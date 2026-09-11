@@ -14,21 +14,21 @@
 
 ## 👥 Equipe (Grupo 10)
 
-| Nome completo | Papel / principais frentes no projeto |
-|---|---|
-| Amanda Zimmermann | A definir |
-| Hellen Cristina de Oliveira | A definir |
-| Iago Henrique Pinto Bogler | A definir |
-| Marceu Lago Pontes Schmidt | A definir |
-| Thiago Luís Lombardi Maes | A definir |
+| Nome completo               | Papel / principais frentes no projeto |
+| --------------------------- | ------------------------------------- |
+| Amanda Zimmermann           | A definir                             |
+| Hellen Cristina de Oliveira | A definir                             |
+| Iago Henrique Pinto Bogler  | A definir                             |
+| Marceu Lago Pontes Schmidt  | A definir                             |
+| Thiago Luís Lombardi Maes   | A definir                             |
 
 ## 📑 Sumário
 
 - [1. Objetivo](#1-objetivo)
 - [2. Escopo](#2-escopo)
 - [3. Principais Requisitos](#3-principais-requisitos)
-  - [3.1 Funcionais (RF)](#31-funcionais-rf)
-  - [3.2 Não Funcionais (RNF)](#32-não-funcionais-rnf)
+    - [3.1 Funcionais (RF)](#31-funcionais-rf)
+    - [3.2 Não Funcionais (RNF)](#32-não-funcionais-rnf)
 - [4. Stack Tecnológica](#4-stack-tecnológica)
 - [5. Estrutura de Pastas](#5-estrutura-de-pastas)
 
@@ -55,34 +55,34 @@ O sistema é composto por duas frentes de uso do professor, integradas por uma A
 
 ### 3.1 Funcionais (RF)
 
-| Código | Requisito |
-|---|---|
-| RF01 | O sistema deve permitir cadastro e login apenas para o professor, sem nenhuma forma de acesso do aluno ao sistema. |
-| RF02 | O sistema deve permitir ao professor criar e gerenciar questões objetivas (2 a 5 alternativas) e discursivas, com tags e busca. |
-| RF03 | O sistema deve permitir ao professor criar turmas e cadastrar os alunos da turma como registros simples (nome e matrícula), sem criação de conta de acesso. |
-| RF04 | O sistema deve permitir ao professor montar provas com até 20 questões, com pontuação independente por questão. |
-| RF05 | O sistema deve permitir ao professor aplicar uma prova já criada a uma ou mais turmas, gerando aplicações independentes entre si. |
-| RF06 | O sistema deve gerar um PDF único consolidado por aplicação, com controle de quantidade de versões, embaralhamento de questões/alternativas e opção de identificação (ou não) do aluno cadastrado na turma. |
-| RF07 | O sistema deve gerar um QR Code por versão (ou por aluno, quando identificado) para uso exclusivo do app mobile do professor. |
-| RF08 | O app mobile deve ler o QR Code e o cartão-resposta pela câmera, calcular a nota automaticamente e permitir correção manual do professor antes de confirmar. |
-| RF09 | Quando a prova tiver identificação do aluno, a nota deve ser atribuída automaticamente ao respectivo registro de aluno na turma ao confirmar a correção; quando não tiver, o professor deve lançar a nota manualmente depois, identificando o aluno pelo nome/matrícula escritos à mão. |
-| RF10 | O app mobile deve funcionar totalmente offline após baixar o gabarito da aplicação, salvando as correções em uma fila local com sincronização automática (idempotente e com tratamento de conflitos) ao reconectar. |
-| RF11 | O sistema deve permitir a publicação/organização do gabarito (por versão ou por aplicação), para uso do próprio professor na devolutiva ao aluno. |
-| RF12 | O sistema deve gerar relatórios de notas por aplicação e consolidados, com estatísticas básicas (média, mediana, desvio padrão) e exportação em CSV, Excel e PDF, para o professor repassar o resultado ao aluno ou lançar no sistema acadêmico. |
-| RF13 | O sistema deve permitir a anonimização da conta do professor e dos dados de alunos vinculados às turmas (LGPD), preservando o histórico de correções e notas já registradas. |
+| Código | Requisito                                                                                                                                                                                                                                                                               |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RF01   | O sistema deve permitir cadastro e login apenas para o professor, sem nenhuma forma de acesso do aluno ao sistema.                                                                                                                                                                      |
+| RF02   | O sistema deve permitir ao professor criar e gerenciar questões objetivas (2 a 5 alternativas) e discursivas, com tags e busca.                                                                                                                                                         |
+| RF03   | O sistema deve permitir ao professor criar turmas e cadastrar os alunos da turma como registros simples (nome e matrícula), sem criação de conta de acesso.                                                                                                                             |
+| RF04   | O sistema deve permitir ao professor montar provas com até 20 questões, com pontuação independente por questão.                                                                                                                                                                         |
+| RF05   | O sistema deve permitir ao professor aplicar uma prova já criada a uma ou mais turmas, gerando aplicações independentes entre si.                                                                                                                                                       |
+| RF06   | O sistema deve gerar um PDF único consolidado por aplicação, com controle de quantidade de versões, embaralhamento de questões/alternativas e opção de identificação (ou não) do aluno cadastrado na turma.                                                                             |
+| RF07   | O sistema deve gerar um QR Code por versão (ou por aluno, quando identificado) para uso exclusivo do app mobile do professor.                                                                                                                                                           |
+| RF08   | O app mobile deve ler o QR Code e o cartão-resposta pela câmera, calcular a nota automaticamente e permitir correção manual do professor antes de confirmar.                                                                                                                            |
+| RF09   | Quando a prova tiver identificação do aluno, a nota deve ser atribuída automaticamente ao respectivo registro de aluno na turma ao confirmar a correção; quando não tiver, o professor deve lançar a nota manualmente depois, identificando o aluno pelo nome/matrícula escritos à mão. |
+| RF10   | O app mobile deve funcionar totalmente offline após baixar o gabarito da aplicação, salvando as correções em uma fila local com sincronização automática (idempotente e com tratamento de conflitos) ao reconectar.                                                                     |
+| RF11   | O sistema deve permitir a publicação/organização do gabarito (por versão ou por aplicação), para uso do próprio professor na devolutiva ao aluno.                                                                                                                                       |
+| RF12   | O sistema deve gerar relatórios de notas por aplicação e consolidados, com estatísticas básicas (média, mediana, desvio padrão) e exportação em CSV, Excel e PDF, para o professor repassar o resultado ao aluno ou lançar no sistema acadêmico.                                        |
+| RF13   | O sistema deve permitir a anonimização da conta do professor e dos dados de alunos vinculados às turmas (LGPD), preservando o histórico de correções e notas já registradas.                                                                                                            |
 
 ### 3.2 Não Funcionais (RNF)
 
-| Código | Requisito |
-|---|---|
-| RNF01 | O sistema deve suportar entre 500 e 600 professores ativos no primeiro ano, cada um gerenciando suas próprias turmas e alunos cadastrados. |
-| RNF02 | A API deve responder em até 300ms (p95) para operações comuns. |
-| RNF03 | O sistema deve manter disponibilidade mensal de 99,5%. |
-| RNF04 | O sistema deve usar HTTPS, autenticação JWT com refresh token e rate limiting contra força bruta. |
-| RNF05 | O acesso às turmas, questões e notas deve garantir isolamento total entre professores, com logs de acesso registrados. |
-| RNF06 | O app de correção deve funcionar de forma totalmente offline, incluindo leitura de QR Code, reconhecimento do cartão-resposta e cálculo de nota. |
-| RNF07 | O sistema deve manter backup diário do banco de dados, com retenção de 30 dias. |
-| RNF08 | As regras críticas de negócio devem ter cobertura de testes automatizados igual ou superior a 80%. |
+| Código | Requisito                                                                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| RNF01  | O sistema deve suportar entre 500 e 600 professores ativos no primeiro ano, cada um gerenciando suas próprias turmas e alunos cadastrados.       |
+| RNF02  | A API deve responder em até 300ms (p95) para operações comuns.                                                                                   |
+| RNF03  | O sistema deve manter disponibilidade mensal de 99,5%.                                                                                           |
+| RNF04  | O sistema deve usar HTTPS, autenticação JWT com refresh token e rate limiting contra força bruta.                                                |
+| RNF05  | O acesso às turmas, questões e notas deve garantir isolamento total entre professores, com logs de acesso registrados.                           |
+| RNF06  | O app de correção deve funcionar de forma totalmente offline, incluindo leitura de QR Code, reconhecimento do cartão-resposta e cálculo de nota. |
+| RNF07  | O sistema deve manter backup diário do banco de dados, com retenção de 30 dias.                                                                  |
+| RNF08  | As regras críticas de negócio devem ter cobertura de testes automatizados igual ou superior a 80%.                                               |
 
 ## 4. Stack Tecnológica
 
@@ -144,6 +144,6 @@ docs/
 
 <div align="center">
 
-*README elaborado para a disciplina de Projeto e Arquitetura de Software — Grupo 10*
+_README elaborado para a disciplina de Projeto e Arquitetura de Software — Grupo 10_
 
 </div>
