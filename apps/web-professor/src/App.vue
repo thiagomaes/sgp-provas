@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+// Casca da aplicação: cada rota decide seu próprio layout.
+// As telas internas usam o AppShell (src/layouts/AppShell.vue);
+// o login é um card centralizado e não usa o shell.
 </script>
 
 <template>
-  <HelloWorld />
+  <RouterView />
 </template>
