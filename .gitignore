@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# builds dos apps
+apps/api/dist/
+apps/web-professor/dist/
