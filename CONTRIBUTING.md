@@ -84,9 +84,12 @@ individual é onde essa correção conta como evidência de trabalho.
 
 ### Rodando localmente
 
+Depois de clonar, instale as dependências do app em que você vai trabalhar
+(`node_modules/` não vai no repositório — só os `package-lock.json`):
+
 ```bash
 # API  → http://localhost:3000/health
-cd apps/api && npm install && npm run start:dev
+cd apps/api && npm install --legacy-peer-deps && npm run start:dev
 
 # Web  → http://localhost:5173
 cd apps/web-professor && npm install && npm run dev
@@ -94,6 +97,12 @@ cd apps/web-professor && npm install && npm run dev
 # Mobile
 cd apps/mobile-professor && npm install && npx expo start
 ```
+
+> [!NOTE]
+> **Por que `--legacy-peer-deps` só na API:** o npm 10.9.x quebra com
+> `Cannot read properties of null (reading 'edgesOut')` ao resolver os peers
+> opcionais do vitest 4 (dependência do scaffold do NestJS). O flag contorna o
+> bug e não altera nenhuma versão instalada. Web e mobile instalam normal.
 
 > Fase atual: **N1** — telas navegáveis com dados mock, ainda sem banco real.
 > Não adicione dependência de banco de dados (MySQL, Prisma, Redis): isso é
