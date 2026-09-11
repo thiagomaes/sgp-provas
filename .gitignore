@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 # builds dos apps
 apps/api/dist/
 apps/web-professor/dist/
+
+# macOS
+.DS_Store
