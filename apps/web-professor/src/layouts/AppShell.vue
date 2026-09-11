@@ -1,20 +1,26 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue'
+import LogoSGP from '../components/LogoSGP.vue'
 import { professoraLogada } from '../mocks/turmas'
 
 /**
  * Layout base de todas as telas internas do SGP.
+ * Fiel aos mockups aprovados (docs/telas/02-dashboard.png e 04-turma-detalhe.png).
  *
  * Uso numa tela de feature:
  *
  *   <AppShell>
- *     <template #titulo>Turmas</template>
- *     <template #subtitulo>Gerencie suas turmas e os alunos cadastrados</template>
+ *     <template #caminho>Turmas / Matemática — 1º Ano</template>
+ *     <template #titulo>Matemática — 1º Ano</template>
+ *     <template #subtitulo>32 alunos cadastrados nesta turma.</template>
+ *     <template #acoes><button>+ Adicionar aluno</button></template>
  *     ...conteúdo da tela...
  *   </AppShell>
  *
- * A tela de login NÃO usa este layout (é um card centralizado).
+ * Os slots #caminho (breadcrumb) e #acoes (botão no canto direito) são
+ * opcionais e somem quando não são preenchidos.
+ * A tela de login NÃO usa este layout (é uma coluna centralizada).
  */
 
 interface ItemMenu {
@@ -38,23 +44,13 @@ const route = useRoute()
 const estaAtivo = computed(() => (prefixo: string) => {
   return route.path === prefixo || route.path.startsWith(`${prefixo}/`)
 })
-
-const iniciais = computed(() =>
-  professoraLogada.nome
-    .split(' ')
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join('')
-    .toUpperCase(),
-)
 </script>
 
 <template>
   <div class="shell">
     <aside class="sidebar">
       <div class="marca">
-        <span class="marca-logo">SGP</span>
-        <span class="marca-sub">Geração de Provas</span>
+        <LogoSGP com-texto />
       </div>
 
       <nav class="menu">
@@ -70,18 +66,19 @@ const iniciais = computed(() =>
       </nav>
 
       <footer class="rodape">
-        <span class="avatar">{{ iniciais }}</span>
-        <span class="rodape-texto">
-          <span class="rodape-nome">{{ professoraLogada.nome }}</span>
-          <span class="rodape-papel">Professora</span>
-        </span>
+        <span class="rodape-nome">{{ professoraLogada.nome }}</span>
+        <span class="rodape-papel">Professora</span>
       </footer>
     </aside>
 
     <main class="conteudo">
       <header class="cabecalho">
-        <h1 class="titulo"><slot name="titulo">Página</slot></h1>
-        <p class="subtitulo"><slot name="subtitulo" /></p>
+        <div class="cabecalho-texto">
+          <p class="caminho"><slot name="caminho" /></p>
+          <h1 class="titulo"><slot name="titulo">Página</slot></h1>
+          <p class="subtitulo"><slot name="subtitulo" /></p>
+        </div>
+        <div class="acoes"><slot name="acoes" /></div>
       </header>
 
       <div class="corpo">
@@ -95,7 +92,7 @@ const iniciais = computed(() =>
 .shell {
   display: flex;
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--surface);
 }
 
 /* ---------- sidebar ---------- */
@@ -111,22 +108,7 @@ const iniciais = computed(() =>
 }
 
 .marca {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
   padding: var(--space-5) var(--space-4) var(--space-4);
-}
-
-.marca-logo {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--accent-dark);
-}
-
-.marca-sub {
-  font-size: var(--text-xs);
-  color: var(--text-faint);
 }
 
 .menu {
@@ -141,7 +123,7 @@ const iniciais = computed(() =>
 .menu-item {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-soft);
 }
 
@@ -158,41 +140,19 @@ const iniciais = computed(() =>
 
 .rodape {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--border);
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-  font-size: var(--text-xs);
-  font-weight: 600;
-}
-
-.rodape-texto {
-  display: flex;
   flex-direction: column;
-  min-width: 0;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
 }
 
 .rodape-nome {
   font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .rodape-papel {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
 }
 
@@ -202,27 +162,43 @@ const iniciais = computed(() =>
   flex: 1;
   margin-left: var(--sidebar-width);
   padding: var(--space-6) var(--space-7);
-  max-width: 1180px;
 }
 
 .cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
   margin-bottom: var(--space-5);
+}
+
+.cabecalho-texto {
+  min-width: 0;
+}
+
+.caminho {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
 }
 
 .titulo {
   margin: 0;
   font-size: var(--text-2xl);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
 }
 
 .subtitulo {
   margin: var(--space-1) 0 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   color: var(--text-soft);
 }
 
-.subtitulo:empty {
+/* Slots opcionais não ocupam espaço quando a tela não os preenche. */
+.caminho:empty,
+.subtitulo:empty,
+.acoes:empty {
   display: none;
 }
 </style>
