@@ -5,34 +5,50 @@ import { questoes } from './questoes'
 
 /**
  * Correções de exemplo da aplicação "aplicacao-1"
- * (Avaliação Bimestral 1, turma Matemática — 1º Ano).
+ * (Avaliação Bimestral 1, turma Matemática — 1º Ano, 32 alunos).
  *
- * São 18 provas corrigidas das 32 da turma, batendo com o campo
- * `corrigidas` em mocks/aplicacoes.ts. A primeira correção é a da aluna
- * Beatriz Almeida (matrícula 2026001), usada como exemplo nos mockups.
+ * São 31 provas lidas pelo app; a aluna Daniela Ferreira (2026003) não tem
+ * correção — é a linha "— lançar —" / "Manual pendente" do mockup
+ * docs/telas/12-notas-detalhe.png. Para saber quem está pendente, compare
+ * os alunos da turma com os alunoId presentes aqui.
+ *
+ * As notas de Beatriz (8,5), Carlos (6,0) e Eduardo (7,5) são as do mockup.
  */
 
-const QUANTIDADE_CORRIGIDA = 18
+/** Aluno sem correção lida: a nota dele será lançada manualmente (RF09). */
+const ALUNOS_PENDENTES = new Set(['aluno-3'])
 
-/** Letra correta de cada questão objetiva da prova de exemplo. */
+/**
+ * Questões que cada aluno errou, quando o mockup fixa a nota.
+ * As pontuações da prova de exemplo são 2 + 2 + 1,5 + 1,5 + 1 + 2 = 10.
+ */
+const ERROS_DO_MOCKUP: Record<string, string[]> = {
+  'aluno-1': ['questao-3'], // 10 − 1,5 = 8,5
+  'aluno-2': ['questao-1', 'questao-2'], // 10 − 4 = 6,0
+  'aluno-4': ['questao-4', 'questao-6'], // 10 − 2,5 = 7,5
+}
+
 function letraCorreta(questaoId: string): CorrectionAnswer['marcada'] {
   const questao = questoes.find((item) => item.id === questaoId)
-  const correta = questao?.alternativas?.find((alt) => alt.correta)
-  return correta?.letra ?? null
+  return questao?.alternativas?.find((alt) => alt.correta)?.letra ?? null
 }
 
 /**
- * Gera as respostas de um aluno de forma determinística: o aluno erra a
- * questão cujo índice bate com o resto da divisão, para os mocks terem
- * variação de nota sem virar dado aleatório (que mudaria a cada reload).
+ * Monta as respostas de um aluno. Quem está em ERROS_DO_MOCKUP recebe
+ * exatamente os erros listados; os demais seguem uma regra determinística,
+ * para variar a nota sem usar valor aleatório (que mudaria a cada reload).
  */
-function respostasDeterministicas(indiceAluno: number): CorrectionAnswer[] {
-  return provaExemplo.questoes.map((item, indice) => {
+function respostasDoAluno(alunoId: string, indice: number): CorrectionAnswer[] {
+  const errosFixos = ERROS_DO_MOCKUP[alunoId]
+
+  return provaExemplo.questoes.map((item, posicao) => {
     const questao = questoes.find((q) => q.id === item.questaoId)
-    const acertou = (indiceAluno + indice) % 4 !== 0
+    const acertou = errosFixos
+      ? !errosFixos.includes(item.questaoId)
+      : (indice + posicao) % 4 !== 0
 
     if (questao?.tipo === 'discursiva') {
-      // Discursiva: sem alternativa marcada; pontuação parcial na correção.
+      // Discursiva: sem alternativa marcada; pontuação parcial quando erra.
       return {
         questaoId: item.questaoId,
         marcada: null,
@@ -41,14 +57,13 @@ function respostasDeterministicas(indiceAluno: number): CorrectionAnswer[] {
       }
     }
 
-    const certa = letraCorreta(item.questaoId)
     const alternativas = questao?.alternativas ?? []
     const erradas = alternativas.filter((alt) => !alt.correta)
-    const marcadaErrada = erradas[indiceAluno % Math.max(erradas.length, 1)]
+    const marcadaErrada = erradas[indice % Math.max(erradas.length, 1)]
 
     return {
       questaoId: item.questaoId,
-      marcada: acertou ? certa : (marcadaErrada?.letra ?? null),
+      marcada: acertou ? letraCorreta(item.questaoId) : (marcadaErrada?.letra ?? null),
       correta: acertou,
       pontuacao: acertou ? item.pontuacao : 0,
     }
@@ -61,9 +76,9 @@ function somaNota(respostas: CorrectionAnswer[]): number {
 }
 
 export const correcoes: Correction[] = turmaExemplo.alunos
-  .slice(0, QUANTIDADE_CORRIGIDA)
+  .filter((aluno) => !ALUNOS_PENDENTES.has(aluno.id))
   .map((aluno, indice) => {
-    const respostas = respostasDeterministicas(indice)
+    const respostas = respostasDoAluno(aluno.id, indice)
     const numero = String(indice + 1).padStart(3, '0')
 
     return {
@@ -77,17 +92,20 @@ export const correcoes: Correction[] = turmaExemplo.alunos
       origem: 'mobile' as const,
       clientCorrectionId: `cli-${numero}`,
       // As três últimas ainda não subiram da fila offline do app (RF10).
-      statusSync:
-        indice >= QUANTIDADE_CORRIGIDA - 3
-          ? ('pendente' as const)
-          : ('sincronizada' as const),
-      corrigidaEm: '2026-03-17',
+      statusSync: indice >= 28 ? ('pendente' as const) : ('sincronizada' as const),
+      corrigidaEm: '2026-08-29',
     }
   })
 
-/** Correção da Beatriz Almeida — exemplo usado nas telas de detalhe. */
+/** Correção da Beatriz Almeida (8,5) — exemplo usado nas telas de detalhe. */
 export const correcaoExemplo = correcoes[0]
 
 export function buscarCorrecoesPorAplicacao(aplicacaoId: string): Correction[] {
   return correcoes.filter((correcao) => correcao.aplicacaoId === aplicacaoId)
+}
+
+/** Alunos da aplicação que ainda precisam de lançamento manual de nota. */
+export function alunosComNotaPendente(aplicacaoId: string): string[] {
+  if (aplicacaoId !== 'aplicacao-1') return []
+  return [...ALUNOS_PENDENTES]
 }

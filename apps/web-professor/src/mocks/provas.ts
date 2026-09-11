@@ -45,14 +45,27 @@ export const provas: Exam[] = [
   },
   {
     id: 'prova-4',
-    titulo: 'Simulado de Física',
+    titulo: 'Prova de Cinemática',
     disciplina: 'Física',
     questoes: [
       { questaoId: 'questao-9', ordem: 1, pontuacao: 5 },
       { questaoId: 'questao-10', ordem: 2, pontuacao: 5 },
     ],
     totalPontos: 10,
-    criadaEm: '2026-03-08',
+    criadaEm: '2026-08-08',
+  },
+  {
+    id: 'prova-5',
+    titulo: 'Simulado ENEM',
+    disciplina: 'Matemática',
+    questoes: [
+      { questaoId: 'questao-2', ordem: 1, pontuacao: 2.5 },
+      { questaoId: 'questao-3', ordem: 2, pontuacao: 2.5 },
+      { questaoId: 'questao-4', ordem: 3, pontuacao: 2.5 },
+      { questaoId: 'questao-6', ordem: 4, pontuacao: 2.5 },
+    ],
+    totalPontos: 10,
+    criadaEm: '2026-08-01',
   },
 ]
 

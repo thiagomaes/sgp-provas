@@ -18,11 +18,13 @@ export const professoraLogada: Teacher = {
  * o restante completa a lista para o total combinado.
  */
 const nomesMatematica = [
+  // Os cinco primeiros são exatamente os que aparecem nos mockups
+  // 04-turma-detalhe.png e 12-notas-detalhe.png — não troque estes nomes.
   'Beatriz Almeida',
-  'Caio Ferreira',
-  'Daniela Souza',
+  'Carlos Eduardo Souza',
+  'Daniela Ferreira',
   'Eduardo Lima',
-  'Fernanda Rocha',
+  'Fernanda Ribeiro',
   'Gabriel Martins',
   'Helena Barbosa',
   'Igor Nascimento',
@@ -126,6 +128,43 @@ const alunosFisica: Student[] = [
   matricula: String(2026201 + indice),
 }))
 
+const alunosMatematica2: Student[] = [
+  'Alexandre Vilar',
+  'Bruna Sanches',
+  'Caio Ferreira',
+  'Denise Macedo',
+  'Emerson Rocha',
+  'Fabiana Cordeiro',
+  'Gustavo Pinheiro',
+  'Heloá Bittencourt',
+  'Ismael Drummond',
+  'Joana Vasques',
+  'Kelly Andrade',
+  'Leandro Bastos',
+  'Melissa Chaves',
+  'Norberto Fialho',
+  'Olga Trindade',
+  'Paulo Sérgio Mota',
+  'Raíssa Bezerra',
+  'Sérgio Lombardi',
+  'Talita Ferrari',
+  'Uriel Santana',
+  'Verônica Aquino',
+  'Wanderson Lobo',
+  'Yuri Salgado',
+  'Zuleica Maciel',
+  'Adriano Borges',
+  'Bruna Valadares',
+  'Célia Tavares',
+  'Diogo Rangel',
+  'Elaine Botelho',
+  'Fernando Quintela',
+].map((nome, indice) => ({
+  id: `aluno-m2-${indice + 1}`,
+  nome,
+  matricula: String(2026301 + indice),
+}))
+
 export const turmas: Class[] = [
   {
     id: 'turma-1',
@@ -145,11 +184,19 @@ export const turmas: Class[] = [
   },
   {
     id: 'turma-3',
-    nome: 'Física — 3º Ano',
+    nome: 'Física — 2º Ano',
     disciplina: 'Física',
-    ano: '3º Ano',
+    ano: '2º Ano',
     turno: 'Manhã',
     alunos: alunosFisica,
+  },
+  {
+    id: 'turma-4',
+    nome: 'Matemática — 2º Ano',
+    disciplina: 'Matemática',
+    ano: '2º Ano',
+    turno: 'Tarde',
+    alunos: alunosMatematica2,
   },
 ]
 
