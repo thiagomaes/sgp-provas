@@ -14,13 +14,16 @@
 
 ## 👥 Equipe (Grupo 10)
 
-| Nome completo               | Papel / principais frentes no projeto |
-| --------------------------- | ------------------------------------- |
-| Amanda Zimmermann           | A definir                             |
-| Hellen Cristina de Oliveira | A definir                             |
-| Iago Henrique Pinto Bogler  | A definir                             |
-| Marceu Lago Pontes Schmidt  | A definir                             |
-| Thiago Luís Lombardi Maes   | A definir                             |
+Divisão por frente de feature (combinada no grupo; quem tiver mais afinidade com
+uma parte pode trocar com o responsável antes de começar):
+
+| Nome completo               | Papel / principais frentes no projeto                          |
+| --------------------------- | -------------------------------------------------------------- |
+| Amanda Zimmermann           | Turmas — lista de turmas e cadastro de alunos na turma          |
+| Hellen Cristina de Oliveira | Banco de questões — lista e editor de questão                   |
+| Iago Henrique Pinto Bogler  | Provas e aplicações — montagem de prova, aplicação e PDF        |
+| Marceu Lago Pontes Schmidt  | Relatórios e notas + app mobile do professor                    |
+| Thiago Luís Lombardi Maes   | Estrutura base do monorepo, autenticação e dashboard            |
 
 ## 📑 Sumário
 
@@ -31,6 +34,8 @@
     - [3.2 Não Funcionais (RNF)](#32-não-funcionais-rnf)
 - [4. Stack Tecnológica](#4-stack-tecnológica)
 - [5. Estrutura de Pastas](#5-estrutura-de-pastas)
+- [6. Como rodar o projeto](#6-como-rodar-o-projeto)
+- [7. Estado atual (N1)](#7-estado-atual-n1)
 
 ---
 
@@ -96,9 +101,9 @@ O sistema é composto por duas frentes de uso do professor, integradas por uma A
 
 A arquitetura de alto nível prevê duas frentes de cliente, ambas exclusivas do professor, consumindo uma API comum:
 
-- **Web Professor**: **Vite + Vue**. Concentra login, turmas (com cadastro de alunos como registros simples), banco de questões, provas, aplicações, geração de PDF e relatórios.
+- **Web Professor**: **Vite + Vue 3 (TypeScript)**, com **Vue Router** e **Pinia**. Concentra login, turmas (com cadastro de alunos como registros simples), banco de questões, provas, aplicações, geração de PDF e relatórios.
 - **App Nativo do Professor**: **React Native / Expo**, único ponto de acesso do sistema à leitura de QR Code. Responsável pela correção por câmera, funcionamento offline e fila local de sincronização (**SQLite**).
-- **API Gateway**: **NestJS ou Fastify**, expondo os módulos de Auth (professor), Class (turmas e alunos cadastrados), Exam/Application, Grade (notas) e Sync Service (recebe lotes de correções da fila local, aplica deduplicação por `clientCorrectionId` e resolve conflitos).
+- **API Gateway**: **NestJS** (decidido na N1, entre as duas opções avaliadas — NestJS e Fastify — pela estrutura modular em camadas já pronta), expondo os módulos de Auth (professor), Class (turmas e alunos cadastrados), Exam/Application, Grade (notas) e Sync Service (recebe lotes de correções da fila local, aplica deduplicação por `clientCorrectionId` e resolve conflitos).
 - **Persistência**: **MySQL** como banco relacional principal, **Redis** para cache/filas, e **Object Storage** para os PDFs gerados.
 - **Vision Service (opcional)**: componente server-side para fallback/verificação de leitura do cartão-resposta com maior precisão quando há conectividade. A leitura em si ocorre on-device, garantindo o funcionamento 100% offline do app.
 
@@ -106,39 +111,93 @@ Bibliotecas de apoio (autenticação JWT + refresh token, hashing de senha, gera
 
 ## 5. Estrutura de Pastas
 
-Como o projeto reúne duas aplicações de cliente (ambas do professor) e uma API, a estrutura sugerida é um monorepo com um pacote por aplicação, mantendo o padrão em camadas (`rota → controle → serviço → repositório → model`) dentro da API:
+O projeto reúne duas aplicações de cliente (ambas do professor) e uma API, num monorepo com um pacote por aplicação, mantendo o padrão em camadas (`rota → controle → serviço → repositório → model`) dentro da API. Estrutura já criada no repositório:
 
 ```
 apps/
-  api/                   # API Gateway (NestJS ou Fastify)
+  api/                      # API NestJS
     src/
-      auth/              # Feature 1 — cadastro, login e anonimização do professor
-      classes/           # Feature 3 — turmas e cadastro de alunos (registros, sem login)
-      exams/              # Feature 2 e 4 — questões e provas
-      applications/       # Feature 5, 6 e 7 — aplicações, PDF/versões, gabarito
-      corrections/         # Feature 8 e 9 — correção e lançamento manual
-      reports/             # Feature 12 — relatórios exportáveis
-      sync/                # Sync Service — fila offline, dedup, conflitos
-      common/              # guards, interceptors, pipes compartilhados
-    prisma/ (ou migrations/)
-  web-professor/          # Vite + Vue — turmas, alunos, provas, aplicações, relatórios
+      auth/                 # Feature 1 — cadastro, login e anonimização do professor
+      classes/              # Feature 3 — turmas e cadastro de alunos (registros, sem login)
+      exams/                # Feature 2 e 4 — questões e provas
+      applications/         # Feature 5, 6 e 7 — aplicações, PDF/versões, gabarito
+      corrections/          # Feature 8 e 9 — correção e lançamento manual
+      reports/              # Feature 12 — relatórios exportáveis
+      sync/                 # Sync Service — fila offline, dedup, conflitos
+      common/               # guards, interceptors, pipes + health.controller.ts
+      app.module.ts
+      main.ts
+  web-professor/            # Vite + Vue 3 (TypeScript)
     src/
-      pages/
-      components/
-      services/            # chamadas à API
-  mobile-professor/        # React Native / Expo — leitura de QR Code e correção offline
+      pages/                # uma tela por arquivo (evita conflito de merge)
+      components/           # componentes compartilhados (EmConstrucao, LogoSGP)
+      layouts/              # AppShell.vue — sidebar + área de conteúdo
+      router/               # todas as rotas do sistema
+      mocks/                # dados de exemplo tipados (fase N1)
+      styles/               # tokens.css — paleta única do sistema
+      main.ts
+  mobile-professor/         # React Native / Expo — leitura de QR Code e correção offline
     src/
       screens/
-      services/            # fila local (SQLite), sync em background
+      services/             # fila local (SQLite), sync em background
       offline/
+    App.js
 docs/
   uml/
-  telas/
+  telas/                    # 16 mockups aprovados pelo cliente (PNG)
   arquitetura/
   adr/
   modelo-dados/
   api/
 ```
+
+> As pastas de banco de dados (`prisma/` ou `migrations/`) entram na N2, junto com a persistência real.
+
+## 6. Como rodar o projeto
+
+Pré-requisito: **Node.js 22+**. Cada app tem suas próprias dependências — instale só a do app em que você vai trabalhar (`node_modules/` não vai versionado; os `package-lock.json` sim).
+
+```bash
+# API  → http://localhost:3000/health
+cd apps/api && npm install --legacy-peer-deps && npm run start:dev
+
+# Web  → http://localhost:5173
+cd apps/web-professor && npm install && npm run dev
+
+# Mobile
+cd apps/mobile-professor && npm install && npx expo start
+```
+
+O `--legacy-peer-deps` é necessário apenas na API: o npm 10.9.x quebra ao resolver os peers opcionais do vitest 4 (dependência do scaffold do NestJS). O flag contorna o bug sem alterar versão nenhuma.
+
+Antes de implementar qualquer tela, leia o [CONTRIBUTING.md](CONTRIBUTING.md) — ele traz a convenção de commit, o fluxo de branch/PR e a regra de não criar cor nem dado mock novo.
+
+## 7. Estado atual (N1)
+
+O que já está no repositório:
+
+| Item | Situação |
+| --- | --- |
+| Estrutura do monorepo | ✅ criada (`apps/` + `docs/`) |
+| API NestJS | ✅ sobe com `GET /health` respondendo 200 |
+| Web (Vite + Vue + Router + Pinia) | ✅ scaffold rodando |
+| Mobile (Expo) | ✅ scaffold em branco |
+| Design tokens (`styles/tokens.css`) | ✅ paleta única extraída dos mockups |
+| Layout base (`layouts/AppShell.vue`) | ✅ sidebar, menu com item ativo, breadcrumb, ações e slots de conteúdo |
+| Rotas de todas as telas | ✅ 12 rotas, cada tela com placeholder "Em construção" |
+| Dados mock tipados (`src/mocks/`) | ✅ turmas, questões, provas, aplicações, correções + `types.ts` |
+| Mockups das 16 telas | ✅ em [`docs/telas/`](docs/telas/) |
+| Telas de feature implementadas | 🔜 em andamento, uma por integrante |
+| Banco de dados, PDF real e leitura de QR Code | 🔜 escopo da N2/N3 |
+
+Nesta fase as telas são **navegáveis com dados mock**: não há banco, autenticação real, geração de PDF nem leitura de câmera. A tela de login aceita qualquer valor e leva ao dashboard.
+
+Regras que valem para todo mundo nesta fase:
+
+- **Não invente cor:** use exclusivamente as variáveis de `apps/web-professor/src/styles/tokens.css`.
+- **Não duplique dado mock:** importe de `apps/web-professor/src/mocks/` — os dados de exemplo (turma "Matemática — 1º Ano" com 32 alunos, aluna Beatriz Almeida 2026001, professora Ana Costa, prova "Avaliação Bimestral 1") são os mesmos dos mockups aprovados.
+- **Não adicione dependência de banco** (MySQL, Prisma, Redis): isso é N2.
+- **O aluno não acessa o sistema:** nunca crie campo de e-mail, senha ou login para aluno.
 
 ---
 
