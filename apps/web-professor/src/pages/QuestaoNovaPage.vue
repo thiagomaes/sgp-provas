@@ -113,6 +113,12 @@ const salvarQuestao = () => {
       erro.value = 'A questão objetiva deve ter entre 2 e 5 alternativas.'
       return
     }
+    
+    const temVazia = alternativas.value.some((a) => a.texto.trim().length === 0)
+    if (temVazia) {
+      erro.value = 'Preencha o texto de todas as alternativas.'
+      return
+    }
 
     const alternativasPreenchidas = alternativas.value.filter(
       (alternativa) => alternativa.texto.trim().length > 0,
