@@ -11,7 +11,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/dashboard' },
+    // O login é a porta de entrada do sistema (RF01): abrir a raiz cai nele.
+    { path: '/', redirect: '/login' },
 
     // Login — única tela fora do AppShell (card centralizado).
     {
