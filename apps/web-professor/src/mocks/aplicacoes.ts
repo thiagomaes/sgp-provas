@@ -23,7 +23,6 @@ export const aplicacoes: Application[] = [
     status: 'em-correcao',
     corrigidas: 31,
     totalProvas: 32,
-    media: 7.5
   },
   {
     id: 'aplicacao-2',
