@@ -205,10 +205,12 @@ O que já está no repositório:
 | Mobile (Expo) | ✅ scaffold em branco |
 | Design tokens (`styles/tokens.css`) | ✅ paleta única extraída dos mockups |
 | Layout base (`layouts/AppShell.vue`) | ✅ sidebar, menu com item ativo, breadcrumb, ações e slots de conteúdo |
-| Rotas de todas as telas | ✅ 12 rotas, cada tela com placeholder "Em construção" |
+| Rotas de todas as telas | ✅ 12 rotas navegáveis |
 | Dados mock tipados (`src/mocks/`) | ✅ turmas, questões, provas, aplicações, correções + `types.ts` |
 | Mockups das 16 telas | ✅ em [`docs/telas/`](docs/telas/) |
-| Telas de feature implementadas | 🔜 em andamento, uma por integrante |
+| Telas web implementadas | ✅ 12 de 12 (login, dashboard, turmas, questões, provas, aplicações, relatórios) |
+| App mobile do professor | ✅ 4 telas navegáveis (login, home offline, scanner, revisão) |
+| Deploy da web | ✅ publicado em [sgp-provas.vercel.app](https://sgp-provas.vercel.app) |
 | Banco de dados, PDF real e leitura de QR Code | 🔜 escopo da N2/N3 |
 
 Nesta fase as telas são **navegáveis com dados mock**: não há banco, autenticação real, geração de PDF nem leitura de câmera. A tela de login aceita qualquer valor e leva ao dashboard.
