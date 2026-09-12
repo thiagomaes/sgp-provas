@@ -10,6 +10,7 @@ const route = useRoute()
 
 const tipo = ref<'objetiva' | 'discursiva'>('objetiva')
 const enunciado = ref('')
+const disciplina = ref('Matemática')
 const tagsTexto = ref('')
 const pontuacaoMaxima = ref(10)
 const erro = ref('')
@@ -35,6 +36,7 @@ const resetFormulario = (questao?: Question) => {
   if (questao) {
     tipo.value = questao.tipo
     enunciado.value = questao.enunciado
+    disciplina.value = questao.disciplina || 'Matemática'
     tagsTexto.value = questao.tags.join(', ')
     pontuacaoMaxima.value = questao.pontuacaoMaxima ?? 10
     alternativas.value = (questao.alternativas ?? []).map((alternativa) => ({
@@ -51,6 +53,7 @@ const resetFormulario = (questao?: Question) => {
 
   tipo.value = 'objetiva'
   enunciado.value = ''
+  disciplina.value = 'Matemática'
   tagsTexto.value = ''
   pontuacaoMaxima.value = 10
   alternativas.value = criarAlternativasPadrao()
@@ -113,7 +116,7 @@ const salvarQuestao = () => {
       erro.value = 'A questão objetiva deve ter entre 2 e 5 alternativas.'
       return
     }
-    
+
     const temVazia = alternativas.value.some((a) => a.texto.trim().length === 0)
     if (temVazia) {
       erro.value = 'Preencha o texto de todas as alternativas.'
@@ -140,7 +143,7 @@ const salvarQuestao = () => {
     id: editingId.value ?? `questao-${Date.now()}`,
     enunciado: enunciadoFormatado,
     tipo: tipo.value,
-    disciplina: 'Matemática',
+    disciplina: disciplina.value,
     tags: parseTags(tagsTexto.value),
     criadaEm: new Date().toISOString().slice(0, 10),
     ...(tipo.value === 'objetiva'
@@ -160,7 +163,7 @@ const salvarQuestao = () => {
   if (editingId.value) {
     const index = questoesState.findIndex((item) => item.id === editingId.value)
     if (index >= 0) {
-      questoesState[index] = { ...questoesState[index], ...dadosQuestao }
+      questoesState[index] = dadosQuestao
     }
   } else {
     questoesState.push(dadosQuestao)
@@ -183,6 +186,16 @@ const cancelar = () => {
 
     <section class="pagina-nova-questao">
       <div class="area-formulario">
+      <div class="campo-grupo">
+        <label class="label" for="disciplina">Disciplina</label>
+        <input
+          id="disciplina"
+          v-model="disciplina"
+          type="text"
+          class="input"
+          placeholder="Ex.: Matemática, História, Física"
+        />
+      </div>
         <div class="campo-grupo tipo-grupo">
           <label class="label">Tipo</label>
 
