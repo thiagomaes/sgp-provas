@@ -54,6 +54,8 @@ export interface Question {
   alternativas?: QuestionOption[]
   /** Espelho de resposta usado nas discursivas na devolutiva. */
   respostaEsperada?: string
+  /** Pontuação máxima para questões discursivas. */
+  pontuacaoMaxima?: number
   disciplina: string
   tags: string[]
   criadaEm: string

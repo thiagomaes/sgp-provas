@@ -48,6 +48,11 @@ const router = createRouter({
       name: 'questao-nova',
       component: () => import('../pages/QuestaoNovaPage.vue'),
     },
+    {
+      path: '/questoes/:id/editar',
+      name: 'questao-editar',
+      component: () => import('../pages/QuestaoNovaPage.vue'),
+    },
 
     {
       path: '/provas',
