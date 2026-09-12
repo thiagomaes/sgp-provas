@@ -172,6 +172,27 @@ O `--legacy-peer-deps` é necessário apenas na API: o npm 10.9.x quebra ao reso
 
 Antes de implementar qualquer tela, leia o [CONTRIBUTING.md](CONTRIBUTING.md) — ele traz a convenção de commit, o fluxo de branch/PR e a regra de não criar cor nem dado mock novo.
 
+### Deploy da web (Vercel)
+
+A web do professor é uma SPA estática (na N1 roda só com dados mock, sem API), então
+o deploy é direto:
+
+| Configuração | Valor |
+| --- | --- |
+| Root Directory | `apps/web-professor` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Install Command | `npm install` |
+
+O arquivo `apps/web-professor/vercel.json` já redireciona todas as rotas para o
+`index.html`. Sem isso, recarregar a página em `/dashboard` ou abrir um link direto
+retorna 404, porque o Vue Router usa modo history e quem resolve a rota é o
+navegador, não o servidor.
+
+Cada push na `main` publica automaticamente. Pull requests ganham uma URL de preview,
+útil para revisar tela sem precisar rodar o projeto na própria máquina.
+
 ## 7. Estado atual (N1)
 
 O que já está no repositório:
