@@ -4,7 +4,7 @@
 
 **Plataforma web e app mobile para o professor criar, aplicar e corrigir provas de forma automatizada, com geração de estatísticas de desempenho.**
 
-🔗 **Link do sistema hospedado:** https://...
+🔗 **Link do sistema hospedado:** https://sgp-provas.vercel.app
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-F5A623?style=flat-square)
 ![Entrega](https://img.shields.io/badge/entrega%20atual-N1-3D348B?style=flat-square)
