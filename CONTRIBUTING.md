@@ -82,6 +82,41 @@ Como as branches foram criadas antes de qualquer tela existir, quem for mexer nu
 arquivo compartilhado deve rodar `git pull origin main` na sua branch antes, para
 não sobrescrever mudança de colega.
 
+### Estado das telas na N1 (padrão do projeto)
+
+Nesta fase não há banco nem API: quando a tela precisa **criar, editar ou remover**
+algo (nova turma, novo aluno, nova questão), o padrão do projeto é envolver o array
+do mock num `ref` e alterá-lo direto — o dado vive em memória enquanto a sessão
+durar.
+
+```ts
+import { ref } from 'vue'
+import { turmas } from '../mocks/turmas'
+import type { Class } from '../mocks/types'
+
+const listaTurmas = ref<Class[]>(turmas)
+
+function criarTurma() {
+  listaTurmas.value.push({ id: `turma-${Date.now()}`, /* ... */ })
+}
+```
+
+Combinado no grupo: é o jeito mais simples para a entrega da N1 e não exige store
+nem camada extra. Duas consequências que são esperadas, não bugs:
+
+- o dado criado **persiste ao navegar entre telas** (o array do mock é o mesmo
+  módulo para todo mundo), e some ao recarregar a página (F5);
+- alterar uma turma em `/turmas` reflete no contador do Dashboard, por exemplo.
+
+Regras que continuam valendo: **não edite os arquivos de `src/mocks/` para incluir
+dados da sua tela** (o array inicial é base comum de todos) e **não crie tipo novo**
+— se faltar campo, adicione o campo em `mocks/types.ts` como opcional e avise o
+grupo.
+
+> Exceção conhecida: `src/state/questoes.ts` foi escrito antes desta decisão e faz
+> uma cópia reativa do mock. Funciona e pode ficar como está; para código novo, use
+> o padrão acima.
+
 ## PR reprovado / reenviado
 
 Sempre que um PR for **reprovado em review** e depois reenviado, o autor registra
