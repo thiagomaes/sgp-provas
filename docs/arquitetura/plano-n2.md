@@ -79,6 +79,42 @@ tempo.
    ser exportado do próprio `schema.prisma` com `prisma-erd-generator` ou desenhado à
    mão) e revisar que nenhuma tela ainda importa de `src/mocks/`.
 
+### 4.1 Branches: cada um já tem a sua (não crie outra)
+
+As 5 branches da N2 já foram criadas no GitHub a partir da `main`. As branches antigas
+da N1 foram apagadas, então não use nenhuma branch sem o prefixo `n2`.
+
+| Pessoa | Branch | Quando começar |
+|---|---|---|
+| Thiago | `feature/n2-infra-auth` | agora |
+| Amanda | `feature/n2-turmas` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
+| Hellen | `feature/n2-questoes` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
+| Iago | `feature/n2-provas-aplicacoes` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
+| Marceu | `feature/n2-relatorios-mobile` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
+
+**Para começar** (troque pelo nome da sua branch):
+
+```
+git fetch origin
+git checkout feature/n2-turmas
+git merge origin/main
+```
+
+O `git merge origin/main` é obrigatório para Amanda, Hellen, Iago e Marceu: as branches
+foram criadas antes do Prompt 0, então elas ainda não têm o Prisma nem a autenticação.
+Um `git pull` sozinho **não resolve**, porque ele só atualiza a sua própria branch e
+não traz o que entrou na `main`. Para conferir que deu certo, o arquivo
+`apps/api/prisma/schema.prisma` precisa existir depois do merge. Se não existir, a
+base ainda não foi mergeada: espere o aviso do Thiago no grupo.
+
+**Durante o trabalho:**
+
+- Commite e dê push só na sua branch: `git push origin feature/n2-turmas`.
+- Nunca commite direto na `main`. Tudo entra por PR, com pelo menos 1 review.
+- **Antes de abrir o PR**, rode de novo `git fetch origin` e `git merge origin/main`
+  na sua branch, para trazer o que os colegas já mergearam. Se der conflito, resolva
+  na sua branch (ou peça ajuda no grupo) antes de abrir o PR.
+
 ---
 
 ## Prompt 0 — Thiago: banco de dados, autenticação e infraestrutura
@@ -94,6 +130,12 @@ Sua tarefa é a fundação da N2: banco de dados real + autenticação. As outra
 pessoas do grupo vão implementar seus módulos (classes, exams, applications,
 corrections/reports) em cima do que você criar aqui — então isso precisa estar
 mergeado na main antes delas começarem.
+
+PASSO 0 (antes de qualquer código): a branch feature/n2-infra-auth já existe no
+GitHub, não crie outra. Rode:
+  git fetch origin
+  git checkout feature/n2-infra-auth
+Confirme com `git branch --show-current` que está nela antes de continuar.
 
 TAREFA 1 — Prisma + MySQL
 Instale o Prisma em apps/api (`npm install prisma --save-dev --legacy-peer-deps` e
@@ -174,10 +216,11 @@ TAREFA 8 — Commits pequenos seguindo a convenção do CONTRIBUTING.md (ex.:
 "feat(api): implementa autenticação jwt com refresh token",
 "feat(web-professor): conecta login à api real").
 
-Branch: feature/n2-infra-auth. Abra PR para main assim que tudo funcionar local
-(API subindo, migration aplicada, seed rodado, login real funcionando) — as outras
-4 pessoas do grupo vão dar `git pull` nessa branch depois de mergeada antes de
-começar a delas.
+Branch: feature/n2-infra-auth (a mesma do PASSO 0). Abra PR para main assim que
+tudo funcionar local (API subindo, migration aplicada, seed rodado, login real
+funcionando). Depois do merge, avise no grupo que a base entrou na main: é a partir
+desse aviso que as outras 4 pessoas rodam `git merge origin/main` nas branches delas
+e começam.
 
 Antes de começar, me mostre um plano rápido das tarefas na ordem de execução.
 ```
@@ -188,8 +231,18 @@ Antes de começar, me mostre um plano rápido das tarefas na ordem de execução
 
 ```
 Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT, PrismaService
-em src/common/) já foi mergeada na main — rode git pull antes de começar, e leia
-apps/api/prisma/schema.prisma para ver os modelos Turma e Aluno já criados.
+em src/common/) já foi mergeada na main.
+
+PASSO 0 (antes de qualquer código): a branch feature/n2-turmas já existe no GitHub,
+não crie outra. Ela foi criada antes da base da N2, então você PRECISA trazer a main
+para dentro dela. Rode exatamente:
+  git fetch origin
+  git checkout feature/n2-turmas
+  git merge origin/main
+(`git pull` sozinho não serve: ele não traz o que entrou na main.) Confira que o
+arquivo apps/api/prisma/schema.prisma existe. Se não existir, a base ainda não foi
+mergeada: pare e me avise, não continue. Depois leia o schema.prisma para ver os
+modelos Turma e Aluno já criados.
 
 Sua tarefa é implementar o módulo de turmas na API e conectar as telas que já são
 suas desde a N1 (Lista de turmas e Detalhe da turma) ao banco real, removendo o mock.
@@ -229,8 +282,10 @@ simples, registre o porquê).
 TAREFA 5 — Commits pequenos (ex.: "feat(api): implementa crud de turmas e alunos",
 "feat(web-professor): conecta telas de turmas à api real").
 
-Branch: feature/n2-turmas. Abra PR para main vinculado à Issue de turmas, com pelo
-menos 1 review antes do merge.
+Branch: feature/n2-turmas (a mesma do PASSO 0). Antes de abrir o PR, rode `git fetch origin` e
+`git merge origin/main` de novo na sua branch, para trazer o que os colegas já
+mergearam, e resolva conflitos se houver. Abra PR para
+main vinculado à Issue de turmas, com pelo menos 1 review antes do merge.
 ```
 
 ---
@@ -239,8 +294,18 @@ menos 1 review antes do merge.
 
 ```
 Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
-PrismaService) já foi mergeada na main — rode git pull, e leia
-apps/api/prisma/schema.prisma para ver os modelos Questao e Alternativa já criados.
+PrismaService) já foi mergeada na main.
+
+PASSO 0 (antes de qualquer código): a branch feature/n2-questoes já existe no GitHub,
+não crie outra. Ela foi criada antes da base da N2, então você PRECISA trazer a main
+para dentro dela. Rode exatamente:
+  git fetch origin
+  git checkout feature/n2-questoes
+  git merge origin/main
+(`git pull` sozinho não serve: ele não traz o que entrou na main.) Confira que o
+arquivo apps/api/prisma/schema.prisma existe. Se não existir, a base ainda não foi
+mergeada: pare e me avise, não continue. Depois leia o schema.prisma para ver os
+modelos Questao e Alternativa já criados.
 
 Sua tarefa é implementar o módulo de questões na API e conectar as telas que já são
 suas desde a N1 (Banco de questões e Editor de questão) ao banco real.
@@ -280,8 +345,10 @@ física (histórico de provas que já usam a questão).
 TAREFA 5 — Commits pequenos (ex.: "feat(api): implementa crud de questões com
 soft-delete", "feat(web-professor): conecta banco de questões à api real").
 
-Branch: feature/n2-questoes. Abra PR para main vinculado à Issue de questões, com
-pelo menos 1 review antes do merge.
+Branch: feature/n2-questoes (a mesma do PASSO 0). Antes de abrir o PR, rode `git fetch origin` e
+`git merge origin/main` de novo na sua branch, para trazer o que os colegas já
+mergearam, e resolva conflitos se houver. Abra PR para
+main vinculado à Issue de questões, com pelo menos 1 review antes do merge.
 ```
 
 ---
@@ -290,8 +357,18 @@ pelo menos 1 review antes do merge.
 
 ```
 Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
-PrismaService) já foi mergeada na main — rode git pull, e leia
-apps/api/prisma/schema.prisma para ver os modelos Prova, ProvaQuestao, Aplicacao e
+PrismaService) já foi mergeada na main.
+
+PASSO 0 (antes de qualquer código): a branch feature/n2-provas-aplicacoes já existe no GitHub,
+não crie outra. Ela foi criada antes da base da N2, então você PRECISA trazer a main
+para dentro dela. Rode exatamente:
+  git fetch origin
+  git checkout feature/n2-provas-aplicacoes
+  git merge origin/main
+(`git pull` sozinho não serve: ele não traz o que entrou na main.) Confira que o
+arquivo apps/api/prisma/schema.prisma existe. Se não existir, a base ainda não foi
+mergeada: pare e me avise, não continue. Depois leia o schema.prisma para ver os
+modelos Prova, ProvaQuestao, Aplicacao e
 VersaoProva já criados.
 
 Sua tarefa é implementar dois módulos na API e conectar as quatro telas que já são
@@ -342,9 +419,11 @@ TAREFA 6 — Commits pequenos (ex.: "feat(api): implementa crud de provas",
 "feat(api): implementa criação de aplicações e geração de versões",
 "feat(web-professor): conecta provas e aplicações à api real").
 
-Branch: feature/n2-provas-aplicacoes (já existe desde a N1). Abra PR para main
-vinculado à Issue, com pelo menos 1 review antes do merge — e, dessa vez, mande o
-PR antes do prazo da fase.
+Branch: feature/n2-provas-aplicacoes (a mesma do PASSO 0). Antes de abrir o PR, rode `git fetch origin` e
+`git merge origin/main` de novo na sua branch, para trazer o que os colegas já
+mergearam, e resolva conflitos se houver. Abra
+PR para main vinculado à Issue, com pelo menos 1 review antes do merge. Desta vez,
+mande o PR antes do prazo da fase.
 ```
 
 ---
@@ -353,8 +432,18 @@ PR antes do prazo da fase.
 
 ```
 Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
-PrismaService) já foi mergeada na main — rode git pull, e leia
-apps/api/prisma/schema.prisma para ver os modelos Correcao, AtribuicaoProva,
+PrismaService) já foi mergeada na main.
+
+PASSO 0 (antes de qualquer código): a branch feature/n2-relatorios-mobile já existe no GitHub,
+não crie outra. Ela foi criada antes da base da N2, então você PRECISA trazer a main
+para dentro dela. Rode exatamente:
+  git fetch origin
+  git checkout feature/n2-relatorios-mobile
+  git merge origin/main
+(`git pull` sozinho não serve: ele não traz o que entrou na main.) Confira que o
+arquivo apps/api/prisma/schema.prisma existe. Se não existir, a base ainda não foi
+mergeada: pare e me avise, não continue. Depois leia o schema.prisma para ver os
+modelos Correcao, AtribuicaoProva,
 VersaoProva e Aplicacao já criados.
 
 Sua tarefa tem duas frentes: o módulo de correções/relatórios na API (conectando as
@@ -404,8 +493,10 @@ TAREFA — Commits pequenos, separando por frente (ex.: "feat(api): implementa
 lançamento manual de nota e relatório por aplicação", "feat(web-professor): conecta
 relatórios e notas à api real", "feat(mobile): conecta login e home à api real").
 
-Branch: feature/n2-relatorios-mobile. Abra PR para main vinculado à Issue, com pelo
-menos 1 review antes do merge.
+Branch: feature/n2-relatorios-mobile (a mesma do PASSO 0). Antes de abrir o PR, rode `git fetch origin` e
+`git merge origin/main` de novo na sua branch, para trazer o que os colegas já
+mergearam, e resolva conflitos se houver. Abra
+PR para main vinculado à Issue, com pelo menos 1 review antes do merge.
 ```
 
 ---
