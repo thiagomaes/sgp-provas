@@ -1,0 +1,424 @@
+# Plano da N2 — SGP (Grupo 10)
+
+> Lido o repositório em 24/09/2026. Este documento parte do estado real do código
+> (não do que deveria existir) e organiza o trabalho da N2 por pessoa, do mesmo jeito
+> que fizemos na N1: um prompt pronto para colar no Claude Code por integrante.
+
+## 1. Onde a N1 ficou (conferido no repositório)
+
+| Item | Situação |
+|---|---|
+| Estrutura do monorepo, tokens, AppShell, rotas | ✅ completo |
+| 12 telas web + 4 telas mobile | ✅ todas implementadas e navegáveis |
+| Deploy web | ✅ [sgp-provas.vercel.app](https://sgp-provas.vercel.app) |
+| API | ⚠️ só `GET /health`, nenhum módulo de feature implementado |
+| Banco de dados | ❌ não existe — tudo roda sobre `src/mocks/*.ts` |
+
+**Autoria confirmada pelo histórico de commits:**
+
+| Pessoa | O que entregou na N1 |
+|---|---|
+| Thiago | Estrutura do monorepo, tokens, AppShell, rotas, dados mock, Login, Dashboard, deploy — **e também** Provas/Aplicações/PDF (era do Iago) e Notas + as 4 telas mobile (parte do Marceu) |
+| Amanda | Turmas — lista e detalhe ✅ |
+| Hellen | Banco de questões — lista e editor ✅ |
+| Marceu | Lista de relatórios ✅ (a tela de Notas e o app mobile acabaram indo para o Thiago) |
+| **Iago** | **Nenhum commit no repositório.** |
+
+Isso importa para a N2: o Diário Individual do Iago na N1 vai refletir a regra do
+escopo ("PR nunca revisado/aprovado conta só parcialmente, pois não chegou a fazer
+parte do sistema"). Para a N2, ele recebe uma tarefa de novo — mas se o padrão se
+repetir, o time precisa remanejar **antes** da entrega, não na véspera.
+
+## 2. O que a N2 exige (escopo da disciplina)
+
+- Conectar o sistema a um banco real (MySQL), removendo os mocks das telas do N1.
+- Modelar o banco (MER/DER) e documentar decisões de arquitetura (ADRs).
+- Nenhum PR pendente ao final da fase.
+- README v2 (diagramas UML, MER/DER, estado da integração).
+- Republicar o sistema hospedado, agora com o backend conectado.
+- Diário individual atualizado, **separando o que foi feito na N1 do que foi feito na N2.**
+
+Critério que mais pesa: **C2 — Sistema Hospedado (com banco), 40%**. O professor vai
+olhar o site publicado cadastrando/listando/editando/excluindo de verdade. Dado mock
+sobrando em qualquer tela desconta nota. Por isso a prioridade abaixo é: primeiro o
+**web-professor 100% conectado ao banco**, o app mobile entra em seguida com o que der
+tempo.
+
+## 3. Decisões de arquitetura para a N2
+
+- **ORM:** Prisma (contrato tipado, migrations e seed prontos para times pequenos;
+  se preferirem TypeORM, é só avisar antes do Thiago rodar o Prompt 0 — muda o
+  prompt, não a divisão de trabalho).
+- **Camadas na API:** dentro de cada módulo, `*.controller.ts` (rota) →
+  `*.service.ts` (regra de negócio) → `*.repository.ts` (acesso ao Prisma) — o
+  `rota → controle → serviço → repositório → model` do README vira pasta de verdade.
+- **Hospedagem do banco + API:** qualquer serviço que ofereça MySQL gerenciado
+  gratuito (ex.: Railway, Aiven) serve — **verifiquem o plano vigente antes de
+  decidir**, condições de free tier mudam com frequência. O prompt de infra já deixa
+  a `DATABASE_URL` como variável de ambiente, então trocar de provedor depois é só
+  trocar a variável.
+- **Nomes de campo:** o schema do banco replica exatamente os tipos que já existem em
+  `apps/web-professor/src/mocks/types.ts` (`nome`, `disciplina`, `turno`,
+  `identificarAluno`, etc.) — isso evita renomear tudo no frontend na hora de trocar
+  mock por API de verdade.
+- **App mobile:** a leitura de câmera/QR Code e a fila offline **não são exigidas
+  pelo critério C2** (ele avalia o sistema hospedado, que é a web). Para a N2, o
+  mobile só precisa logar de verdade e listar os gabaritos baixáveis via API — a
+  câmera e a sincronização offline completas ficam como meta de N3. Isso está
+  refletido no prompt do Marceu abaixo.
+
+## 4. Ordem de execução
+
+1. **Prompt 0 (Thiago)** — schema Prisma, migrations, seed, autenticação JWT. Precisa
+   estar mergeado na `main` antes de qualquer outro prompt, porque todos os módulos
+   dependem do Prisma Client gerado e do guard de autenticação.
+2. **Prompts 1 a 4 (Amanda, Hellen, Iago, Marceu)** — em paralelo, cada um no seu
+   módulo de API + a troca de mock por chamada real nas telas que já são suas desde a
+   N1 (mesma pessoa, mesma tela — ninguém pega tela de N1 de outro colega).
+3. **Depois que os 4 mergearem:** atualizar README v2, gerar o diagrama MER/DER (pode
+   ser exportado do próprio `schema.prisma` com `prisma-erd-generator` ou desenhado à
+   mão) e revisar que nenhuma tela ainda importa de `src/mocks/`.
+
+---
+
+## Prompt 0 — Thiago: banco de dados, autenticação e infraestrutura
+
+```
+Você está no repositório do SGP (apps/api, apps/web-professor). A N1 está completa:
+12 telas web e 4 mobile funcionam com dados mock em apps/web-professor/src/mocks/.
+Leia esses arquivos (especialmente types.ts) antes de criar o schema — os nomes de
+campo do banco devem espelhar exatamente os tipos que já existem lá, para não
+quebrar as telas na hora da integração.
+
+Sua tarefa é a fundação da N2: banco de dados real + autenticação. As outras 4
+pessoas do grupo vão implementar seus módulos (classes, exams, applications,
+corrections/reports) em cima do que você criar aqui — então isso precisa estar
+mergeado na main antes delas começarem.
+
+TAREFA 1 — Prisma + MySQL
+Instale o Prisma em apps/api (`npm install prisma --save-dev --legacy-peer-deps` e
+`npm install @prisma/client --legacy-peer-deps`) e rode `npx prisma init`. Configure
+o datasource para MySQL lendo `DATABASE_URL` de uma variável de ambiente (crie
+`.env.example` com um valor de exemplo, e garanta que `.env` está no .gitignore).
+
+TAREFA 2 — Schema (apps/api/prisma/schema.prisma)
+Modele estas entidades (nomes de campo batendo com mocks/types.ts):
+
+- Professor: id, nome, email (único), passwordHash, createdAt, anonymizedAt?
+- RefreshToken: id, professorId, tokenHash, deviceInfo?, issuedAt, expiresAt, revokedAt?
+- Turma: id, professorId, nome, disciplina, ano, turno (string: 'Manhã'|'Tarde'|'Noite'), createdAt
+- Aluno: id, turmaId, nome, matricula, createdAt — @@unique([turmaId, matricula])
+- Questao: id, professorId, enunciado, tipo ('objetiva'|'discursiva'), respostaEsperada?,
+  pontuacaoMaxima?, disciplina, tags (Json, array de strings), deletedAt?, createdAt
+- Alternativa: id, questaoId, letra ('A'..'E'), texto, correta (boolean)
+- Prova: id, professorId, titulo, disciplina, createdAt
+- ProvaQuestao (join table): id, provaId, questaoId, ordem, pontuacao — @@unique([provaId, questaoId])
+- Aplicacao: id, provaId, turmaId, professorId, data, versoes, embaralharQuestoes,
+  embaralharAlternativas, identificarAluno, status ('rascunho'|'pdf-gerado'|
+  'em-correcao'|'concluida'), pdfUrl?, createdAt
+- VersaoProva: id, aplicacaoId, numeroVersao, layout (Json), codigoPublico (único),
+  qrCodePayload (único), gabaritoPublicado, gabaritoPublicadoEm?, createdAt
+- AtribuicaoProva: id, versaoProvaId, alunoId, qrCodePayload (único)
+- Correcao: id, aplicacaoId, versaoProvaId, alunoId?, nomeInformado?,
+  matriculaInformada?, respostas (Json), nota, origem ('mobile'|'manual'),
+  clientCorrectionId? (único), statusSync ('sincronizada'|'pendente'|'conflito'),
+  corrigidaEm
+
+Todas as relações de chave estrangeira correspondentes (Professor 1:N Turma, Turma
+1:N Aluno, etc.) devem existir no schema. Rode `npx prisma migrate dev --name
+init_schema` para gerar a primeira migration.
+
+TAREFA 3 — Seed (apps/api/prisma/seed.ts)
+Popule o banco com os MESMOS dados que já existem em
+apps/web-professor/src/mocks/*.ts (professora Ana Costa, turma "Matemática — 1º Ano"
+com os alunos nomeados no mock, prova "Avaliação Bimestral 1", etc.) — assim quando
+as telas trocarem de mock para API, o conteúdo visível não muda. Configure o script
+`"prisma": { "seed": "..." }` no package.json e rode `npx prisma db seed`.
+
+TAREFA 4 — Autenticação (apps/api/src/auth/)
+Estrutura em camadas: auth.controller.ts, auth.service.ts, auth.repository.ts.
+- POST /auth/register — cria professor (nome, email, senha) com hash via bcrypt.
+- POST /auth/login — valida credenciais, retorna access token JWT (15min) e refresh
+  token (7 dias, salvo com hash em RefreshToken).
+- POST /auth/refresh — troca um refresh token válido por um novo access token.
+- POST /auth/logout — revoga o refresh token do dispositivo atual.
+- Crie um JwtAuthGuard reutilizável em src/common/ e um decorator @CurrentProfessor()
+  que extrai o id do professor logado do token — todos os outros módulos vão usar
+  os dois.
+- Rate limiting básico no login (ex.: @nestjs/throttler).
+
+TAREFA 5 — Configuração compartilhada
+- ConfigModule global lendo variáveis de ambiente (DATABASE_URL, JWT_SECRET,
+  JWT_REFRESH_SECRET).
+- PrismaService em src/common/ (conecta no onModuleInit, desconecta no
+  onModuleDestroy), injetável em qualquer repository dos outros módulos.
+- Registre AuthModule e o módulo comum em app.module.ts.
+
+TAREFA 6 — Login real no web-professor
+Troque apps/web-professor/src/pages/LoginPage.vue para chamar POST /auth/login de
+verdade (crie apps/web-professor/src/services/http.ts com um cliente fetch/axios
+básico lendo a URL da API de uma env var VITE_API_URL, e
+apps/web-professor/src/services/auth.ts com a função de login). Guarde o access
+token (Pinia store ou localStorage) e use-o nas próximas chamadas que os colegas
+forem criar. Trate erro de credencial inválida na tela.
+
+TAREFA 7 — Documentação
+- docs/adr/ADR-002-orm-prisma.md: contexto, decisão, consequências de usar Prisma.
+- docs/adr/ADR-003-autenticacao-jwt.md: idem para JWT + refresh token.
+- docs/modelo-dados/mer-der.png (ou .md com o diagrama em Mermaid): a partir do
+  schema.prisma final, depois que os outros 4 prompts também tiverem adicionado
+  suas entidades (pode deixar como TAREFA pendente e voltar nela por último).
+
+TAREFA 8 — Commits pequenos seguindo a convenção do CONTRIBUTING.md (ex.:
+"feat(api): adiciona schema prisma e migration inicial",
+"feat(api): implementa autenticação jwt com refresh token",
+"feat(web-professor): conecta login à api real").
+
+Branch: feature/n2-infra-auth. Abra PR para main assim que tudo funcionar local
+(API subindo, migration aplicada, seed rodado, login real funcionando) — as outras
+4 pessoas do grupo vão dar `git pull` nessa branch depois de mergeada antes de
+começar a delas.
+
+Antes de começar, me mostre um plano rápido das tarefas na ordem de execução.
+```
+
+---
+
+## Prompt 1 — Amanda: módulo de Turmas
+
+```
+Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT, PrismaService
+em src/common/) já foi mergeada na main — rode git pull antes de começar, e leia
+apps/api/prisma/schema.prisma para ver os modelos Turma e Aluno já criados.
+
+Sua tarefa é implementar o módulo de turmas na API e conectar as telas que já são
+suas desde a N1 (Lista de turmas e Detalhe da turma) ao banco real, removendo o mock.
+
+TAREFA 1 — apps/api/src/classes/ (camadas: controller → service → repository)
+- GET /classes — lista as turmas do professor autenticado (use @CurrentProfessor()),
+  com contagem de alunos.
+- POST /classes — cria turma (nome, disciplina, ano, turno).
+- GET /classes/:id — detalhe da turma com a lista de alunos.
+- PATCH /classes/:id — edita turma.
+- POST /classes/:id/students — adiciona aluno (nome, matrícula) à turma.
+- DELETE /classes/:id/students/:studentId — remove aluno da turma (sem apagar
+  histórico de correções vinculadas a ele, se existirem).
+Todas as rotas exigem o JwtAuthGuard e só retornam/alteram turmas do professor
+logado (nunca de outro professor — teste isso).
+
+TAREFA 2 — Wiring no web-professor
+Em apps/web-professor/src/pages/TurmasPage.vue e TurmaDetalhePage.vue, troque o
+import de `../mocks/turmas` por chamadas reais (crie
+apps/web-professor/src/services/turmas.ts com as funções listarTurmas,
+criarTurma, obterTurma, adicionarAluno, removerAluno, usando o cliente http já
+criado pelo Thiago em services/http.ts). Mantenha o mesmo layout e comportamento
+visual — só troca de onde o dado vem. Adicione um estado de loading simples
+(ex.: "Carregando turmas...") enquanto a chamada não resolve.
+
+TAREFA 3 — Não delete o mock ainda
+Não apague apps/web-professor/src/mocks/turmas.ts nem types.ts — outras telas
+(Dashboard, Aplicações) ainda podem depender dele até seus donos também migrarem.
+Se o Dashboard (do Thiago) quebrar porque ele lia turmas.ts para contar turmas,
+avise no grupo antes de mexer lá.
+
+TAREFA 4 — Documentação
+docs/adr/ADR-004-soft-delete-turma.md (ou nome equivalente): documente a decisão de
+como turma arquivada e aluno removido preservam histórico (mesmo que a decisão seja
+simples, registre o porquê).
+
+TAREFA 5 — Commits pequenos (ex.: "feat(api): implementa crud de turmas e alunos",
+"feat(web-professor): conecta telas de turmas à api real").
+
+Branch: feature/n2-turmas. Abra PR para main vinculado à Issue de turmas, com pelo
+menos 1 review antes do merge.
+```
+
+---
+
+## Prompt 2 — Hellen: módulo de Banco de Questões
+
+```
+Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
+PrismaService) já foi mergeada na main — rode git pull, e leia
+apps/api/prisma/schema.prisma para ver os modelos Questao e Alternativa já criados.
+
+Sua tarefa é implementar o módulo de questões na API e conectar as telas que já são
+suas desde a N1 (Banco de questões e Editor de questão) ao banco real.
+
+TAREFA 1 — apps/api/src/exams/questions (ou src/questions, se preferir separar de
+exams) — camadas controller → service → repository:
+- GET /questions — lista questões do professor, com filtro por texto (query param
+  `busca`) e por tag (query param `tag`). Não retorna questões com deletedAt
+  preenchido.
+- POST /questions — cria questão. Se tipo = 'objetiva', recebe de 2 a 5
+  alternativas com exatamente uma marcada como correta (valide isso no service,
+  retorne 400 com mensagem clara se não bater). Se tipo = 'discursiva', recebe
+  pontuacaoMaxima e respostaEsperada em vez de alternativas.
+- PATCH /questions/:id — edita questão (mesmas validações de tipo).
+- DELETE /questions/:id — soft-delete (preenche deletedAt, não apaga a linha —
+  isso é necessário porque provas que já usam a questão não podem perder a
+  referência).
+Todas as rotas exigem JwtAuthGuard e só operam nas questões do professor logado.
+
+TAREFA 2 — Wiring no web-professor
+Em QuestoesPage.vue e QuestaoNovaPage.vue, troque o import de `../mocks/questoes` e
+o uso de `../state/questoes.ts` por chamadas reais (crie
+apps/web-professor/src/services/questoes.ts). O CONTRIBUTING.md observa que
+state/questoes.ts foi escrito antes do padrão atual — aproveite esta tarefa para
+substituí-lo pela chamada de API em vez de manter os dois padrões coexistindo.
+Mantenha a busca e o filtro por tag funcionando client-side ou via query param da
+API (sua escolha, mas documente qual optou no PR).
+
+TAREFA 3 — Não delete o mock ainda
+Não apague mocks/questoes.ts nem types.ts — a tela de Montagem de Prova (do Iago)
+também lê de lá até ele migrar a dele.
+
+TAREFA 4 — Documentação
+docs/adr/ADR-005-soft-delete-questao.md: por que soft-delete em vez de exclusão
+física (histórico de provas que já usam a questão).
+
+TAREFA 5 — Commits pequenos (ex.: "feat(api): implementa crud de questões com
+soft-delete", "feat(web-professor): conecta banco de questões à api real").
+
+Branch: feature/n2-questoes. Abra PR para main vinculado à Issue de questões, com
+pelo menos 1 review antes do merge.
+```
+
+---
+
+## Prompt 3 — Iago: módulo de Provas e Aplicações
+
+```
+Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
+PrismaService) já foi mergeada na main — rode git pull, e leia
+apps/api/prisma/schema.prisma para ver os modelos Prova, ProvaQuestao, Aplicacao e
+VersaoProva já criados.
+
+Sua tarefa é implementar dois módulos na API e conectar as quatro telas que já são
+suas desde a N1 (Lista de provas, Montagem de prova, Lista de aplicações,
+Exportação de PDF) ao banco real. Essas telas hoje leem de
+apps/web-professor/src/mocks/provas.ts e aplicacoes.ts — foi você quem entregou
+essas telas na N1 (o Thiago cobriu na sua ausência), então essa é a sua chance de
+assumir a parte de verdade agora.
+
+TAREFA 1 — apps/api/src/exams/ (provas) — camadas controller → service → repository:
+- GET /exams — lista provas do professor.
+- POST /exams — cria prova (título, disciplina, lista de questaoId + ordem +
+  pontuação). Valide: no máximo 20 questões, cada questaoId precisa existir e
+  pertencer ao professor logado.
+- GET /exams/:id — detalhe com as questões.
+- PATCH /exams/:id — edita.
+
+TAREFA 2 — apps/api/src/applications/ (aplicações) — mesmas camadas:
+- GET /applications — lista aplicações do professor (prova, turma, status).
+- POST /applications — cria aplicação (provaId, turmaId, data).
+- GET /applications/:id — detalhe.
+- POST /applications/:id/generate — recebe a configuração de exportação
+  (quantidade de versões, embaralharQuestoes, embaralharAlternativas,
+  identificarAluno), cria os registros de VersaoProva correspondentes (uma por
+  versão) com um `codigoPublico` e `qrCodePayload` gerados (pode ser um uuid por
+  enquanto — a geração do PDF em si e o QR Code de verdade são N3), e muda o
+  status da aplicação para 'pdf-gerado'. Isso é o suficiente para a tela de
+  Exportação parar de ser só visual.
+
+TAREFA 3 — Wiring no web-professor
+Em ProvasPage.vue, ProvaNovaPage.vue, AplicacoesPage.vue e
+AplicacaoExportarPage.vue, troque os imports de mocks/provas.ts e
+mocks/aplicacoes.ts por chamadas reais (crie
+apps/web-professor/src/services/provas.ts e services/aplicacoes.ts). Os toggles de
+embaralhamento e o stepper de versões na tela de exportação passam a enviar de
+verdade para POST /applications/:id/generate, em vez de só simular no estado local.
+
+TAREFA 4 — Não delete o mock ainda
+Não apague mocks/provas.ts, mocks/aplicacoes.ts nem types.ts — Dashboard (Thiago) e
+Relatórios (Marceu) ainda podem depender deles até migrarem.
+
+TAREFA 5 — Documentação
+docs/adr/ADR-006-geracao-versoes-prova.md: como o embaralhamento é modelado
+(campo `layout` json em VersaoProva) e por que a geração real do PDF fica para a
+N3.
+
+TAREFA 6 — Commits pequenos (ex.: "feat(api): implementa crud de provas",
+"feat(api): implementa criação de aplicações e geração de versões",
+"feat(web-professor): conecta provas e aplicações à api real").
+
+Branch: feature/n2-provas-aplicacoes (já existe desde a N1). Abra PR para main
+vinculado à Issue, com pelo menos 1 review antes do merge — e, dessa vez, mande o
+PR antes do prazo da fase.
+```
+
+---
+
+## Prompt 4 — Marceu: módulo de Correções/Relatórios e API do app mobile
+
+```
+Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
+PrismaService) já foi mergeada na main — rode git pull, e leia
+apps/api/prisma/schema.prisma para ver os modelos Correcao, AtribuicaoProva,
+VersaoProva e Aplicacao já criados.
+
+Sua tarefa tem duas frentes: o módulo de correções/relatórios na API (conectando as
+telas de Relatórios e Notas que já são suas) e a integração mínima do app mobile com
+a API real — sem tentar fechar leitura de câmera nem fila offline nesta fase (isso
+fica para a N3; o critério de nota da N2 avalia o sistema hospedado da web, não o
+app mobile).
+
+FRENTE 1 — apps/api/src/corrections/ e apps/api/src/reports/ — camadas
+controller → service → repository:
+- GET /applications/:id/corrections — lista correções de uma aplicação (aluno,
+  matrícula, nota, origem automática/manual), com filtro `?assigned=false` para as
+  pendentes de atribuição.
+- PATCH /applications/:id/corrections/:correctionId — atribui uma correção
+  pendente a um aluno da turma (lançamento manual, RF09) — preenche o alunoId sem
+  criar registro novo.
+- GET /applications/:id/report — estatísticas da aplicação (média, mediana, desvio
+  padrão) calculadas a partir das Correcao daquela aplicação.
+- GET /reports/consolidated?format=csv|xlsx|pdf — relatório consolidado (pode
+  começar só com csv funcionando de verdade; xlsx/pdf ficam de stretch goal se
+  sobrar tempo).
+
+FRENTE 2 — Wiring no web-professor
+Em RelatoriosPage.vue e RelatorioDetalhePage.vue, troque o import de
+mocks/aplicacoes.ts e mocks/correcoes.ts por chamadas reais (crie
+apps/web-professor/src/services/relatorios.ts). O botão "lançar nota" na tela de
+Notas passa a chamar PATCH /applications/:id/corrections/:correctionId de verdade.
+Os botões "Exportar CSV"/"Exportar PDF" chamam o endpoint de relatório consolidado
+(mesmo que só o CSV funcione de fato por enquanto — documente no PR o que ficou
+pendente).
+
+FRENTE 3 — App mobile (apps/mobile-professor) — integração mínima:
+- Tela de Login chama POST /auth/login de verdade (mesmo endpoint que o Thiago
+  criou para a web), salvando o token localmente (AsyncStorage).
+- Tela Home passa a buscar a lista de aplicações com gabarito disponível via
+  GET /applications (filtrando as que já têm versão gerada) em vez do mock fixo.
+- As telas de Câmera e Revisão continuam com dados mock por enquanto — não é
+  esperado leitura de QR Code real nem fila de sincronização nesta fase. Deixe um
+  comentário no código marcando isso como escopo de N3, para não parecer
+  esquecimento.
+
+TAREFA — Documentação
+docs/adr/ADR-007-relatorios-consolidados.md: formatos de exportação suportados
+nesta fase e o que ficou para a N3.
+
+TAREFA — Commits pequenos, separando por frente (ex.: "feat(api): implementa
+lançamento manual de nota e relatório por aplicação", "feat(web-professor): conecta
+relatórios e notas à api real", "feat(mobile): conecta login e home à api real").
+
+Branch: feature/n2-relatorios-mobile. Abra PR para main vinculado à Issue, com pelo
+menos 1 review antes do merge.
+```
+
+---
+
+## 5. Depois que os 4 PRs estiverem mergeados
+
+- **README v2**: atualizar a seção "Estado atual" para N2, trocar o badge de
+  entrega, documentar a URL da API hospedada e como configurar `DATABASE_URL` /
+  `VITE_API_URL` localmente.
+- **MER/DER**: gerar a partir do `schema.prisma` final (ex.:
+  `prisma-erd-generator`) e salvar em `docs/modelo-dados/`.
+- **Verificação final:** rodar uma busca por `from '../mocks/` em
+  `apps/web-professor/src/pages/` — se algum arquivo ainda importar mock direto, é
+  isso que vai descontar no critério C2 (nenhum dado fixo).
+- **Deploy**: republicar a API (Railway/Aiven/o que for escolhido) e apontar
+  `VITE_API_URL` na Vercel para a URL de produção da API antes da entrega.
