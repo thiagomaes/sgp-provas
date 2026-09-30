@@ -82,7 +82,9 @@ tempo.
 ### 4.1 Branches: cada um já tem a sua (não crie outra)
 
 As 5 branches da N2 já foram criadas no GitHub a partir da `main`. As branches antigas
-da N1 foram apagadas, então não use nenhuma branch sem o prefixo `n2`.
+da N1 foram apagadas, então, na parte de código, não use nenhuma branch sem o
+prefixo `n2`. A exceção é a N2 Parte 1 (diagramas UML), que vem antes desta e usa as
+branches `docs/uml-*` descritas no `docs/arquitetura/plano-n2-parte1.md`.
 
 | Pessoa | Branch | Quando começar |
 |---|---|---|
