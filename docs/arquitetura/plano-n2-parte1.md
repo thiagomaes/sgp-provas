@@ -1,6 +1,8 @@
 # Plano da N2 Parte 1: Diagramas UML (Grupo 10)
 
 > **Prazo da entrega:** 09/10/2026 às 23:59 (vários envios permitidos).
+> **Prazo do grupo:** cada diagrama com PR revisado e mergeado até **quinta 08/10**.
+> É o único prazo, não tem cobrança de etapas antes disso.
 > **O que entregar:** 4 diagramas UML do SGP (Caso de Uso, Atividade, Classe e
 > Sequência), cada um com o **passo a passo da criação**, seguindo o formato do
 > `Exemplo Atividade.md` (FastBurger) do material de aula.
@@ -76,7 +78,7 @@ A divisão segue a área de cada um desde a N1: Marceu ficou com a correção pe
 (é o fluxo do diagrama de sequência) e Iago com Classe, que é o mesmo modelo de
 dados que ele vai implementar no backend de Provas e Aplicações.
 
-**Plano B para Iago:** se não houver PR de Classe aberto até **domingo 04/10**, o
+**Plano B para Iago:** se o PR de Classe não estiver mergeado até **quinta 08/10**, o
 Thiago assume o diagrama de Classe (sai rápido, porque é a tradução direta do
 schema do `plano-n2.md`) e isso fica registrado no diário. Combinem isso no grupo
 agora, não na véspera.
@@ -111,11 +113,12 @@ de um `.puml`, qualquer uma destas serve:
 | Data | O que acontece |
 |---|---|
 | **qua 30/09** | Thiago sobe a base (`docs/uml/README.md` com cenário e índice) e avisa no grupo |
-| **qui 01/10 a seg 05/10** | Cada um faz seu diagrama e **abre o PR até segunda 05/10** |
-| **dom 04/10** | Checagem do plano B do Iago |
-| **ter 06/10 a qua 07/10** | Reviews cruzados, ajustes pedidos, merge |
+| **qui 01/10 a qui 08/10** | Cada um faz seu diagrama no seu ritmo: abre o PR, recebe o review do colega, ajusta e mergeia. **Prazo único: quinta 08/10.** |
 | **qui 08/10** | Thiago confere consistência entre os 4 diagramas e monta a entrega |
-| **sex 09/10** | Envio (até 23:59, mas a meta é enviar no dia 08) |
+| **sex 09/10** | Envio (até 23:59) |
+
+Não há prazos intermediários, mas o review depende de um colega: quem abrir o PR
+mais cedo tem mais tempo para receber o review e ajustar sem correria.
 
 ### Reviews cruzados (evidência para o diário de todos)
 
@@ -261,7 +264,7 @@ ator Aluno apareceu.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise de atores do caso
 de uso", "docs(docs): adiciona diagrama de caso de uso"). Push na branch e PR
-para a main pedindo review da Hellen.
+para a main pedindo review da Hellen. Prazo: PR aberto, revisado e mergeado até quinta 08/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
 adicione Co-Authored-By, menção a Claude/IA ou rodapé de atribuição no commit
@@ -316,7 +319,7 @@ imagem e confira se as raias e decisões estão legíveis.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise do fluxo de
 atividades", "docs(docs): adiciona diagrama de atividades com raias"). Push na
-branch e PR para a main pedindo review do Marceu.
+branch e PR para a main pedindo review do Marceu. Prazo: PR aberto, revisado e mergeado até quinta 08/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
 adicione Co-Authored-By, menção a Claude/IA ou rodapé de atribuição no commit
@@ -376,7 +379,7 @@ imagem e confira se está legível.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise de classes e
 multiplicidades", "docs(docs): adiciona diagrama de classes"). Push na branch e
-PR para a main pedindo review da Amanda. Prazo para abrir o PR: domingo 04/10.
+PR para a main pedindo review da Amanda. Prazo: PR aberto, revisado e mergeado até quinta 08/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
 adicione Co-Authored-By, menção a Claude/IA ou rodapé de atribuição no commit
@@ -440,7 +443,7 @@ imagem e confira se está legível.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise do diagrama de
 sequência", "docs(docs): adiciona diagrama de sequência da correção pelo app").
-Push na branch e PR para a main pedindo review do Iago.
+Push na branch e PR para a main pedindo review do Iago. Prazo: PR aberto, revisado e mergeado até quinta 08/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
 adicione Co-Authored-By, menção a Claude/IA ou rodapé de atribuição no commit
