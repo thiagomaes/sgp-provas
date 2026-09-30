@@ -397,7 +397,8 @@ Leia docs/uml/README.md (cenário base e regra de escopo). Se não existir, a ba
 ainda não foi mergeada: pare e me avise.
 
 CENÁRIO DO DIAGRAMA: "Correção de uma prova pelo App Mobile". É o coração do
-sistema e é a parte que você já cuidou na N1 (telas do app).
+sistema e é o mesmo fluxo do app mobile que você vai integrar à API na
+N2 (FRENTE 3 do seu prompt no plano-n2.md).
 
 REGRA DE ESCOPO: o aluno não é participante. Os participantes são: Professor
 (ator), AppMobile, FilaLocal (SQLite do celular, use o símbolo de banco), API
