@@ -76,7 +76,7 @@ A divisão segue a área de cada um desde a N1: Marceu ficou com a correção pe
 (é o fluxo do diagrama de sequência) e Iago com Classe, que é o mesmo modelo de
 dados que ele vai implementar no backend de Provas e Aplicações.
 
-**Plano B para Iago:** se não houver PR de Classe aberto até **sábado 04/10**, o
+**Plano B para Iago:** se não houver PR de Classe aberto até **domingo 04/10**, o
 Thiago assume o diagrama de Classe (sai rápido, porque é a tradução direta do
 schema do `plano-n2.md`) e isso fica registrado no diário. Combinem isso no grupo
 agora, não na véspera.
@@ -111,11 +111,11 @@ de um `.puml`, qualquer uma destas serve:
 | Data | O que acontece |
 |---|---|
 | **qua 30/09** | Thiago sobe a base (`docs/uml/README.md` com cenário e índice) e avisa no grupo |
-| **qui 01/10 a dom 05/10** | Cada um faz seu diagrama e **abre o PR até domingo 05/10** |
-| **sáb 04/10** | Checagem do plano B do Iago |
-| **seg 06/10 a ter 07/10** | Reviews cruzados, ajustes pedidos, merge |
-| **qua 08/10** | Thiago confere consistência entre os 4 diagramas e monta a entrega |
-| **qui 09/10** | Envio (até 23:59, mas a meta é enviar no dia 08) |
+| **qui 01/10 a seg 05/10** | Cada um faz seu diagrama e **abre o PR até segunda 05/10** |
+| **dom 04/10** | Checagem do plano B do Iago |
+| **ter 06/10 a qua 07/10** | Reviews cruzados, ajustes pedidos, merge |
+| **qui 08/10** | Thiago confere consistência entre os 4 diagramas e monta a entrega |
+| **sex 09/10** | Envio (até 23:59, mas a meta é enviar no dia 08) |
 
 ### Reviews cruzados (evidência para o diário de todos)
 
@@ -376,7 +376,7 @@ imagem e confira se está legível.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise de classes e
 multiplicidades", "docs(docs): adiciona diagrama de classes"). Push na branch e
-PR para a main pedindo review da Amanda. Prazo para abrir o PR: sábado 04/10.
+PR para a main pedindo review da Amanda. Prazo para abrir o PR: domingo 04/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
 adicione Co-Authored-By, menção a Claude/IA ou rodapé de atribuição no commit
@@ -448,7 +448,7 @@ nem no PR; não use --author.
 
 ---
 
-## 7. Checklist final do Thiago (quarta 08/10)
+## 7. Checklist final do Thiago (quinta 08/10)
 
 - [ ] Os 4 PRs mergeados, cada um com pelo menos 1 review registrado.
 - [ ] Nenhum diagrama tem Aluno como ator, raia ou participante.
