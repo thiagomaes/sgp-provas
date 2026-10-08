@@ -1,0 +1,80 @@
+@startuml caso-de-uso
+' Diagrama de Casos de Uso do SGP (N2 Parte 1)
+' Regra de escopo: o único ator é o Professor. O aluno é só dado (nome e matrícula).
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam usecase {
+  BackgroundColor #F5F8FF
+  BorderColor #3B5B92
+  ArrowColor #3B5B92
+}
+skinparam rectangle {
+  BorderColor #3B5B92
+  FontStyle bold
+}
+
+actor "Professor" as Prof
+
+rectangle "SGP Web do Professor" {
+  usecase "Autenticar-se" as UC_Auth
+  usecase "Gerenciar Turmas" as UC_Turmas
+  usecase "Cadastrar Alunos na Turma" as UC_Alunos
+  usecase "Gerenciar Banco de Questões" as UC_Questoes
+  usecase "Montar Prova" as UC_Prova
+  usecase "Definir Pontuação das Questões" as UC_Pontuacao
+  usecase "Aplicar Prova à Turma" as UC_Aplicar
+  usecase "Gerar PDF da Aplicação" as UC_PDF
+  usecase "Gerar QR Code das Provas" as UC_QR
+  usecase "Embaralhar Questões e Alternativas" as UC_Embaralhar
+  usecase "Identificar Aluno na Prova" as UC_Identificar
+  usecase "Publicar Gabarito" as UC_Gabarito
+  usecase "Lançar Nota Manualmente" as UC_NotaManual
+  usecase "Consultar Relatório de Notas" as UC_Relatorio
+  usecase "Exportar Relatório" as UC_Exportar
+  usecase "Anonimizar Dados (LGPD)" as UC_LGPD
+}
+
+rectangle "SGP App Mobile do Professor" {
+  usecase "Baixar Gabarito no App" as UC_Baixar
+  usecase "Corrigir Prova pelo App" as UC_Corrigir
+  usecase "Ler QR Code" as UC_LerQR
+  usecase "Ler Cartão-Resposta" as UC_LerCartao
+  usecase "Calcular Nota" as UC_Calcular
+  usecase "Ajustar Correção" as UC_Ajustar
+  usecase "Sincronizar Correções" as UC_Sync
+}
+
+' Associações do ator
+Prof --> UC_Auth
+Prof --> UC_Turmas
+Prof --> UC_Alunos
+Prof --> UC_Questoes
+Prof --> UC_Prova
+Prof --> UC_Aplicar
+Prof --> UC_Gabarito
+Prof --> UC_NotaManual
+Prof --> UC_Relatorio
+Prof --> UC_LGPD
+Prof --> UC_Baixar
+Prof --> UC_Corrigir
+Prof --> UC_Sync
+
+' <<include>>: sempre acontece junto
+UC_Prova ..> UC_Pontuacao : <<include>>
+UC_Aplicar ..> UC_PDF : <<include>>
+UC_PDF ..> UC_QR : <<include>>
+UC_Corrigir ..> UC_LerQR : <<include>>
+UC_Corrigir ..> UC_LerCartao : <<include>>
+UC_Corrigir ..> UC_Calcular : <<include>>
+
+' <<extend>>: opcional ou condicional (seta aponta para o caso base)
+UC_Embaralhar ..> UC_PDF : <<extend>>\n[embaralhamento ativado]
+UC_Identificar ..> UC_PDF : <<extend>>\n[prova identificada]
+UC_Ajustar ..> UC_Corrigir : <<extend>>\n[nota lida incorreta]
+UC_NotaManual ..> UC_Corrigir : <<extend>>\n[prova sem identificação]
+UC_Exportar ..> UC_Relatorio : <<extend>>
+
+@enduml
