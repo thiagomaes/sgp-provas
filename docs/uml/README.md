@@ -14,7 +14,7 @@ diagrama pronto.
 > turma e configura a geração do PDF: quantas versões, se embaralha questões e
 > alternativas, e se cada prova sai identificada com o nome do aluno. O sistema
 > gera um PDF único com todas as versões e um QR Code em cada prova. Depois da
-> prova em sala, o Professor abre o aplicativo no celular, que já baixou o
+> prova em sala, o Professor abre o SGP no navegador do celular, que já baixou o
 > gabarito e funciona sem internet, lê o QR Code e o cartão-resposta de cada
 > prova pela câmera, confere a nota calculada automaticamente e confirma. Se a
 > prova era identificada, a nota vai direto para o aluno; se não, o Professor
@@ -25,7 +25,7 @@ diagrama pronto.
 
 ## Regra de escopo
 
-O aluno **não é ator do sistema**: ele não tem login, não acessa a web nem o app e
+O aluno **não é ator do sistema**: ele não tem login, não acessa o sistema e
 não consulta nota (RF01). Nos diagramas, ele aparece só como **dado** cadastrado
 pelo professor na turma (classe `Aluno`, com nome e matrícula) e, no máximo, como
 quem responde a prova no papel, fora do sistema. O único ator humano é o
@@ -36,7 +36,7 @@ quem responde a prova no papel, fora do sistema. O único ator humano é o
 1. [Diagrama de Caso de Uso](01-caso-de-uso/caso-de-uso.md)
 2. [Diagrama de Atividade (com raias)](02-atividade/atividade.md)
 3. [Diagrama de Classe](03-classe/classe.md)
-4. [Diagrama de Sequência (correção pelo app mobile)](04-sequencia/sequencia.md)
+4. [Diagrama de Sequência (correção pela câmera do celular)](04-sequencia/sequencia.md)
 
 ## Responsáveis
 

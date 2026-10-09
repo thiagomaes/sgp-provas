@@ -36,6 +36,11 @@ function nomeDaTurma(id: string): string {
   return buscarTurmaPorId(id)?.nome ?? 'Turma removida'
 }
 
+/** Com o PDF gerado, as provas impressas já podem ser lidas pela câmera. */
+function podeCorrigir(aplicacao: Application): boolean {
+  return aplicacao.status === 'pdf-gerado' || aplicacao.status === 'em-correcao'
+}
+
 function criarAplicacao() {
   erro.value = ''
 
@@ -121,6 +126,13 @@ function criarAplicacao() {
             </span>
           </td>
           <td class="tabela-acao">
+            <RouterLink
+              v-if="podeCorrigir(aplicacao)"
+              class="botao-corrigir"
+              :to="`/correcao/${aplicacao.id}/escanear`"
+            >
+              Corrigir
+            </RouterLink>
             <RouterLink :to="`/aplicacoes/${aplicacao.id}/exportar`">
               Configurar PDF →
             </RouterLink>
@@ -223,9 +235,29 @@ select:focus {
   border-bottom: none;
 }
 
+.tabela-acao {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .tabela-acao a {
   font-weight: 600;
   color: var(--text);
+}
+
+.tabela-acao .botao-corrigir {
+  display: inline-block;
+  margin-right: var(--space-4);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--surface);
+  background: var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+.tabela-acao .botao-corrigir:hover {
+  color: var(--surface);
+  background: var(--accent-dark);
 }
 
 .tabela-acao a:hover {

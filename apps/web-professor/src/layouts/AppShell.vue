@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LogoSGP from '../components/LogoSGP.vue'
 import { professoraLogada } from '../mocks/turmas'
 
@@ -21,6 +21,11 @@ import { professoraLogada } from '../mocks/turmas'
  * Os slots #caminho (breadcrumb) e #acoes (botão no canto direito) são
  * opcionais e somem quando não são preenchidos.
  * A tela de login NÃO usa este layout (é uma coluna centralizada).
+ *
+ * Responsivo: abaixo de 768px a sidebar vira uma gaveta aberta pelo botão
+ * de menu da barra do topo, e as tabelas das telas rolam na horizontal
+ * dentro do próprio bloco. O SGP é um sistema web só, usado também no
+ * celular (ADR-001), então toda tela nova precisa caber em 390px.
  */
 
 interface ItemMenu {
@@ -36,6 +41,7 @@ const menu: ItemMenu[] = [
   { rotulo: 'Banco de questões', para: '/questoes', prefixo: '/questoes' },
   { rotulo: 'Provas', para: '/provas', prefixo: '/provas' },
   { rotulo: 'Aplicações e PDF', para: '/aplicacoes', prefixo: '/aplicacoes' },
+  { rotulo: 'Correção', para: '/correcao', prefixo: '/correcao' },
   { rotulo: 'Relatórios e notas', para: '/relatorios', prefixo: '/relatorios' },
 ]
 
@@ -44,11 +50,37 @@ const route = useRoute()
 const estaAtivo = computed(() => (prefixo: string) => {
   return route.path === prefixo || route.path.startsWith(`${prefixo}/`)
 })
+
+/** Gaveta do menu no celular. No desktop a sidebar fica sempre visível. */
+const menuAberto = ref(false)
+
+// Escolher um item do menu troca de rota: a gaveta fecha sozinha.
+watch(
+  () => route.path,
+  () => {
+    menuAberto.value = false
+  },
+)
 </script>
 
 <template>
   <div class="shell">
-    <aside class="sidebar">
+    <header class="topo-celular">
+      <LogoSGP com-texto />
+      <button
+        class="botao-menu"
+        type="button"
+        :aria-expanded="menuAberto"
+        aria-controls="menu-lateral"
+        @click="menuAberto = !menuAberto"
+      >
+        {{ menuAberto ? 'Fechar' : 'Menu' }}
+      </button>
+    </header>
+
+    <div v-if="menuAberto" class="fundo-menu" @click="menuAberto = false" />
+
+    <aside id="menu-lateral" class="sidebar" :class="{ aberta: menuAberto }">
       <div class="marca">
         <LogoSGP com-texto />
       </div>
@@ -200,5 +232,90 @@ const estaAtivo = computed(() => (prefixo: string) => {
 .subtitulo:empty,
 .acoes:empty {
   display: none;
+}
+
+/* ---------- celular (abaixo de 768px) ---------- */
+
+.topo-celular,
+.fundo-menu {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .topo-celular {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .botao-menu {
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .fundo-menu {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    background: var(--text);
+    opacity: 0.4;
+  }
+
+  .sidebar {
+    z-index: 30;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+
+  .sidebar.aberta {
+    transform: translateX(0);
+  }
+
+  .conteudo {
+    min-width: 0;
+    margin-left: 0;
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .cabecalho {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .titulo {
+    font-size: var(--text-xl);
+  }
+
+  /*
+   * Tabelas das telas: em vez de espremer as colunas ou estourar a página,
+   * a própria tabela vira um bloco com rolagem horizontal.
+   */
+  .corpo :deep(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .corpo :deep(th),
+  .corpo :deep(td) {
+    white-space: nowrap;
+  }
 }
 </style>

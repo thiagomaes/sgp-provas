@@ -18,6 +18,11 @@ A N2 foi dividida em partes. **Esta Parte 1 é só modelagem (diagramas).** O
 valendo, mas fica **pausado até esta entrega sair**. Ninguém precisa mexer em
 código agora.
 
+**Atualização (09/10):** o SGP passou a ser um sistema web só, responsivo. Não
+existe mais app mobile separado: a correção pela câmera é uma tela da própria
+web, aberta no navegador do celular (`/correcao`). Os prompts abaixo já usam
+essa decisão. Ver `docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md`.
+
 Os dois planos se ajudam: o Diagrama de Classe desta parte usa exatamente as
 entidades do schema descrito no `plano-n2.md` (Professor, Turma, Aluno, Questao,
 Prova, Aplicacao, Correcao...). Quando o backend começar, o diagrama já é o mapa.
@@ -53,7 +58,7 @@ escopo que o grupo aprovou (somente professor):
 > turma e configura a geração do PDF: quantas versões, se embaralha questões e
 > alternativas, e se cada prova sai identificada com o nome do aluno. O sistema
 > gera um PDF único com todas as versões e um QR Code em cada prova. Depois da
-> prova em sala, o Professor abre o aplicativo no celular, que já baixou o
+> prova em sala, o Professor abre o SGP no navegador do celular, que já baixou o
 > gabarito e funciona sem internet, lê o QR Code e o cartão-resposta de cada
 > prova pela câmera, confere a nota calculada automaticamente e confirma. Se a
 > prova era identificada, a nota vai direto para o aluno; se não, o Professor
@@ -74,7 +79,7 @@ escopo que o grupo aprovou (somente professor):
 | Iago | Diagrama de Classe | `docs/uml/03-classe/` | `docs/uml-classe` |
 | Marceu | Diagrama de Sequência | `docs/uml/04-sequencia/` | `docs/uml-sequencia` |
 
-A divisão segue a área de cada um desde a N1: Marceu ficou com a correção pelo app
+A divisão segue a área de cada um desde a N1: Marceu ficou com a correção pela câmera
 (é o fluxo do diagrama de sequência) e Iago com Classe, que é o mesmo modelo de
 dados que ele vai implementar no backend de Provas e Aplicações.
 
@@ -239,11 +244,11 @@ TAREFA 1: Crie docs/uml/01-caso-de-uso/caso-de-uso.md com esta estrutura:
   requisito (RF) de origem entre parênteses. Espera-se algo como: Autenticar-se,
   Gerenciar Turmas, Cadastrar Alunos na Turma, Gerenciar Banco de Questões,
   Montar Prova, Aplicar Prova à Turma, Gerar PDF da Aplicação, Baixar Gabarito
-  no App, Corrigir Prova pelo App, Lançar Nota Manualmente, Consultar Relatório
+  para Correção Offline, Corrigir Prova pela Câmera, Lançar Nota Manualmente, Consultar Relatório
   de Notas, Exportar Relatório.
 ### Passo 1B: Relacionamentos include/extend
 - Explique quais casos usam <<include>> (obrigatório, sempre acontece junto; ex:
-  Corrigir Prova pelo App inclui Ler QR Code e Ler Cartão-Resposta; Gerar PDF
+  Corrigir Prova pela Câmera inclui Ler QR Code e Ler Cartão-Resposta; Gerar PDF
   inclui Embaralhar Questões) e quais usam <<extend>> (opcional/condicional; ex:
   Lançar Nota Manualmente estende o fluxo quando a prova não é identificada).
 ### Diagrama de Caso de Uso
@@ -252,8 +257,11 @@ TAREFA 1: Crie docs/uml/01-caso-de-uso/caso-de-uso.md com esta estrutura:
 TAREFA 2: Crie docs/uml/01-caso-de-uso/caso-de-uso.puml em PlantUML:
 - left to right direction;
 - ator Professor fora do retângulo;
-- dois retângulos de sistema: "SGP Web do Professor" e "SGP App Mobile do
-  Professor" (isso mostra que a correção por câmera só existe no app);
+- um único retângulo de sistema, "SGP (web do professor)". Dentro dele, agrupe
+  em um pacote "Correção pelo celular" os casos de uso da câmera (Baixar Gabarito
+  para Correção Offline, Corrigir Prova pela Câmera, Ler QR Code, Ler
+  Cartão-Resposta). Não existe app separado: é a mesma web, aberta no navegador
+  do celular (ADR-001);
 - os casos de uso do Passo 1A nos retângulos certos, com as setas
   <<include>>/<<extend>> do Passo 1B.
 
@@ -294,7 +302,7 @@ TAREFA 1: Crie docs/uml/02-atividade/atividade.md com esta estrutura:
 ### Passo 2A: Análise do Fluxo Cronológico
 Lista numerada com a sequência lógica do cenário base, do início ao fim:
 criar prova, aplicar à turma, configurar geração, gerar PDF, imprimir e aplicar
-em sala, app baixa gabarito, ler QR Code e cartão-resposta, conferir nota,
+em sala, a tela de correção baixa o gabarito, ler QR Code e cartão-resposta, conferir nota,
 confirmar, sincronizar, atribuir nota, relatório. Marque em negrito as DECISÕES:
 - a prova é identificada por aluno? [Sim] nota atribuída automaticamente /
   [Não] professor lança nota manualmente na web;
@@ -302,15 +310,17 @@ confirmar, sincronizar, atribuir nota, relatório. Marque em negrito as DECISÕE
   e sincroniza depois;
 - a nota lida está correta? [Não] professor ajusta antes de confirmar.
 ### Raias identificadas
-Tabela Raia | Responsabilidades, com 3 raias: Professor, Sistema Web (API) e
-App Mobile. Explique em uma frase por que usar raias (mais de um responsável).
+Tabela Raia | Responsabilidades, com 3 raias: Professor, Web do Professor
+(navegador, inclusive no celular, onde fica a tela de correção) e API (servidor).
+Não use raia de app mobile: ele não existe mais (ADR-001).
+Explique em uma frase por que usar raias (mais de um responsável).
 ### Diagrama de Atividades
 - a imagem: ![Diagrama de Atividades do SGP com raias](atividade.png)
 
 TAREFA 2: Crie docs/uml/02-atividade/atividade.puml em PlantUML, usando a
-sintaxe de raias (|Professor|, |Sistema Web|, |App Mobile|), com início, fim e
+sintaxe de raias (|Professor|, |Web do Professor|, |API|), com início, fim e
 os losangos de decisão do Passo 2A (if/else). Use os mesmos nomes de ação que o
-diagrama de Caso de Uso (Gerar PDF da Aplicação, Corrigir Prova pelo App,
+diagrama de Caso de Uso (Gerar PDF da Aplicação, Corrigir Prova pela Câmera,
 Lançar Nota Manualmente, Consultar Relatório de Notas).
 
 TAREFA 3: Gere atividade.png (plantuml via npx ou java; se não conseguir, me
@@ -399,12 +409,13 @@ PASSO 0: git checkout main && git pull && git checkout -b docs/uml-sequencia
 Leia docs/uml/README.md (cenário base e regra de escopo). Se não existir, a base
 ainda não foi mergeada: pare e me avise.
 
-CENÁRIO DO DIAGRAMA: "Correção de uma prova pelo App Mobile". É o coração do
-sistema e é o mesmo fluxo do app mobile que você vai integrar à API na
-N2 (FRENTE 3 do seu prompt no plano-n2.md).
+CENÁRIO DO DIAGRAMA: "Correção de uma prova pela câmera do celular". É o
+coração do sistema: o professor abre a tela de correção da web no navegador do
+celular (/correcao), que substituiu o app mobile (ADR-001).
 
 REGRA DE ESCOPO: o aluno não é participante. Os participantes são: Professor
-(ator), AppMobile, FilaLocal (SQLite do celular, use o símbolo de banco), API
+(ator), TelaCorrecao (a web aberta no celular), FilaLocal (IndexedDB do
+navegador, use o símbolo de banco), API
 (servidor) e BancoDeDados (símbolo de banco).
 
 TAREFA 1: Crie docs/uml/04-sequencia/sequencia.md com esta estrutura:
@@ -416,22 +427,22 @@ e tracejadas, bloco alt), adaptados ao SGP. Explique as decisões:
 - bloco alt "prova identificada" / "prova sem identificação": na primeira a API
   atribui a nota ao aluno automaticamente; na segunda a correção fica pendente
   de lançamento manual na web;
-- bloco opt ou alt "sem internet": o app grava na FilaLocal e sincroniza depois,
+- bloco opt ou alt "sem internet": a tela grava na FilaLocal e sincroniza depois,
   enviando o clientCorrectionId para evitar duplicidade.
 ### Diagrama de Sequência
 - a imagem: ![Diagrama de Sequência do SGP](sequencia.png)
 
 TAREFA 2: Crie docs/uml/04-sequencia/sequencia.puml em PlantUML com
 autonumber, activate/deactivate e esta ordem de mensagens:
-Professor -> AppMobile: iniciarCorrecao(aplicacao)
-AppMobile -> FilaLocal: carregarGabarito(aplicacaoId)  (já baixado antes)
-Professor -> AppMobile: lerQRCode()
-Professor -> AppMobile: lerCartaoResposta()
-AppMobile -> AppMobile: calcularNota(respostas, gabarito)
-AppMobile --> Professor: exibe nota para conferência
-Professor -> AppMobile: confirmarCorrecao()
-AppMobile -> FilaLocal: salvarCorrecao(clientCorrectionId)
-bloco alt/opt de conexão, depois AppMobile -> API: sincronizar(lote)
+Professor -> TelaCorrecao: iniciarCorrecao(aplicacao)
+TelaCorrecao -> FilaLocal: carregarGabarito(aplicacaoId)  (já baixado antes)
+Professor -> TelaCorrecao: lerQRCode()
+Professor -> TelaCorrecao: lerCartaoResposta()
+TelaCorrecao -> TelaCorrecao: calcularNota(respostas, gabarito)
+TelaCorrecao --> Professor: exibe nota para conferência
+Professor -> TelaCorrecao: confirmarCorrecao()
+TelaCorrecao -> FilaLocal: salvarCorrecao(clientCorrectionId)
+bloco alt/opt de conexão, depois TelaCorrecao -> API: sincronizar(lote)
 API -> BancoDeDados: verificar clientCorrectionId (deduplicação)
 bloco alt identificada / não identificada, com os retornos tracejados.
 Use os mesmos nomes do diagrama de Caso de Uso e de Classe (Correcao,
@@ -442,7 +453,7 @@ diga para exportar pela extensão do VS Code ou pelo site plantuml.com). Abra a
 imagem e confira se está legível.
 
 TAREFA 4: Commits pequenos (ex: "docs(docs): adiciona análise do diagrama de
-sequência", "docs(docs): adiciona diagrama de sequência da correção pelo app").
+sequência", "docs(docs): adiciona diagrama de sequência da correção pela câmera").
 Push na branch e PR para a main pedindo review do Iago. Prazo: PR aberto, revisado e mergeado até quinta 08/10.
 
 REGRAS DE COMMIT: use a identidade git já configurada nesta máquina; NÃO
