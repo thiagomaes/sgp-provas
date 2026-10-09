@@ -32,10 +32,13 @@ uma parte pode trocar com o responsável antes de começar):
 - [3. Principais Requisitos](#3-principais-requisitos)
     - [3.1 Funcionais (RF)](#31-funcionais-rf)
     - [3.2 Não Funcionais (RNF)](#32-não-funcionais-rnf)
-- [4. Stack Tecnológica](#4-stack-tecnológica)
-- [5. Estrutura de Pastas](#5-estrutura-de-pastas)
-- [6. Como rodar o projeto](#6-como-rodar-o-projeto)
-- [7. Estado atual (N1)](#7-estado-atual-n1)
+- [4. Telas do Sistema](#4-telas-do-sistema)
+    - [4.1 Web do Professor](#41-web-do-professor)
+    - [4.2 Correção pelo celular](#42-correção-pelo-celular)
+- [5. Stack Tecnológica](#5-stack-tecnológica)
+- [6. Estrutura de Pastas](#6-estrutura-de-pastas)
+- [7. Como rodar o projeto](#7-como-rodar-o-projeto)
+- [8. Estado atual (N1)](#8-estado-atual-n1)
 
 ---
 
@@ -91,7 +94,83 @@ O sistema é **uma aplicação web só**, responsiva, usada pelo professor no co
 | RNF07  | O sistema deve manter backup diário do banco de dados, com retenção de 30 dias.                                                                  |
 | RNF08  | As regras críticas de negócio devem ter cobertura de testes automatizados igual ou superior a 80%.                                               |
 
-## 4. Stack Tecnológica
+## 4. Telas do Sistema
+
+Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pelo cliente continuam em [`docs/telas/`](docs/telas/)). O SGP é uma aplicação web só, responsiva: as telas abaixo são as mesmas no computador e no celular.
+
+### 4.1 Web do Professor
+
+![Login](docs/telas/sistema/01-login.png)
+
+**Login:** entrada exclusiva do professor; nesta fase aceita qualquer e-mail e senha.
+
+![Dashboard](docs/telas/sistema/02-dashboard.png)
+
+**Dashboard:** resumo com o total de turmas, provas e aplicações, e as últimas aplicações com o status de cada uma.
+
+![Turmas](docs/telas/sistema/03-turmas.png)
+
+**Turmas:** turmas do professor com disciplina, quantidade de alunos e turno.
+
+![Detalhe da turma](docs/telas/sistema/04-turma-detalhe.png)
+
+**Detalhe da turma:** alunos cadastrados na turma (nome e matrícula, sem conta de acesso) e o botão para adicionar aluno.
+
+![Banco de questões](docs/telas/sistema/05-banco-de-questoes.png)
+
+**Banco de questões:** questões objetivas e discursivas, com busca por texto e filtro por tag.
+
+![Editor de questão](docs/telas/sistema/06-editor-de-questao.png)
+
+**Editor de questão:** cria ou edita uma questão: tipo, enunciado, tags e alternativas, com a correta marcada.
+
+![Provas](docs/telas/sistema/07-provas.png)
+
+**Provas:** provas reutilizáveis, com a quantidade de questões e a pontuação total.
+
+![Montagem de prova](docs/telas/sistema/08-montagem-de-prova.png)
+
+**Montagem de prova:** escolhe até 20 questões do banco e define a pontuação de cada uma.
+
+![Aplicações e PDF](docs/telas/sistema/09-aplicacoes.png)
+
+**Aplicações e PDF:** aplica uma prova a uma turma e mostra o status de cada aplicação, com o atalho Corrigir.
+
+![Exportação do PDF](docs/telas/sistema/10-exportacao-pdf.png)
+
+**Exportação do PDF:** configura versões, embaralhamento de questões e alternativas e identificação do aluno antes de gerar o PDF.
+
+![Correção](docs/telas/sistema/11-correcao.png)
+
+**Correção:** aplicações aguardando correção, com o progresso de provas corrigidas e o acesso à leitura pela câmera.
+
+![Relatórios](docs/telas/sistema/12-relatorios.png)
+
+**Relatórios:** aplicações com data e média da turma, com acesso aos resultados de cada uma.
+
+![Notas](docs/telas/sistema/13-notas.png)
+
+**Notas:** nota de cada aluno com a origem (automática ou manual) e o lançamento manual das provas sem identificação.
+
+### 4.2 Correção pelo celular
+
+O professor abre o SGP no navegador do celular e corrige as provas pela câmera ([ADR-001](docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md)).
+
+<img src="docs/telas/sistema/14-celular-correcao.png" alt="Correção no celular" width="300">
+
+**Correção no celular:** a mesma lista de correção no celular, com o menu recolhido no topo.
+
+<img src="docs/telas/sistema/15-celular-escanear.png" alt="Escanear prova" width="300">
+
+**Escanear prova:** abre a câmera traseira para ler o QR Code e o cartão-resposta; sem câmera, mostra o quadro com a instrução. Nesta fase a leitura é simulada.
+
+<img src="docs/telas/sistema/16-celular-revisao.png" alt="Revisar correção" width="300">
+
+**Revisar correção:** mostra a nota calculada e os acertos por questão para o professor ajustar, se precisar, e confirmar.
+
+> O print da tela de escanear foi feito em um navegador sem câmera, por isso mostra o quadro escuro com a instrução. No celular, o vídeo da câmera aparece dentro do quadro.
+
+## 5. Stack Tecnológica
 
 ![Vue](https://img.shields.io/badge/Vue.js-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
@@ -108,7 +187,7 @@ A arquitetura de alto nível prevê um cliente web, exclusivo do professor, cons
 
 Bibliotecas de apoio (autenticação JWT + refresh token, hashing de senha, geração de QR Code, leitura de PDF/exportação CSV-Excel-PDF etc.) devem ser listadas aqui conforme forem incorporadas ao projeto.
 
-## 5. Estrutura de Pastas
+## 6. Estrutura de Pastas
 
 O projeto reúne a aplicação web do professor e uma API, num monorepo com um pacote por aplicação, mantendo o padrão em camadas (`rota → controle → serviço → repositório → model`) dentro da API. Estrutura já criada no repositório:
 
@@ -146,7 +225,7 @@ docs/
 
 > As pastas de banco de dados (`prisma/` ou `migrations/`) entram na N2, junto com a persistência real.
 
-## 6. Como rodar o projeto
+## 7. Como rodar o projeto
 
 Pré-requisito: **Node.js 22+**. Cada app tem suas próprias dependências — instale só a do app em que você vai trabalhar (`node_modules/` não vai versionado; os `package-lock.json` sim).
 
@@ -185,7 +264,7 @@ navegador, não o servidor.
 Cada push na `main` publica automaticamente. Pull requests ganham uma URL de preview,
 útil para revisar tela sem precisar rodar o projeto na própria máquina.
 
-## 7. Estado atual (N1)
+## 8. Estado atual (N1)
 
 O que já está no repositório:
 
