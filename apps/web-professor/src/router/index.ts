@@ -76,6 +76,23 @@ const router = createRouter({
       component: () => import('../pages/AplicacaoExportarPage.vue'),
     },
 
+    // Correção pela câmera do celular (RF08). Ver ADR-001.
+    {
+      path: '/correcao',
+      name: 'correcao',
+      component: () => import('../pages/CorrecaoPage.vue'),
+    },
+    {
+      path: '/correcao/:id/escanear',
+      name: 'correcao-escanear',
+      component: () => import('../pages/CorrecaoEscanearPage.vue'),
+    },
+    {
+      path: '/correcao/:id/revisao',
+      name: 'correcao-revisao',
+      component: () => import('../pages/CorrecaoRevisaoPage.vue'),
+    },
+
     {
       path: '/relatorios',
       name: 'relatorios',

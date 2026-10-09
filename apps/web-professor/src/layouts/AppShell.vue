@@ -41,6 +41,7 @@ const menu: ItemMenu[] = [
   { rotulo: 'Banco de questões', para: '/questoes', prefixo: '/questoes' },
   { rotulo: 'Provas', para: '/provas', prefixo: '/provas' },
   { rotulo: 'Aplicações e PDF', para: '/aplicacoes', prefixo: '/aplicacoes' },
+  { rotulo: 'Correção', para: '/correcao', prefixo: '/correcao' },
   { rotulo: 'Relatórios e notas', para: '/relatorios', prefixo: '/relatorios' },
 ]
 
