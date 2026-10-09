@@ -136,8 +136,7 @@ individual é onde essa correção conta como evidência de trabalho.
 | Pasta | O que é |
 | --- | --- |
 | `apps/api` | API NestJS (`GET /health` já disponível) |
-| `apps/web-professor` | Vite + Vue — telas do professor |
-| `apps/mobile-professor` | Expo — leitura de QR Code e correção offline |
+| `apps/web-professor` | Vite + Vue — telas do professor, responsivas (inclusive a correção pela câmera do celular) |
 | `docs/` | UML, telas, arquitetura, ADRs, modelo de dados e contrato da API |
 
 ### Rodando localmente
@@ -151,16 +150,18 @@ cd apps/api && npm install --legacy-peer-deps && npm run start:dev
 
 # Web  → http://localhost:5173
 cd apps/web-professor && npm install && npm run dev
-
-# Mobile
-cd apps/mobile-professor && npm install && npx expo start
 ```
+
+Para testar a correção no celular, abra a web pelo navegador do aparelho. A
+câmera só abre em contexto seguro (HTTPS ou `localhost`), então use o link
+publicado ou o preview da Vercel do seu PR. Não existe mais app separado: ver
+[ADR-001](docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md).
 
 > [!NOTE]
 > **Por que `--legacy-peer-deps` só na API:** o npm 10.9.x quebra com
 > `Cannot read properties of null (reading 'edgesOut')` ao resolver os peers
 > opcionais do vitest 4 (dependência do scaffold do NestJS). O flag contorna o
-> bug e não altera nenhuma versão instalada. Web e mobile instalam normal.
+> bug e não altera nenhuma versão instalada. A web instala normal.
 
 > Fase atual: **N1** — telas navegáveis com dados mock, ainda sem banco real.
 > Não adicione dependência de banco de dados (MySQL, Prisma, Redis): isso é
