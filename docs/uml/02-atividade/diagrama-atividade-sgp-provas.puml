@@ -38,20 +38,20 @@ endwhile (Sim)
 
 |Professor|
 :Imprime o PDF, aplica a prova e recolhe os cartões-resposta;
-:Abre o App Mobile para iniciar as correções;
+:Abre o Web no celular para iniciar as correções;
 
-|App Mobile|
+|Web no celular|
 :Verifica se os dados da aplicação e o gabarito estão no dispositivo;
 if (Pacote da aplicação disponível localmente?) then (Sim)
   :Usa o pacote local, mesmo sem conexão;
 else (Não)
   |Professor|
   :Conecta o dispositivo à Internet;
-  |App Mobile|
+  |Web no celular|
   :Baixa a aplicação e o gabarito;
   |Sistema Web|
   :Fornece os dados da aplicação e o gabarito;
-  |App Mobile|
+  |Web no celular|
 endif
 
 while (Há cartões-resposta restantes para corrigir?) is (Sim)
@@ -66,13 +66,13 @@ repeat while (QR Code válido para a aplicação?) is (Não)
 :Revisa a leitura e a nota calculada;
 if (É necessário corrigir algum dado?) then (Sim)
   :Ajusta as respostas ou a nota;
-  |App Mobile|
+  |Web no celular|
   :Atualiza o resultado da correção;
   |Professor|
 endif
 :Confirma a correção;
 
-|App Mobile|
+|Web no celular|
 if (Aplicação conectada agora?) then (Sim)
   :Guarda a correção na fila local e envia a fila;
   |Sistema Web|
