@@ -1,0 +1,112 @@
+@startuml sequencia
+' Diagrama de Sequência do SGP (N2 Parte 1)
+' Cenário: correção de uma prova pela câmera do celular (tela /correcao da web, ADR-001).
+' Regra de escopo: o aluno não é participante. Ele só aparece como dado (Aluno).
+
+title Correção de uma prova pela câmera do celular
+
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 20
+skinparam sequence {
+  ArrowColor #3B5B92
+  LifeLineBorderColor #3B5B92
+  ParticipantBorderColor #3B5B92
+  ParticipantBackgroundColor #F5F8FF
+  ActorBorderColor #3B5B92
+  ActorBackgroundColor #F5F8FF
+  DatabaseBorderColor #3B5B92
+  DatabaseBackgroundColor #F5F8FF
+  GroupBorderColor #3B5B92
+  GroupBackgroundColor #EEF2FA
+}
+
+autonumber
+
+actor "Professor" as Professor
+participant "TelaCorrecao\n(web no celular)" as TelaCorrecao
+database "FilaLocal\n(IndexedDB)" as FilaLocal
+participant "API\n(servidor)" as API
+database "BancoDeDados" as BancoDeDados
+
+== Preparação (gabarito já baixado antes, com internet) ==
+
+Professor -> TelaCorrecao : iniciarCorrecao(aplicacao)
+activate TelaCorrecao
+TelaCorrecao -> FilaLocal : carregarGabarito(aplicacaoId)
+activate FilaLocal
+FilaLocal --> TelaCorrecao : gabarito das versões da Aplicacao
+deactivate FilaLocal
+TelaCorrecao --> Professor : câmera aberta
+
+== Leitura da prova ==
+
+Professor -> TelaCorrecao : lerQRCode()
+TelaCorrecao --> Professor : versão da prova e aluno (se identificada)
+Professor -> TelaCorrecao : lerCartaoResposta()
+TelaCorrecao -> TelaCorrecao : calcularNota(respostas, gabarito)
+TelaCorrecao --> Professor : exibe nota para conferência
+
+opt nota lida incorreta
+  Professor -> TelaCorrecao : ajustarCorrecao(respostas)
+  TelaCorrecao -> TelaCorrecao : calcularNota(respostas, gabarito)
+  TelaCorrecao --> Professor : exibe nota ajustada
+end
+
+Professor -> TelaCorrecao : confirmarCorrecao()
+TelaCorrecao -> FilaLocal : salvarCorrecao(clientCorrectionId)
+activate FilaLocal
+FilaLocal --> TelaCorrecao : Correcao salva (statusSync = pendente)
+deactivate FilaLocal
+
+== Sincronização ==
+
+opt sem internet
+  TelaCorrecao --> Professor : correção salva no celular, aguardando conexão
+  ... celular volta a ter internet ...
+end
+
+TelaCorrecao -> FilaLocal : listarPendentes()
+activate FilaLocal
+FilaLocal --> TelaCorrecao : lote de correções pendentes
+deactivate FilaLocal
+
+TelaCorrecao -> API : sincronizar(lote)
+activate API
+
+loop para cada Correcao do lote
+  API -> BancoDeDados : verificar clientCorrectionId (deduplicação)
+  activate BancoDeDados
+  BancoDeDados --> API : já existe / não existe
+  deactivate BancoDeDados
+
+  alt clientCorrectionId já recebido
+    API -> API : ignora o reenvio (não duplica a nota)
+  else correção nova
+    API -> BancoDeDados : salvarCorrecao(correcao)
+    activate BancoDeDados
+    alt prova identificada
+      API -> BancoDeDados : atribuirAluno(correcao, alunoId)
+      BancoDeDados --> API : nota atribuída ao Aluno
+    else prova sem identificação
+      BancoDeDados --> API : Correcao sem Aluno (alunoId vazio)
+      note right of API
+        Fica pendente de
+        "Lançar Nota Manualmente"
+        na web, pelo nome e
+        matrícula escritos na folha.
+      end note
+    end
+    deactivate BancoDeDados
+  end
+end
+
+API --> TelaCorrecao : resultado da sincronização
+deactivate API
+TelaCorrecao -> FilaLocal : marcarSincronizadas(clientCorrectionIds)
+TelaCorrecao --> Professor : correções sincronizadas
+deactivate TelaCorrecao
+
+@enduml
