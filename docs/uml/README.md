@@ -42,7 +42,8 @@ quem responde a prova no papel, fora do sistema. O único ator humano é o
 
 | Diagrama | Integrante | PR |
 |---|---|---|
-| Caso de Uso | Amanda Zimmermann | a preencher |
-| Atividade | Hellen Cristina de Oliveira | a preencher |
-| Classe | Iago Henrique Pinto Bogler | a preencher |
-| Sequência | Marceu Lago Pontes Schmidt | a preencher |
+| Caso de Uso | Amanda Zimmermann | [#9](https://github.com/thiagomaes/sgp-provas/pull/9) |
+| Atividade | Hellen Cristina de Oliveira | [#11](https://github.com/thiagomaes/sgp-provas/pull/11) |
+| Classe | Iago Henrique Pinto Bogler | [#8](https://github.com/thiagomaes/sgp-provas/pull/8) |
+| Sequência | Marceu Lago Pontes Schmidt | [#12](https://github.com/thiagomaes/sgp-provas/pull/12) |
+| Ajustes finais (consistência com ADR-001) | Thiago Luís Lombardi Maes | [#13](https://github.com/thiagomaes/sgp-provas/pull/13) |
