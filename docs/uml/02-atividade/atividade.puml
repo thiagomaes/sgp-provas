@@ -38,7 +38,7 @@ endwhile (Sim)
 
 |Professor|
 :Imprime o PDF, aplica a prova e recolhe os cartões-resposta;
-:Abre o Web no celular para iniciar as correções;
+:Abre a web no celular para iniciar as correções;
 
 |Web no celular|
 :Verifica se os dados da aplicação e o gabarito estão no dispositivo;
@@ -78,6 +78,7 @@ if (Aplicação conectada agora?) then (Sim)
   |Sistema Web|
   :Recebe as correções e deduplica por identificador;
 else (Não)
+  |Web no celular|
   :Guarda a correção na fila local;
   :Aguarda a conexão e sincroniza automaticamente ao reconectar;
   |Sistema Web|

@@ -1,0 +1,137 @@
+@startuml
+title Diagrama de Classes do SGP
+skinparam classAttributeIconSize 0
+hide empty members
+
+class Professor {
+  +id : String
+  +nome : String
+  +email : String
+  +passwordHash : String
+  +createdAt : DateTime
+  +anonymizedAt : DateTime?
+  +cadastrarTurma() : Turma
+  +criarQuestao() : Questao
+  +criarProva() : Prova
+}
+
+class Turma {
+  +id : String
+  +professorId : String
+  +nome : String
+  +disciplina : String
+  +ano : String
+  +turno : String
+  +createdAt : DateTime
+  +adicionarAluno(nome : String, matricula : String) : Aluno
+  +removerAluno(alunoId : String) : void
+}
+
+class Aluno {
+  +id : String
+  +nome : String
+  +matricula : String
+}
+
+class Questao {
+  +id : String
+  +professorId : String
+  +enunciado : String
+  +tipo : String
+  +respostaEsperada : String?
+  +pontuacaoMaxima : Decimal?
+  +disciplina : String
+  +tags : String[]
+  +deletedAt : DateTime?
+  +createdAt : DateTime
+  +adicionarAlternativa() : Alternativa
+  +validar() : Boolean
+}
+
+class Alternativa {
+  +id : String
+  +questaoId : String
+  +letra : String
+  +texto : String
+  +correta : Boolean
+}
+
+class Prova {
+  +id : String
+  +professorId : String
+  +titulo : String
+  +disciplina : String
+  +totalPontos : Decimal
+  +createdAt : DateTime
+  +adicionarQuestao(questao : Questao, ordem : Int, pontuacao : Decimal) : ProvaQuestao
+  +calcularTotalPontos() : Decimal
+}
+
+class ProvaQuestao {
+  +id : String
+  +provaId : String
+  +questaoId : String
+  +ordem : Int
+  +pontuacao : Decimal
+}
+
+class Aplicacao {
+  +id : String
+  +provaId : String
+  +turmaId : String
+  +professorId : String
+  +data : Date
+  +versoes : Int
+  +embaralharQuestoes : Boolean
+  +embaralharAlternativas : Boolean
+  +identificarAluno : Boolean
+  +status : String
+  +corrigidas : Int
+  +totalProvas : Int
+  +pdfUrl : String?
+  +createdAt : DateTime
+  +gerarVersoes() : VersaoProva[]
+}
+
+class VersaoProva {
+  +id : String
+  +aplicacaoId : String
+  +numeroVersao : Int
+  +layout : Json
+  +codigoPublico : String
+  +qrCodePayload : String
+  +gabaritoPublicado : Boolean
+  +gabaritoPublicadoEm : DateTime?
+  +createdAt : DateTime
+}
+
+class Correcao {
+  +id : String
+  +aplicacaoId : String
+  +versaoProvaId : String
+  +alunoId : String?
+  +nomeInformado : String?
+  +matriculaInformada : String?
+  +respostas : Json
+  +nota : Decimal
+  +origem : String
+  +clientCorrectionId : String?
+  +statusSync : String
+  +corrigidaEm : DateTime
+  +calcularNota() : Decimal
+  +atribuirAluno(aluno : Aluno) : void
+}
+
+Professor "1" -- "0..*" Turma : cadastra
+Professor "1" -- "0..*" Questao : cria
+Professor "1" -- "0..*" Prova : cria
+Turma "1" *-- "0..*" Aluno : contém
+Questao "1" *-- "0..5" Alternativa : oferece
+Prova "1" *-- "0..*" ProvaQuestao : organiza
+Questao "1" -- "0..*" ProvaQuestao : selecionada em
+Prova "1" -- "0..*" Aplicacao : aplicada em
+Turma "1" -- "0..*" Aplicacao : recebe
+Aplicacao "1" *-- "1..*" VersaoProva : gera
+Aplicacao "1" -- "0..*" Correcao : recebe
+Aluno "0..1" -- "0..*" Correcao : identificado em
+@enduml

@@ -4,12 +4,19 @@
 > (não do que deveria existir) e organiza o trabalho da N2 por pessoa, do mesmo jeito
 > que fizemos na N1: um prompt pronto para colar no Claude Code por integrante.
 
+> **Atualização (09/10/2026):** o SGP passou a ser **um sistema web só**, responsivo,
+> usado também no celular. O app mobile (`apps/mobile-professor`) foi removido e a
+> correção de provas virou 3 telas da própria web: `/correcao`,
+> `/correcao/:id/escanear` (câmera do navegador) e `/correcao/:id/revisao`. Ver
+> `docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md`. Os prompts abaixo já
+> foram ajustados a essa decisão: ninguém precisa mexer em app nativo.
+
 ## 1. Onde a N1 ficou (conferido no repositório)
 
 | Item | Situação |
 |---|---|
 | Estrutura do monorepo, tokens, AppShell, rotas | ✅ completo |
-| 12 telas web + 4 telas mobile | ✅ todas implementadas e navegáveis |
+| 12 telas web + 4 telas mobile | ✅ todas implementadas e navegáveis (depois da N1, as 4 telas mobile viraram as 3 telas de correção da web, ver ADR-001) |
 | Deploy web | ✅ [sgp-provas.vercel.app](https://sgp-provas.vercel.app) |
 | API | ⚠️ só `GET /health`, nenhum módulo de feature implementado |
 | Banco de dados | ❌ não existe — tudo roda sobre `src/mocks/*.ts` |
@@ -41,8 +48,8 @@ repetir, o time precisa remanejar **antes** da entrega, não na véspera.
 Critério que mais pesa: **C2 — Sistema Hospedado (com banco), 40%**. O professor vai
 olhar o site publicado cadastrando/listando/editando/excluindo de verdade. Dado mock
 sobrando em qualquer tela desconta nota. Por isso a prioridade abaixo é: primeiro o
-**web-professor 100% conectado ao banco**, o app mobile entra em seguida com o que der
-tempo.
+**web-professor 100% conectado ao banco**, incluindo as telas de correção. A leitura
+real do QR Code e o funcionamento offline ficam para depois, com o que der tempo.
 
 ## 3. Decisões de arquitetura para a N2
 
@@ -61,11 +68,16 @@ tempo.
   `apps/web-professor/src/mocks/types.ts` (`nome`, `disciplina`, `turno`,
   `identificarAluno`, etc.) — isso evita renomear tudo no frontend na hora de trocar
   mock por API de verdade.
-- **App mobile:** a leitura de câmera/QR Code e a fila offline **não são exigidas
-  pelo critério C2** (ele avalia o sistema hospedado, que é a web). Para a N2, o
-  mobile só precisa logar de verdade e listar os gabaritos baixáveis via API — a
-  câmera e a sincronização offline completas ficam como meta de N3. Isso está
-  refletido no prompt do Marceu abaixo.
+- **Correção de provas (web no celular):** não existe mais app nativo (ADR-001). Na
+  N2, as telas de correção passam a ler as aplicações da API e o "Confirmar" da
+  revisão grava a correção no banco. A leitura real do QR Code e do cartão-resposta
+  continua simulada pelo botão "Simular leitura", e o offline (PWA com service
+  worker e fila em IndexedDB) fica como meta de N3. Isso está no prompt do Marceu.
+- **Campos calculados:** `corrigidas` e `totalProvas` existem em `mocks/types.ts`
+  (tipo `Application`) e são usados nas telas de Aplicações e de Correção, mas
+  **não são colunas** do banco. A API calcula os dois ao listar aplicações:
+  `corrigidas` = quantidade de `Correcao` da aplicação, `totalProvas` = quantidade
+  de alunos da turma.
 
 ## 4. Ordem de execução
 
@@ -74,7 +86,9 @@ tempo.
    dependem do Prisma Client gerado e do guard de autenticação.
 2. **Prompts 1 a 4 (Amanda, Hellen, Iago, Marceu)** — em paralelo, cada um no seu
    módulo de API + a troca de mock por chamada real nas telas que já são suas desde a
-   N1 (mesma pessoa, mesma tela — ninguém pega tela de N1 de outro colega).
+   N1 (mesma pessoa, mesma tela — ninguém pega tela de N1 de outro colega). A única
+   exceção são as 3 telas de correção (`/correcao`), que o Thiago criou depois da N1
+   e ficam com o Marceu, junto com correções e notas.
 3. **Depois que os 4 mergearem:** atualizar README v2, gerar o diagrama MER/DER (pode
    ser exportado do próprio `schema.prisma` com `prisma-erd-generator` ou desenhado à
    mão) e revisar que nenhuma tela ainda importa de `src/mocks/`.
@@ -92,7 +106,7 @@ branches `docs/uml-*` descritas no `docs/arquitetura/plano-n2-parte1.md`.
 | Amanda | `feature/n2-turmas` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
 | Hellen | `feature/n2-questoes` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
 | Iago | `feature/n2-provas-aplicacoes` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
-| Marceu | `feature/n2-relatorios-mobile` | depois que a `feature/n2-infra-auth` for mergeada na `main` |
+| Marceu | `feature/n2-relatorios-mobile` (o "mobile" no nome é da época do app; a branch é para relatórios, notas e correção na web) | depois que a `feature/n2-infra-auth` for mergeada na `main` |
 
 **Para começar** (troque pelo nome da sua branch):
 
@@ -123,7 +137,8 @@ base ainda não foi mergeada: espere o aviso do Thiago no grupo.
 
 ```
 Você está no repositório do SGP (apps/api, apps/web-professor). A N1 está completa:
-12 telas web e 4 mobile funcionam com dados mock em apps/web-professor/src/mocks/.
+15 telas web funcionam com dados mock em apps/web-professor/src/mocks/ (inclusive as 3
+de correção, usadas no celular). Não existe app mobile: o SGP é uma web só (ADR-001).
 Leia esses arquivos (especialmente types.ts) antes de criar o schema — os nomes de
 campo do banco devem espelhar exatamente os tipos que já existem lá, para não
 quebrar as telas na hora da integração.
@@ -167,6 +182,12 @@ Modele estas entidades (nomes de campo batendo com mocks/types.ts):
   matriculaInformada?, respostas (Json), nota, origem ('mobile'|'manual'),
   clientCorrectionId? (único), statusSync ('sincronizada'|'pendente'|'conflito'),
   corrigidaEm
+  (origem 'mobile' = lida pela câmera do celular na tela de correção da web; o nome
+  vem da N1 e foi mantido para bater com mocks/types.ts)
+
+ATENÇÃO: corrigidas e totalProvas, que aparecem no tipo Application de
+mocks/types.ts, NÃO são colunas da Aplicacao. São calculados pela API (quantidade
+de Correcao da aplicação e quantidade de alunos da turma).
 
 Todas as relações de chave estrangeira correspondentes (Professor 1:N Turma, Turma
 1:N Aluno, etc.) devem existir no schema. Rode `npx prisma migrate dev --name
@@ -204,7 +225,10 @@ verdade (crie apps/web-professor/src/services/http.ts com um cliente fetch/axios
 básico lendo a URL da API de uma env var VITE_API_URL, e
 apps/web-professor/src/services/auth.ts com a função de login). Guarde o access
 token (Pinia store ou localStorage) e use-o nas próximas chamadas que os colegas
-forem criar. Trate erro de credencial inválida na tela.
+forem criar. Trate erro de credencial inválida na tela. Troque também o rodapé do
+apps/web-professor/src/layouts/AppShell.vue, que hoje mostra professoraLogada de
+mocks/turmas.ts, pelo nome do professor logado (crie GET /auth/me, se precisar).
+Rotas internas sem token devem redirecionar para /login.
 
 TAREFA 7 — Documentação
 - docs/adr/ADR-002-orm-prisma.md: contexto, decisão, consequências de usar Prisma.
@@ -272,7 +296,8 @@ visual — só troca de onde o dado vem. Adicione um estado de loading simples
 
 TAREFA 3 — Não delete o mock ainda
 Não apague apps/web-professor/src/mocks/turmas.ts nem types.ts — outras telas
-(Dashboard, Aplicações) ainda podem depender dele até seus donos também migrarem.
+(Dashboard, Aplicações, Correção) ainda podem depender dele até seus donos também
+migrarem.
 Se o Dashboard (do Thiago) quebrar porque ele lia turmas.ts para contar turmas,
 avise no grupo antes de mexer lá.
 
@@ -389,7 +414,10 @@ TAREFA 1 — apps/api/src/exams/ (provas) — camadas controller → service →
 - PATCH /exams/:id — edita.
 
 TAREFA 2 — apps/api/src/applications/ (aplicações) — mesmas camadas:
-- GET /applications — lista aplicações do professor (prova, turma, status).
+- GET /applications — lista aplicações do professor (prova, turma, status), já
+  com os campos calculados corrigidas (quantidade de Correcao da aplicação) e
+  totalProvas (quantidade de alunos da turma). As telas de Aplicações e de Correção
+  usam os dois; eles não são colunas do banco.
 - POST /applications — cria aplicação (provaId, turmaId, data).
 - GET /applications/:id — detalhe.
 - POST /applications/:id/generate — recebe a configuração de exportação
@@ -409,8 +437,10 @@ embaralhamento e o stepper de versões na tela de exportação passam a enviar d
 verdade para POST /applications/:id/generate, em vez de só simular no estado local.
 
 TAREFA 4 — Não delete o mock ainda
-Não apague mocks/provas.ts, mocks/aplicacoes.ts nem types.ts — Dashboard (Thiago) e
-Relatórios (Marceu) ainda podem depender deles até migrarem.
+Não apague mocks/provas.ts, mocks/aplicacoes.ts nem types.ts — Dashboard (Thiago),
+Relatórios e Correção (Marceu) ainda podem depender deles até migrarem. Na
+AplicacoesPage.vue, mantenha o botão "Corrigir" das linhas com status pdf-gerado ou
+em-correcao (ele leva para /correcao/:id/escanear).
 
 TAREFA 5 — Documentação
 docs/adr/ADR-006-geracao-versoes-prova.md: como o embaralhamento é modelado
@@ -430,7 +460,7 @@ mande o PR antes do prazo da fase.
 
 ---
 
-## Prompt 4 — Marceu: módulo de Correções/Relatórios e API do app mobile
+## Prompt 4 — Marceu: módulo de Correções/Relatórios e correção na web
 
 ```
 Você está no repositório do SGP. A base da N2 (Prisma, autenticação JWT,
@@ -448,17 +478,25 @@ mergeada: pare e me avise, não continue. Depois leia o schema.prisma para ver o
 modelos Correcao, AtribuicaoProva,
 VersaoProva e Aplicacao já criados.
 
-Sua tarefa tem duas frentes: o módulo de correções/relatórios na API (conectando as
-telas de Relatórios e Notas que já são suas) e a integração mínima do app mobile com
-a API real — sem tentar fechar leitura de câmera nem fila offline nesta fase (isso
-fica para a N3; o critério de nota da N2 avalia o sistema hospedado da web, não o
-app mobile).
+Sua tarefa tem três frentes: o módulo de correções/relatórios na API, a troca de
+mock por API nas telas de Relatórios e Notas, e a troca de mock por API nas telas
+de correção de provas. NÃO existe app mobile: o SGP é uma web só, responsiva, e a
+correção pela câmera é feita na própria web aberta no celular (leia
+docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md). Não tente fazer a
+leitura real do QR Code nem o offline nesta fase: isso fica para a N3.
 
 FRENTE 1 — apps/api/src/corrections/ e apps/api/src/reports/ — camadas
 controller → service → repository:
 - GET /applications/:id/corrections — lista correções de uma aplicação (aluno,
   matrícula, nota, origem automática/manual), com filtro `?assigned=false` para as
   pendentes de atribuição.
+- POST /applications/:id/corrections — grava uma correção lida pela câmera
+  (aluno ou null quando a prova não é identificada, versao, nota, respostas,
+  origem 'mobile', clientCorrectionId). Se já existir uma correção com o mesmo
+  clientCorrectionId, devolva a existente em vez de duplicar (RF10). Ao gravar a
+  primeira correção, mude o status da aplicação de 'pdf-gerado' para 'em-correcao'.
+  O versaoProvaId sai da VersaoProva com o numeroVersao recebido; se a aplicação não
+  tiver versão gerada, retorne 400.
 - PATCH /applications/:id/corrections/:correctionId — atribui uma correção
   pendente a um aluno da turma (lançamento manual, RF09) — preenche o alunoId sem
   criar registro novo.
@@ -477,15 +515,26 @@ Os botões "Exportar CSV"/"Exportar PDF" chamam o endpoint de relatório consoli
 (mesmo que só o CSV funcione de fato por enquanto — documente no PR o que ficou
 pendente).
 
-FRENTE 3 — App mobile (apps/mobile-professor) — integração mínima:
-- Tela de Login chama POST /auth/login de verdade (mesmo endpoint que o Thiago
-  criou para a web), salvando o token localmente (AsyncStorage).
-- Tela Home passa a buscar a lista de aplicações com gabarito disponível via
-  GET /applications (filtrando as que já têm versão gerada) em vez do mock fixo.
-- As telas de Câmera e Revisão continuam com dados mock por enquanto — não é
-  esperado leitura de QR Code real nem fila de sincronização nesta fase. Deixe um
-  comentário no código marcando isso como escopo de N3, para não parecer
-  esquecimento.
+FRENTE 3 — Correção de provas na web (telas criadas pelo Thiago depois da N1, que
+ficam com você na N2 por serem parte de correções e notas):
+- CorrecaoPage.vue (/correcao): troque o import de mocks/aplicacoes.ts pela
+  listagem de GET /applications (use o services/aplicacoes.ts do Iago; se ainda
+  não estiver na main, combine com ele em vez de criar outro). A tela mostra as
+  aplicações com status pdf-gerado ou em-correcao, com corrigidas e totalProvas
+  vindos da API.
+- CorrecaoEscanearPage.vue (/correcao/:id/escanear): a câmera do navegador
+  continua igual e a leitura continua simulada pelo botão "Simular leitura".
+  Só troque os dados de aplicação, prova e turma do cabeçalho por API.
+- CorrecaoRevisaoPage.vue (/correcao/:id/revisao): a nota de exemplo continua
+  sendo montada a partir das questões da prova, mas os dados passam a vir da API
+  (prova pelo GET /exams/:id do Iago, alunos pelo GET /classes/:id da Amanda,
+  correções já feitas pelo GET /applications/:id/corrections). O botão
+  "Confirmar" passa a chamar POST /applications/:id/corrections em vez de dar
+  push no array do mock, e depois volta para /correcao.
+- Mantenha os comentários TODO(N2/N3) que já estão no código sobre a leitura
+  real do QR Code e do cartão-resposta.
+- Teste as 3 telas em 390x844 (celular): elas são usadas principalmente no
+  celular. A câmera só abre em HTTPS ou localhost.
 
 TAREFA — Documentação
 docs/adr/ADR-007-relatorios-consolidados.md: formatos de exportação suportados
@@ -493,7 +542,8 @@ nesta fase e o que ficou para a N3.
 
 TAREFA — Commits pequenos, separando por frente (ex.: "feat(api): implementa
 lançamento manual de nota e relatório por aplicação", "feat(web-professor): conecta
-relatórios e notas à api real", "feat(mobile): conecta login e home à api real").
+relatórios e notas à api real", "feat(web-professor): conecta correção de provas à
+api real").
 
 Branch: feature/n2-relatorios-mobile (a mesma do PASSO 0). Antes de abrir o PR, rode `git fetch origin` e
 `git merge origin/main` de novo na sua branch, para trazer o que os colegas já
@@ -510,8 +560,15 @@ PR para main vinculado à Issue, com pelo menos 1 review antes do merge.
   `VITE_API_URL` localmente.
 - **MER/DER**: gerar a partir do `schema.prisma` final (ex.:
   `prisma-erd-generator`) e salvar em `docs/modelo-dados/`.
-- **Verificação final:** rodar uma busca por `from '../mocks/` em
-  `apps/web-professor/src/pages/` — se algum arquivo ainda importar mock direto, é
-  isso que vai descontar no critério C2 (nenhum dado fixo).
+- **Dashboard (Thiago):** a DashboardPage.vue não está em nenhum prompt acima e
+  lê de `mocks/`. Depois dos 4 merges, troque os contadores e as "Últimas
+  aplicações" por chamadas aos services que os colegas criaram.
+- **Verificação final:** rodar uma busca por `mocks/` em
+  `apps/web-professor/src/pages/` e `apps/web-professor/src/layouts/` — se algum
+  arquivo ainda importar mock direto, é isso que vai descontar no critério C2
+  (nenhum dado fixo). Só então dá para apagar a pasta `src/mocks/` (mantendo os
+  tipos de `types.ts` em outro lugar, se ainda forem usados).
+- **Celular:** abrir o site publicado no celular e fazer o fluxo de correção
+  inteiro (lista, escanear, simular leitura, confirmar) com o banco real.
 - **Deploy**: republicar a API (Railway/Aiven/o que for escolhido) e apontar
   `VITE_API_URL` na Vercel para a URL de produção da API antes da entrega.
