@@ -14,9 +14,9 @@ Lendo o cenário base, procuramos **quem** interage com o sistema (atores) e
 
 | Ator | Papel no sistema |
 |---|---|
-| Professor | Único usuário do SGP. Faz login, cadastra turmas e alunos, monta o banco de questões e as provas, gera o PDF da aplicação, corrige pelo app mobile e consulta/exporta os relatórios de notas. |
+| Professor | Único usuário do SGP. Faz login, cadastra turmas e alunos, monta o banco de questões e as provas, gera o PDF da aplicação, corrige as provas pela câmera do celular e consulta/exporta os relatórios de notas. |
 
-**Por que o Aluno não é ator:** ele não faz login, não acessa a web nem o app e
+**Por que o Aluno não é ator:** ele não faz login, não acessa o sistema e
 não consulta nota (RF01, RF03). O aluno só aparece como **dado** cadastrado pelo
 professor (nome e matrícula) e responde a prova no papel, fora do sistema.
 
@@ -50,23 +50,27 @@ um caso de uso. Entre parênteses, o requisito de origem no README.
 12. **Anonimizar Dados (LGPD)** (RF13): anonimização da conta do professor e dos
     alunos vinculados, preservando o histórico de notas.
 
-**SGP App Mobile do Professor**
+**Correção na Web (celular)**, dentro do mesmo sistema
 
-13. **Baixar Gabarito no App** (RF10): "o aplicativo no celular, que já baixou o
-    gabarito e funciona sem internet".
-14. **Corrigir Prova pelo App** (RF08): "lê o QR Code e o cartão-resposta de cada
+13. **Baixar Gabarito para Correção Offline** (RF10): "abre o SGP no navegador do
+    celular, que já baixou o gabarito e funciona sem internet".
+14. **Corrigir Prova pela Câmera** (RF08): "lê o QR Code e o cartão-resposta de cada
     prova pela câmera, confere a nota calculada automaticamente e confirma".
 15. **Sincronizar Correções** (RF10): "quando o celular volta a ter internet, as
     correções são sincronizadas".
 
-Os casos de uso foram separados em **dois retângulos de sistema** porque a
-correção por câmera (e tudo que depende dela) só existe no app mobile, enquanto
-o cadastro, a montagem de provas e os relatórios só existem na web.
+O SGP é **um único sistema**: a web do professor, responsiva, usada também no
+celular. A correção não é um segundo sistema
+([ADR-001](../../adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md)). Por isso o
+diagrama tem um só retângulo de sistema, "SGP Web do Professor". Os casos de uso da
+correção por câmera ficam num retângulo interno, "Correção na Web (celular)", só
+para mostrar que eles são feitos com a web aberta no navegador do celular, onde
+está a câmera.
 
 **Sobre o Autenticar-se:** ele é pré-condição de todos os outros casos de uso
 (nenhuma tela funciona sem login), então foi ligado direto ao Professor em vez de
 receber uma seta `<<include>>` de cada caso, o que deixaria o diagrama ilegível.
-O app mobile usa a mesma conta do professor.
+A correção no celular usa a mesma conta do professor, porque é o mesmo sistema.
 
 ### Passo 1B: Relacionamentos include/extend
 
@@ -82,10 +86,10 @@ A seta sai do caso base e aponta para o caso incluído.
 |---|---|---|
 | Montar Prova | Definir Pontuação das Questões | Toda questão da prova precisa de pontuação (RF04). |
 | Aplicar Prova à Turma | Gerar PDF da Aplicação | Aplicar a prova é justamente gerar o PDF para aquela turma (RF05, RF06). |
-| Gerar PDF da Aplicação | Gerar QR Code das Provas | Toda prova do PDF sai com QR Code, senão o app não consegue corrigir (RF07). |
-| Corrigir Prova pelo App | Ler QR Code | O QR Code diz ao app qual aplicação e versão está sendo corrigida (RF08). |
-| Corrigir Prova pelo App | Ler Cartão-Resposta | Sem ler as respostas marcadas não há correção (RF08). |
-| Corrigir Prova pelo App | Calcular Nota | A nota é sempre calculada automaticamente comparando com o gabarito (RF08). |
+| Gerar PDF da Aplicação | Gerar QR Code das Provas | Toda prova do PDF sai com QR Code, senão a correção pela câmera não consegue identificar a prova (RF07). |
+| Corrigir Prova pela Câmera | Ler QR Code | O QR Code diz à tela de correção qual aplicação e versão está sendo corrigida (RF08). |
+| Corrigir Prova pela Câmera | Ler Cartão-Resposta | Sem ler as respostas marcadas não há correção (RF08). |
+| Corrigir Prova pela Câmera | Calcular Nota | A nota é sempre calculada automaticamente comparando com o gabarito (RF08). |
 
 #### `<<extend>>`: opcional ou condicional
 
@@ -96,8 +100,8 @@ está a condição em que a extensão acontece.
 |---|---|---|
 | Embaralhar Questões e Alternativas | Gerar PDF da Aplicação | O professor ativou o embaralhamento na configuração (RF06). |
 | Identificar Aluno na Prova | Gerar PDF da Aplicação | O professor escolheu gerar provas identificadas com o nome do aluno (RF06). |
-| Ajustar Correção | Corrigir Prova pelo App | A nota lida está errada e o professor corrige antes de confirmar (RF08). |
-| Lançar Nota Manualmente | Corrigir Prova pelo App | A prova **não** era identificada, então a nota não vai direto para o aluno e o professor lança depois na web pelo nome/matrícula escritos na folha (RF09). |
+| Ajustar Correção | Corrigir Prova pela Câmera | A nota lida está errada e o professor corrige antes de confirmar (RF08). |
+| Lançar Nota Manualmente | Corrigir Prova pela Câmera | A prova **não** era identificada, então a nota não vai direto para o aluno e o professor lança depois na web pelo nome/matrícula escritos na folha (RF09). |
 | Exportar Relatório | Consultar Relatório de Notas | Só quando o professor quer a planilha para lançar no sistema acadêmico (RF12). |
 
 Embaralhar e Identificar ficaram como `<<extend>>` (e não `<<include>>`) porque

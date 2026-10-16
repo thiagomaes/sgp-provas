@@ -1,6 +1,8 @@
 @startuml caso-de-uso
 ' Diagrama de Casos de Uso do SGP (N2 Parte 1)
 ' Regra de escopo: o único ator é o Professor. O aluno é só dado (nome e matrícula).
+' Um sistema só: a correção pela câmera é parte da própria web, aberta no
+' navegador do celular (docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md).
 
 left to right direction
 skinparam packageStyle rectangle
@@ -35,16 +37,16 @@ rectangle "SGP Web do Professor" {
   usecase "Consultar Relatório de Notas" as UC_Relatorio
   usecase "Exportar Relatório" as UC_Exportar
   usecase "Anonimizar Dados (LGPD)" as UC_LGPD
-}
 
-rectangle "SGP App Mobile do Professor" {
-  usecase "Baixar Gabarito no App" as UC_Baixar
-  usecase "Corrigir Prova pelo App" as UC_Corrigir
-  usecase "Ler QR Code" as UC_LerQR
-  usecase "Ler Cartão-Resposta" as UC_LerCartao
-  usecase "Calcular Nota" as UC_Calcular
-  usecase "Ajustar Correção" as UC_Ajustar
-  usecase "Sincronizar Correções" as UC_Sync
+  rectangle "Correção na Web (celular)" {
+    usecase "Baixar Gabarito para Correção Offline" as UC_Baixar
+    usecase "Corrigir Prova pela Câmera" as UC_Corrigir
+    usecase "Ler QR Code" as UC_LerQR
+    usecase "Ler Cartão-Resposta" as UC_LerCartao
+    usecase "Calcular Nota" as UC_Calcular
+    usecase "Ajustar Correção" as UC_Ajustar
+    usecase "Sincronizar Correções" as UC_Sync
+  }
 }
 
 ' Associações do ator
