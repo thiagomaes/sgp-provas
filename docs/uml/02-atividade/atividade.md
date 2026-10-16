@@ -1,18 +1,13 @@
-# Diagrama de Atividade — SGP-Provas
+# Diagrama de Atividade do SGP
 
-## 1. Análise
+Este documento segue o formato do exemplo FastBurger dado em aula: primeiro a
+análise do [Cenário Base](../README.md#cenário-base), depois o diagrama pronto.
+
+## 2. Diagrama de Atividades
 
 O diagrama de atividade descreve o fluxo completo de uma prova no SGP-Provas, desde o login do professor até a consulta do relatório de notas. Ele mostra **quem faz o quê** (raias) e **em que ordem** (fluxo), incluindo decisões, repetições e o funcionamento offline da correção.
 
-### 1.1 Raias (quem participa)
-
-| Raia | Papel |
-|---|---|
-| **Professor** | Ator humano: monta a prova, aplica, revisa e confirma as correções. |
-| **Sistema Web** | Valida dados, gera o PDF e os QR Codes, fornece o gabarito, recebe e consolida as correções. |
-| **Web no celular** | O sistema aberto no navegador do celular: lê QR Code e cartão pela câmera, calcula a nota localmente e sincroniza. |
-
-### 1.2 Passo a passo da criação
+### Passo 2A: Análise do Fluxo Cronológico
 
 1. **Início e login.** O fluxo começa na raia *Professor*, que informa as credenciais. O *Sistema Web* as valida.
 2. **Decisão: credenciais válidas?** Se **sim**, abre a área do professor. Se **não**, informa que o acesso não foi validado e o fluxo **termina**.
@@ -32,15 +27,29 @@ O diagrama de atividade descreve o fluxo completo de uma prova no SGP-Provas, de
    7. **Decisão: aluno identificado na aplicação?** Se **sim**, associa a nota ao aluno cadastrado. Se **não**, o professor confere nome ou matrícula no cartão, lança a nota manualmente e o sistema a associa ao aluno da turma.
 10. **Fim da correção.** Quando não restarem cartões, o professor consulta ou exporta o relatório de notas e estatísticas e o fluxo **termina**.
 
-### 1.3 Elementos UML usados
+### Raias identificadas
+
+| Raia | Papel |
+|---|---|
+| **Professor** | Ator humano: monta a prova, aplica, revisa e confirma as correções. |
+| **Sistema Web** | Valida dados, gera o PDF e os QR Codes, fornece o gabarito, recebe e consolida as correções. |
+| **Web no celular** | O sistema aberto no navegador do celular: lê QR Code e cartão pela câmera, calcula a nota localmente e sincroniza. |
+
+O fluxo tem mais de um responsável, por isso usamos raias: cada coluna mostra quem
+executa cada ação. A raia *Web no celular* não é um segundo sistema, é a mesma web
+do SGP aberta no navegador do celular por causa da câmera
+([ADR-001](../../adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md)). O aluno
+não tem raia, porque não executa nenhuma ação no sistema.
+
+### Elementos UML usados
 
 - **Raias (swimlanes):** `|Professor|`, `|Sistema Web|`, `|Web no celular|`
 - **Nó inicial e finais:** `start` / `stop` (há um final antecipado no login inválido)
 - **Decisões:** `if / else`
 - **Laços:** `while` (validação da prova e correção) e `repeat while` (leitura do QR Code)
 
-## 2. Diagrama
+### Diagrama de Atividades
 
-![Diagrama de Atividade — SGP-Provas](atividade.png)
+![Diagrama de Atividades do SGP com raias](atividade.png)
 
 Código-fonte: [`atividade.puml`](atividade.puml)
