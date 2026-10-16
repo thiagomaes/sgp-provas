@@ -1,0 +1,111 @@
+@startuml
+title Diagrama de Atividade — SGP-Provas
+
+|Professor|
+start
+:Acessa o Sistema Web e informa as credenciais;
+
+|Sistema Web|
+:Valida as credenciais do professor;
+if (Credenciais válidas?) then (Sim)
+  :Abre a área do professor;
+else (Não)
+  :Informa que o acesso não foi validado;
+  stop
+endif
+
+|Professor|
+:Seleciona ou cadastra a turma e os alunos;
+:Seleciona questões e monta a prova;
+
+|Sistema Web|
+:Valida a prova e a quantidade de questões;
+while (Prova válida e com até 20 questões?) is (Não)
+  :Exibe as pendências encontradas;
+  |Professor|
+  :Corrige a prova e suas questões;
+  |Sistema Web|
+  :Valida novamente a prova;
+endwhile (Sim)
+
+|Professor|
+:Cria uma aplicação para a turma;
+:Configura versões, embaralhamento e identificação dos alunos;
+
+|Sistema Web|
+:Gera o PDF consolidado e um QR Code por versão ou aluno;
+:Disponibiliza o gabarito da aplicação;
+
+|Professor|
+:Imprime o PDF, aplica a prova e recolhe os cartões-resposta;
+:Abre o App Mobile para iniciar as correções;
+
+|App Mobile|
+:Verifica se os dados da aplicação e o gabarito estão no dispositivo;
+if (Pacote da aplicação disponível localmente?) then (Sim)
+  :Usa o pacote local, mesmo sem conexão;
+else (Não)
+  |Professor|
+  :Conecta o dispositivo à Internet;
+  |App Mobile|
+  :Baixa a aplicação e o gabarito;
+  |Sistema Web|
+  :Fornece os dados da aplicação e o gabarito;
+  |App Mobile|
+endif
+
+while (Há cartões-resposta restantes para corrigir?) is (Sim)
+repeat
+  :Lê o QR Code pela câmera;
+  :Valida localmente a aplicação e a versão do QR Code;
+repeat while (QR Code válido para a aplicação?) is (Não)
+
+:Lê o cartão-resposta pela câmera;
+:Calcula a nota com o gabarito local;
+|Professor|
+:Revisa a leitura e a nota calculada;
+if (É necessário corrigir algum dado?) then (Sim)
+  :Ajusta as respostas ou a nota;
+  |App Mobile|
+  :Atualiza o resultado da correção;
+  |Professor|
+endif
+:Confirma a correção;
+
+|App Mobile|
+if (Aplicação conectada agora?) then (Sim)
+  :Guarda a correção na fila local e envia a fila;
+  |Sistema Web|
+  :Recebe as correções e deduplica por identificador;
+else (Não)
+  :Guarda a correção na fila local;
+  :Aguarda a conexão e sincroniza automaticamente ao reconectar;
+  |Sistema Web|
+  :Recebe as correções e deduplica por identificador;
+endif
+
+if (Há conflito de sincronização?) then (Sim)
+  :Sinaliza o conflito para resolução;
+  |Professor|
+  :Analisa e resolve o conflito;
+  |Sistema Web|
+  :Registra a resolução e confirma a sincronização;
+else (Não)
+  :Confirma a sincronização idempotente;
+endif
+
+if (Aluno identificado na aplicação?) then (Sim)
+  :Associa a nota ao aluno cadastrado;
+else (Não)
+  |Professor|
+  :Confere o nome ou a matrícula escritos no cartão;
+  :Identifica o aluno e lança a nota manualmente;
+  |Sistema Web|
+  :Associa a nota ao aluno da turma;
+endif
+endwhile (Não)
+
+|Professor|
+:Consulta ou exporta o relatório de notas e estatísticas;
+stop
+@enduml
