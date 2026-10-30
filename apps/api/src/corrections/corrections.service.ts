@@ -5,24 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, type Correcao } from '@prisma/client';
-import { dataIso, umaCasa } from '../common/formatos.js';
+import { umaCasa } from '../common/formatos.js';
 import { calcularNota, type Letra, type QuestaoDoGabarito } from './calculo-nota.js';
+import { correcaoParaResposta as paraResposta, type CorrecaoResposta } from './correcao.mapper.js';
 import { CorrectionsRepository } from './corrections.repository.js';
 import type { CreateCorrecaoDto, UpdateCorrecaoDto } from './dto/correcao.dto.js';
-
-/** Mesmo formato do tipo Correction da web. */
-export interface CorrecaoResposta {
-  id: string;
-  aplicacaoId: string;
-  alunoId: string | null;
-  versao: number;
-  nota: number;
-  respostas: unknown;
-  origem: string;
-  clientCorrectionId: string;
-  statusSync: string;
-  corrigidaEm: string;
-}
 
 type AplicacaoComGabarito = NonNullable<Awaited<ReturnType<CorrectionsRepository['aplicacaoComGabarito']>>>;
 
@@ -171,19 +158,4 @@ function exigirNotaValida(nota: number, totalPontos: number) {
   if (nota < 0 || nota > totalPontos) {
     throw new BadRequestException(`A nota deve ficar entre 0 e ${totalPontos}.`);
   }
-}
-
-function paraResposta(correcao: Correcao): CorrecaoResposta {
-  return {
-    id: correcao.id,
-    aplicacaoId: correcao.aplicacaoId,
-    alunoId: correcao.alunoId,
-    versao: correcao.versao,
-    nota: correcao.nota,
-    respostas: correcao.respostas,
-    origem: correcao.origem,
-    clientCorrectionId: correcao.clientCorrectionId,
-    statusSync: correcao.statusSync,
-    corrigidaEm: dataIso(correcao.corrigidaEm),
-  };
 }

@@ -10,6 +10,7 @@ import { ExamsModule } from './exams/exams.module.js';
 import { HealthController } from './common/health.controller.js';
 import { JwtAuthGuard } from './common/jwt-auth.guard.js';
 import { QuestionsModule } from './questions/questions.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 /**
  * Módulo raiz da API do SGP.
@@ -21,7 +22,17 @@ import { QuestionsModule } from './questions/questions.module.js';
  * @Publica() (/health, /auth/login, /auth/register e /auth/refresh).
  */
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), CommonModule, AuthModule, ClassesModule, QuestionsModule, ExamsModule, ApplicationsModule, CorrectionsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    CommonModule,
+    AuthModule,
+    ClassesModule,
+    QuestionsModule,
+    ExamsModule,
+    ApplicationsModule,
+    CorrectionsModule,
+    ReportsModule,
+  ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
