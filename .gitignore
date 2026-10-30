@@ -148,3 +148,6 @@ apps/web-professor/dist/
 
 # macOS
 .DS_Store
+
+# Vercel (o pull baixa as variáveis com a senha do banco)
+.vercel/
