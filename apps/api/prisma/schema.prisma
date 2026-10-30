@@ -9,9 +9,10 @@
 
 generator client {
   provider      = "prisma-client-js"
-  // "rhel-openssl-3.0.x" é o ambiente das funções da Vercel: sem ele o
-  // Prisma não encontra o binário em produção.
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+  // As funções da Vercel rodam em Linux: "linux-arm64-openssl-3.0.x" é a
+  // arquitetura padrão do projeto e "rhel-openssl-3.0.x" cobre x86_64. Sem o
+  // motor certo o Prisma falha ao conectar e a função nem chega a subir.
+  binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
 datasource db {
