@@ -1,0 +1,207 @@
+// Schema do SGP (N2). Os nomes de campo seguem
+// apps/web-professor/src/mocks/types.ts, para as telas trocarem o mock pela API
+// sem renomear nada. Os ids são texto: o seed usa os mesmos ids dos mocks
+// (turma-1, aluno-1, aplicacao-1...).
+//
+// Campos com valores fixos (turno, tipo, status, origem, statusSync) são String
+// porque o enum do Prisma não aceita valores como "Manhã" ou "pdf-gerado". Os
+// valores válidos são conferidos nos DTOs da API.
+
+generator client {
+  provider      = "prisma-client-js"
+  // "rhel-openssl-3.0.x" é o ambiente das funções da Vercel: sem ele o
+  // Prisma não encontra o binário em produção.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// Único usuário com login no sistema (RF01). O aluno não tem conta.
+model Professor {
+  id            String         @id @default(cuid())
+  nome          String
+  email         String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  /// Preenchido na anonimização (RF13); a conta deixa de logar.
+  anonymizedAt  DateTime?
+  refreshTokens RefreshToken[]
+  turmas        Turma[]
+  questoes      Questao[]
+  provas        Prova[]
+  aplicacoes    Aplicacao[]
+}
+
+/// Refresh token de 7 dias. Só o hash (SHA-256) fica no banco.
+model RefreshToken {
+  id          String    @id @default(cuid())
+  professorId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+
+  @@index([professorId])
+}
+
+model Turma {
+  id          String      @id @default(cuid())
+  professorId String
+  nome        String
+  disciplina  String
+  ano         String
+  /// 'Manhã' | 'Tarde' | 'Noite'
+  turno       String      @db.VarChar(10)
+  createdAt   DateTime    @default(now())
+  professor   Professor   @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  alunos      Aluno[]
+  aplicacoes  Aplicacao[]
+
+  @@index([professorId])
+}
+
+/// Registro simples dentro da turma (RF03): nome e matrícula, sem login.
+model Aluno {
+  id        String     @id @default(cuid())
+  turmaId   String
+  nome      String
+  matricula String     @db.VarChar(30)
+  createdAt DateTime   @default(now())
+  turma     Turma      @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  /// Restrict: aluno com correção não pode ser apagado (a API responde 409).
+  correcoes Correcao[]
+
+  @@unique([turmaId, matricula])
+}
+
+model Questao {
+  id               String         @id @default(cuid())
+  professorId      String
+  enunciado        String         @db.Text
+  /// 'objetiva' | 'discursiva'
+  tipo             String         @db.VarChar(12)
+  respostaEsperada String?        @db.Text
+  pontuacaoMaxima  Float?
+  disciplina       String
+  /// Lista de textos, ex.: ["álgebra", "equação do 1º grau"]
+  tags             Json
+  /// Soft-delete: provas que já usam a questão não perdem a referência.
+  deletedAt        DateTime?
+  criadaEm         DateTime       @default(now())
+  professor        Professor      @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  alternativas     Alternativa[]
+  provas           ProvaQuestao[]
+
+  @@index([professorId])
+}
+
+/// Alternativa de questão objetiva (2 a 5 por questão, uma correta).
+model Alternativa {
+  id        String  @id @default(cuid())
+  questaoId String
+  /// 'A' a 'E'
+  letra     String  @db.Char(1)
+  texto     String  @db.Text
+  correta   Boolean
+  questao   Questao @relation(fields: [questaoId], references: [id], onDelete: Cascade)
+
+  @@unique([questaoId, letra])
+}
+
+model Prova {
+  id          String         @id @default(cuid())
+  professorId String
+  titulo      String
+  disciplina  String
+  /// Soma das pontuações das questões, calculada pela API.
+  totalPontos Float
+  criadaEm    DateTime       @default(now())
+  /// Soft-delete: aplicações antigas continuam apontando para a prova.
+  deletedAt   DateTime?
+  professor   Professor      @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  questoes    ProvaQuestao[]
+  aplicacoes  Aplicacao[]
+
+  @@index([professorId])
+}
+
+/// Questão dentro de uma prova, com ordem e pontuação próprias (RF04).
+model ProvaQuestao {
+  id        String  @id @default(cuid())
+  provaId   String
+  questaoId String
+  ordem     Int
+  pontuacao Float
+  prova     Prova   @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  questao   Questao @relation(fields: [questaoId], references: [id], onDelete: Restrict)
+
+  @@unique([provaId, questaoId])
+}
+
+/// Prova aplicada a uma turma (RF05, RF06).
+model Aplicacao {
+  id                     String        @id @default(cuid())
+  provaId                String
+  turmaId                String
+  professorId            String
+  data                   DateTime      @db.Date
+  versoes                Int
+  embaralharQuestoes     Boolean
+  embaralharAlternativas Boolean
+  identificarAluno       Boolean
+  /// 'rascunho' | 'pdf-gerado' | 'em-correcao' | 'concluida'
+  status                 String        @default("rascunho") @db.VarChar(12)
+  /// Provas já corrigidas; a API soma 1 a cada correção nova.
+  corrigidas             Int           @default(0)
+  createdAt              DateTime      @default(now())
+  prova                  Prova         @relation(fields: [provaId], references: [id], onDelete: Restrict)
+  turma                  Turma         @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  professor              Professor     @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  versoesProva           VersaoProva[]
+  correcoes              Correcao[]
+
+  @@index([professorId])
+  @@index([turmaId])
+}
+
+/// Uma versão embaralhada da prova, com o conteúdo do QR Code (RF07).
+model VersaoProva {
+  id            String    @id @default(cuid())
+  aplicacaoId   String
+  numeroVersao  Int
+  /// Ordem das questões e das alternativas desta versão.
+  layout        Json
+  qrCodePayload String    @unique
+  createdAt     DateTime  @default(now())
+  aplicacao     Aplicacao @relation(fields: [aplicacaoId], references: [id], onDelete: Cascade)
+
+  @@unique([aplicacaoId, numeroVersao])
+}
+
+/// Correção de uma prova (RF08, RF09, RF10).
+model Correcao {
+  id                 String    @id @default(cuid())
+  aplicacaoId        String
+  /// Null quando a prova não é identificada, até o lançamento manual (RF09).
+  alunoId            String?
+  versao             Int
+  nota               Float
+  respostas          Json
+  /// 'mobile' (lida pela câmera do celular na tela de correção) | 'manual'
+  origem             String    @db.VarChar(10)
+  /// Id gerado na tela de correção, para não duplicar ao sincronizar (RF10).
+  clientCorrectionId String    @unique
+  /// 'sincronizada' | 'pendente' | 'conflito'
+  statusSync         String    @default("sincronizada") @db.VarChar(12)
+  corrigidaEm        DateTime  @default(now())
+  /// Restrict: aplicação com correção não pode ser apagada (a API responde 409).
+  aplicacao          Aplicacao @relation(fields: [aplicacaoId], references: [id], onDelete: Restrict)
+  aluno              Aluno?    @relation(fields: [alunoId], references: [id], onDelete: Restrict)
+
+  @@index([aplicacaoId])
+  @@index([alunoId])
+}

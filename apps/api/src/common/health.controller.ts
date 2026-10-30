@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
+import { Publica } from './publica.decorator.js';
 
 /**
  * Health check da API.
- * Usado pelo web e pelo app mobile para verificar se a API está de pé
- * (no mobile, também para decidir quando tentar sincronizar a fila offline).
+ * Usado pela web para verificar se a API está de pé (na tela de correção,
+ * também para decidir quando sincronizar as correções guardadas offline).
  */
+@Publica()
 @Controller('health')
 export class HealthController {
   @Get()
