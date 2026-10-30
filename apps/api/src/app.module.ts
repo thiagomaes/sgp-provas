@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ApplicationsModule } from './applications/applications.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ClassesModule } from './classes/classes.module.js';
 import { CommonModule } from './common/common.module.js';
@@ -19,7 +20,7 @@ import { QuestionsModule } from './questions/questions.module.js';
  * @Publica() (/health, /auth/login, /auth/register e /auth/refresh).
  */
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), CommonModule, AuthModule, ClassesModule, QuestionsModule, ExamsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), CommonModule, AuthModule, ClassesModule, QuestionsModule, ExamsModule, ApplicationsModule],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
