@@ -459,3 +459,61 @@ textarea.input-texto {
 
 .botao-remover {
   border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-soft);
+  padding: var(--space-2) var(--space-3);
+}
+
+.botao-adicionar {
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  color: var(--accent-dark);
+  padding: var(--space-2) var(--space-3);
+  align-self: flex-start;
+}
+
+.acoes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.botao-primario,
+.botao-secundario {
+  min-height: 42px;
+  padding: 0 var(--space-4);
+}
+
+.botao-primario {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: var(--surface);
+}
+
+.botao-secundario {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.mensagem-erro {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warn);
+  background: var(--warn-soft);
+  color: var(--warn);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 900px) {
+  .pagina-nova-questao {
+    grid-template-columns: 1fr;
+  }
+
+  .area-meta {
+    order: 2;
+  }
+}
+</style>
