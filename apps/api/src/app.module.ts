@@ -1,16 +1,22 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { CommonModule } from './common/common.module.js';
 import { HealthController } from './common/health.controller.js';
+import { JwtAuthGuard } from './common/jwt-auth.guard.js';
 
 /**
  * Módulo raiz da API do SGP.
  *
- * Os módulos de feature (auth, classes, exams, applications, corrections,
- * reports, sync) serão registrados aqui conforme forem implementados —
- * cada um na sua pasta em src/.
+ * Cada módulo de feature fica na sua pasta em src/, com controller (rotas),
+ * service (regras de negócio), repository (Prisma) e DTOs.
+ *
+ * O JwtAuthGuard é global: toda rota exige login, exceto as marcadas com
+ * @Publica() (/health, /auth/login, /auth/register e /auth/refresh).
  */
 @Module({
-  imports: [],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), CommonModule],
   controllers: [HealthController],
-  providers: [],
+  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}
