@@ -10,6 +10,9 @@ class Professor {
   +passwordHash : String
   +createdAt : DateTime
   +anonymizedAt : DateTime?
+  +cadastrarTurma() : Turma
+  +criarQuestao() : Questao
+  +criarProva() : Prova
 }
 
 class RefreshToken {
@@ -29,6 +32,8 @@ class Turma {
   +ano : String
   +turno : String
   +createdAt : DateTime
+  +adicionarAluno(nome : String, matricula : String) : Aluno
+  +removerAluno(alunoId : String) : void
 }
 
 class Aluno {
@@ -50,6 +55,8 @@ class Questao {
   +tags : Json
   +deletedAt : DateTime?
   +criadaEm : DateTime
+  +adicionarAlternativa() : Alternativa
+  +validar() : Boolean
 }
 
 class Alternativa {
@@ -68,6 +75,8 @@ class Prova {
   +totalPontos : Float
   +criadaEm : DateTime
   +deletedAt : DateTime?
+  +adicionarQuestao(questao : Questao, ordem : Int, pontuacao : Float) : ProvaQuestao
+  +calcularTotalPontos() : Float
 }
 
 class ProvaQuestao {
@@ -91,6 +100,7 @@ class Aplicacao {
   +status : String
   +corrigidas : Int
   +createdAt : DateTime
+  +gerarVersoes() : VersaoProva[]
 }
 
 class VersaoProva {
@@ -113,6 +123,8 @@ class Correcao {
   +clientCorrectionId : String
   +statusSync : String
   +corrigidaEm : DateTime
+  +calcularNota() : Float
+  +atribuirAluno(aluno : Aluno) : void
 }
 
 Professor "1" -- "0..*" RefreshToken : possui
@@ -120,13 +132,13 @@ Professor "1" -- "0..*" Turma : cadastra
 Professor "1" -- "0..*" Questao : cadastra
 Professor "1" -- "0..*" Prova : cria
 Professor "1" -- "0..*" Aplicacao : registra
-Turma "1" -- "0..*" Aluno : contem
+Turma "1" *-- "0..*" Aluno : contem
 Turma "1" -- "0..*" Aplicacao : recebe
-Questao "1" -- "0..*" Alternativa : possui
+Questao "1" *-- "0..5" Alternativa : possui
 Questao "1" -- "0..*" ProvaQuestao : selecionada em
-Prova "1" -- "0..*" ProvaQuestao : organiza
+Prova "1" *-- "0..*" ProvaQuestao : organiza
 Prova "1" -- "0..*" Aplicacao : aplicada em
-Aplicacao "1" -- "0..*" VersaoProva : gera
+Aplicacao "1" *-- "0..*" VersaoProva : gera
 Aplicacao "1" -- "0..*" Correcao : recebe
 Aluno "0..1" -- "0..*" Correcao : identificado em
 @enduml
