@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { aplicacaoParaResposta, type AplicacaoResposta } from '../applications/aplicacao.mapper.js';
 import { correcaoParaResposta, type CorrecaoResposta } from '../corrections/correcao.mapper.js';
+import { dataIso } from '../common/formatos.js';
 import { calcularEstatisticas, media, type Estatisticas } from './estatisticas.js';
 import { ReportsRepository } from './reports.repository.js';
 
@@ -83,10 +84,30 @@ export class ReportsService {
       ]),
       ...relatorio.semAluno.map((correcao) => ['(não identificado)', '', notaBr(correcao.nota), rotuloOrigem(correcao.origem)]),
     ];
-    // O BOM no início faz o Excel abrir os acentos certos.
-    const conteudo = '﻿' + linhas.map((linha) => linha.map(celulaCsv).join(';')).join('\r\n') + '\r\n';
     const nome = `${relatorio.prova.titulo} ${relatorio.turma.nome}`;
-    return { nomeArquivo: `notas-${paraNomeDeArquivo(nome)}.csv`, conteudo };
+    return { nomeArquivo: `notas-${paraNomeDeArquivo(nome)}.csv`, conteudo: paraCsv(linhas) };
+  }
+
+  /** CSV com as notas de todas as aplicações do professor (xlsx e pdf ficam para a N3). */
+  async consolidadoCsv(professorId: string): Promise<{ nomeArquivo: string; conteudo: string }> {
+    const relatorios = (await this.repositorio.relatoriosConsolidados(professorId)).map(montarRelatorio);
+    const linhas = [
+      ['Prova', 'Turma', 'Data', 'Aluno', 'Matrícula', 'Nota', 'Origem'],
+      ...relatorios.flatMap(({ prova, turma, aplicacao, notas, semAluno }) => {
+        const inicio = [prova.titulo, turma.nome, aplicacao.data];
+        return [
+          ...notas.map(({ aluno, correcao }) => [
+            ...inicio,
+            aluno.nome,
+            aluno.matricula,
+            correcao ? notaBr(correcao.nota) : '',
+            correcao ? rotuloOrigem(correcao.origem) : 'Pendente',
+          ]),
+          ...semAluno.map((correcao) => [...inicio, '(não identificado)', '', notaBr(correcao.nota), rotuloOrigem(correcao.origem)]),
+        ];
+      }),
+    ];
+    return { nomeArquivo: `relatorio-consolidado-${dataIso(new Date())}.csv`, conteudo: paraCsv(linhas) };
   }
 
   private async dados(professorId: string, aplicacaoId: string) {
@@ -117,6 +138,12 @@ function notaBr(nota: number): string {
 
 function rotuloOrigem(origem: string): string {
   return origem === 'manual' ? 'Manual' : 'Automática';
+}
+
+/** Separador ";" e vírgula decimal, como o Excel em português abre. */
+function paraCsv(linhas: string[][]): string {
+  // O BOM no início faz o Excel abrir os acentos certos.
+  return '﻿' + linhas.map((linha) => linha.map(celulaCsv).join(';')).join('\r\n') + '\r\n';
 }
 
 function celulaCsv(valor: string): string {

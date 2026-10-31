@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Param, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { CurrentProfessor } from '../common/current-professor.decorator.js';
 import { ReportsService } from './reports.service.js';
@@ -11,6 +11,20 @@ export class ReportsController {
   @Get('reports/summary')
   resumo(@CurrentProfessor() professorId: string) {
     return this.relatorios.resumo(professorId);
+  }
+
+  /** Notas de todas as aplicações num CSV só. Por enquanto só ?format=csv (o padrão). */
+  @Get('reports/consolidated')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  async consolidado(
+    @CurrentProfessor() professorId: string,
+    @Query('format') formato = 'csv',
+    @Res() resposta: Response,
+  ) {
+    if (formato !== 'csv') throw new BadRequestException("Por enquanto só o formato 'csv' está disponível.");
+    const { nomeArquivo, conteudo } = await this.relatorios.consolidadoCsv(professorId);
+    resposta.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    resposta.send(conteudo);
   }
 
   /** Média, mediana, desvio padrão e a nota de cada aluno. */
