@@ -5,7 +5,7 @@ import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
 import { atualizarCorrecao, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
-import { baixarCsv, buscarRelatorio } from '../services/relatorios'
+import { baixarCsv, buscarRelatorio, nomeDoCsv } from '../services/relatorios'
 import type { ApplicationReport, Correction } from '../types'
 
 /**
@@ -121,10 +121,11 @@ const exportando = ref(false)
 const erroExportacao = ref('')
 
 async function exportarCsv() {
+  if (!relatorio.value) return
   exportando.value = true
   erroExportacao.value = ''
   try {
-    await baixarCsv(aplicacaoId)
+    await baixarCsv(aplicacaoId, nomeDoCsv(relatorio.value.prova.titulo, relatorio.value.turma.nome))
   } catch (falha) {
     erroExportacao.value = mensagemDeErro(falha, 'Não foi possível baixar o CSV.')
   } finally {
