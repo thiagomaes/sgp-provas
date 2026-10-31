@@ -27,9 +27,9 @@
 | ADRs 002 a 004 | Amanda | #18, #21 | ✅ na main |
 | Banco de questões ligado à API e ADR-005 | Hellen | #19 | ✅ na main |
 | Relatório consolidado em CSV (`GET /reports/consolidated`) | Marceu | #22 | ✅ na main |
-| MER/DER e diagrama de classes ajustado | Iago | #23 | ⏳ PR aberto, com mudanças pedidas na revisão |
+| MER/DER e diagrama de classes ajustado | Iago | #23 | ✅ na main |
 | Teste de ponta a ponta no site publicado | Thiago | #25 | ✅ na main (13 de 13 passos) |
-| README v2 | Thiago | #26 | ⏳ PR aberto, review do Marceu |
+| README v2 | Thiago | #26 | ✅ na main |
 | Zip, link e envio | Thiago | | ⏳ fim do dia |
 
 ### Revisores
