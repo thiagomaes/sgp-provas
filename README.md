@@ -4,26 +4,28 @@
 
 **Plataforma web responsiva, usada no computador e no celular, para o professor criar, aplicar e corrigir provas de forma automatizada, com geração de estatísticas de desempenho.**
 
-🔗 **Link do sistema hospedado:** https://sgp-provas.vercel.app
+🔗 **Sistema hospedado:** https://sgp-provas.vercel.app · **API:** https://sgp-provas-api.vercel.app/health
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-F5A623?style=flat-square)
-![Entrega](https://img.shields.io/badge/entrega%20atual-N1-3D348B?style=flat-square)
+![Entrega](https://img.shields.io/badge/entrega%20atual-N2-3D348B?style=flat-square)
 ![Licença](https://img.shields.io/badge/licença-uso%20acadêmico-7B4FA6?style=flat-square)
 
 </div>
 
 ## 👥 Equipe (Grupo 10)
 
-Divisão por frente de feature (combinada no grupo; quem tiver mais afinidade com
-uma parte pode trocar com o responsável antes de começar):
+| Nome completo               | Papel na N2                                                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Thiago Luís Lombardi Maes   | Banco no Aiven, API com Prisma e JWT, deploy da API, telas ligadas à API e teste de ponta a ponta (#16, #20, #24, #25) |
+| Amanda Zimmermann           | ADRs 002 a 004 (#18, #21)                                                                                     |
+| Hellen Cristina de Oliveira | Banco de questões ligado à API e ADR-005 (#19)                                                                |
+| Iago Henrique Pinto Bogler  | MER/DER e diagrama de classes ajustado (#23)                                                                  |
+| Marceu Lago Pontes Schmidt  | Relatório consolidado em CSV (#22) e revisões                                                                 |
 
-| Nome completo               | Papel / principais frentes no projeto                          |
-| --------------------------- | -------------------------------------------------------------- |
-| Amanda Zimmermann           | Turmas — lista de turmas e cadastro de alunos na turma          |
-| Hellen Cristina de Oliveira | Banco de questões — lista e editor de questão                   |
-| Iago Henrique Pinto Bogler  | Provas e aplicações — montagem de prova, aplicação e PDF        |
-| Marceu Lago Pontes Schmidt  | Relatórios e notas + correção de provas                         |
-| Thiago Luís Lombardi Maes   | Estrutura base do monorepo, autenticação e dashboard            |
+Os números são os pull requests no GitHub. Na N1 cada integrante ficou com um
+grupo de telas; na N2 o Thiago fez a base de código (API e integração das telas)
+e cada integrante ficou com uma entrega própria, como registrado em
+[`docs/arquitetura/plano-n2.md`](docs/arquitetura/plano-n2.md).
 
 ## 📑 Sumário
 
@@ -35,10 +37,18 @@ uma parte pode trocar com o responsável antes de começar):
 - [4. Telas do Sistema](#4-telas-do-sistema)
     - [4.1 Web do Professor](#41-web-do-professor)
     - [4.2 Correção pelo celular](#42-correção-pelo-celular)
-- [5. Stack Tecnológica](#5-stack-tecnológica)
-- [6. Estrutura de Pastas](#6-estrutura-de-pastas)
-- [7. Como rodar o projeto](#7-como-rodar-o-projeto)
-- [8. Estado atual (N1)](#8-estado-atual-n1)
+- [5. Modelagem (UML)](#5-modelagem-uml)
+- [6. Modelo de Dados](#6-modelo-de-dados)
+- [7. Decisões Arquiteturais (ADRs)](#7-decisões-arquiteturais-adrs)
+- [8. Arquitetura](#8-arquitetura)
+- [9. Especificação da API](#9-especificação-da-api)
+- [10. Stack Tecnológica](#10-stack-tecnológica)
+- [11. Estrutura de Pastas](#11-estrutura-de-pastas)
+- [12. Como rodar o projeto](#12-como-rodar-o-projeto)
+- [13. Sistema hospedado](#13-sistema-hospedado)
+- [14. Deploy](#14-deploy)
+- [15. Testes](#15-testes)
+- [16. Estado atual (N2)](#16-estado-atual-n2)
 
 ---
 
@@ -96,13 +106,18 @@ O sistema é **uma aplicação web só**, responsiva, usada pelo professor no co
 
 ## 4. Telas do Sistema
 
-Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pelo cliente continuam em [`docs/telas/`](docs/telas/)). O SGP é uma aplicação web só, responsiva: as telas abaixo são as mesmas no computador e no celular.
+O SGP é uma aplicação web só, responsiva: as telas abaixo são as mesmas no
+computador e no celular. Os prints foram feitos na N1, com os dados de exemplo que
+na N2 viraram o seed do banco. Na N2 as telas continuam iguais, mas leem e gravam
+tudo na API. Os prints do sistema publicado na N2, passo a passo, estão no
+[teste de ponta a ponta](docs/testes/n2-ponta-a-ponta.md). Os protótipos
+aprovados pelo cliente continuam em [`docs/telas/`](docs/telas/).
 
 ### 4.1 Web do Professor
 
 ![Login](docs/telas/sistema/01-login.png)
 
-**Login:** entrada exclusiva do professor; nesta fase aceita qualquer e-mail e senha.
+**Login:** entrada exclusiva do professor; o e-mail e a senha são conferidos pela API, que devolve os tokens JWT da sessão.
 
 ![Dashboard](docs/telas/sistema/02-dashboard.png)
 
@@ -110,11 +125,11 @@ Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pe
 
 ![Turmas](docs/telas/sistema/03-turmas.png)
 
-**Turmas:** turmas do professor com disciplina, quantidade de alunos e turno.
+**Turmas:** turmas do professor com disciplina, quantidade de alunos e turno; criar, editar e excluir.
 
 ![Detalhe da turma](docs/telas/sistema/04-turma-detalhe.png)
 
-**Detalhe da turma:** alunos cadastrados na turma (nome e matrícula, sem conta de acesso) e o botão para adicionar aluno.
+**Detalhe da turma:** alunos cadastrados na turma (nome e matrícula, sem conta de acesso); adicionar, editar e remover aluno.
 
 ![Banco de questões](docs/telas/sistema/05-banco-de-questoes.png)
 
@@ -126,7 +141,7 @@ Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pe
 
 ![Provas](docs/telas/sistema/07-provas.png)
 
-**Provas:** provas reutilizáveis, com a quantidade de questões e a pontuação total.
+**Provas:** provas reutilizáveis, com a quantidade de questões e a pontuação total; editar e excluir.
 
 ![Montagem de prova](docs/telas/sistema/08-montagem-de-prova.png)
 
@@ -138,7 +153,7 @@ Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pe
 
 ![Exportação do PDF](docs/telas/sistema/10-exportacao-pdf.png)
 
-**Exportação do PDF:** configura versões, embaralhamento de questões e alternativas e identificação do aluno antes de gerar o PDF.
+**Gerar versões:** configura versões, embaralhamento de questões e alternativas e identificação do aluno; a API gera as versões e a tela mostra o QR Code de cada uma.
 
 ![Correção](docs/telas/sistema/11-correcao.png)
 
@@ -150,7 +165,7 @@ Prints reais do sistema rodando com os dados mock da N1 (os mockups aprovados pe
 
 ![Notas](docs/telas/sistema/13-notas.png)
 
-**Notas:** nota de cada aluno com a origem (automática ou manual) e o lançamento manual das provas sem identificação.
+**Notas:** nota de cada aluno com a origem (automática ou manual), estatísticas da turma, lançamento e edição manual de nota e exportação em CSV.
 
 ### 4.2 Correção pelo celular
 
@@ -162,135 +177,382 @@ O professor abre o SGP no navegador do celular e corrige as provas pela câmera 
 
 <img src="docs/telas/sistema/15-celular-escanear.png" alt="Escanear prova" width="300">
 
-**Escanear prova:** abre a câmera traseira para ler o QR Code e o cartão-resposta; sem câmera, mostra o quadro com a instrução. Nesta fase a leitura é simulada.
+**Escanear prova:** abre a câmera traseira para ler o QR Code e o cartão-resposta; sem câmera, mostra o quadro com a instrução. Nesta fase a leitura ainda é simulada pelo botão **Simular leitura**.
 
 <img src="docs/telas/sistema/16-celular-revisao.png" alt="Revisar correção" width="300">
 
-**Revisar correção:** mostra a nota calculada e os acertos por questão para o professor ajustar, se precisar, e confirmar.
+**Revisar correção:** mostra a nota calculada e os acertos por questão para o professor ajustar, se precisar, e confirmar. Confirmar grava a correção no banco, e a API recalcula a nota com o gabarito.
 
 > O print da tela de escanear foi feito em um navegador sem câmera, por isso mostra o quadro escuro com a instrução. No celular, o vídeo da câmera aparece dentro do quadro.
 
-## 5. Stack Tecnológica
+## 5. Modelagem (UML)
+
+Os quatro diagramas partem do mesmo cenário base e seguem o formato do exemplo
+dado em aula: cada um tem o passo a passo da análise e o diagrama pronto. O índice
+e os responsáveis estão em [`docs/uml/README.md`](docs/uml/README.md).
+
+### 5.1 Caso de Uso
+
+![Diagrama de Caso de Uso](docs/uml/01-caso-de-uso/caso-de-uso.png)
+
+O único ator humano é o **Professor**: o aluno não acessa o sistema e aparece só
+como dado da turma. O diagrama reúne o que o professor faz no SGP, do login à
+exportação das notas, incluindo a correção pela câmera do celular.
+[Passo a passo](docs/uml/01-caso-de-uso/caso-de-uso.md)
+
+### 5.2 Atividade
+
+![Diagrama de Atividade](docs/uml/02-atividade/atividade.png)
+
+Fluxo completo de uma prova, do login ao relatório, com raias para o Professor, o
+Sistema Web e a web aberta no celular. Mostra as decisões (login inválido, prova
+com mais de 20 questões, prova sem identificação) e os laços de leitura das provas.
+[Passo a passo](docs/uml/02-atividade/atividade.md)
+
+### 5.3 Classe
+
+![Diagrama de Classe](docs/uml/03-classe/classe.png)
+
+As classes do domínio (Professor, Turma, Aluno, Questao, Alternativa, Prova,
+ProvaQuestao, Aplicacao, VersaoProva e Correcao), com atributos e
+relacionamentos. É a base do modelo de dados da
+seção 6. [Passo a passo](docs/uml/03-classe/classe.md)
+
+### 5.4 Sequência
+
+![Diagrama de Sequência](docs/uml/04-sequencia/sequencia.png)
+
+O cenário central do SGP: a correção de uma prova pela câmera do celular, da
+leitura do QR Code e do cartão-resposta até a nota guardada na fila local e
+sincronizada com a API. [Passo a passo](docs/uml/04-sequencia/sequencia.md)
+
+## 6. Modelo de Dados
+
+![DER do SGP](docs/modelo-dados/der.png)
+
+O MER e o DER, com as tabelas, chaves e relacionamentos, estão explicados em
+[`docs/modelo-dados/mer-der.md`](docs/modelo-dados/mer-der.md).
+
+A fonte única do modelo é o
+[`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma): as migrations,
+o seed e os tipos do Prisma Client saem dele, e os diagramas o acompanham.
+
+## 7. Decisões Arquiteturais (ADRs)
+
+Cada decisão de arquitetura fica registrada num ADR, com contexto, alternativas e
+consequências. O formato e o índice estão em
+[`docs/adr/README.md`](docs/adr/README.md).
+
+| ADR | Decisão | Link |
+| --- | --- | --- |
+| 001 | Web responsiva no lugar de app nativo: a correção é uma tela da própria web, usada no celular | [ADR-001](docs/adr/ADR-001-web-responsiva-no-lugar-de-app-nativo.md) |
+| 002 | MySQL com Prisma 6 na API NestJS, com o `schema.prisma` como fonte única do modelo | [ADR-002](docs/adr/ADR-002-mysql-com-prisma.md) |
+| 003 | Autenticação JWT só do professor, com refresh token rotacionado e guard global | [ADR-003](docs/adr/ADR-003-autenticacao-jwt.md) |
+| 004 | Hospedagem na Vercel (web e API) com banco MySQL no Aiven | [ADR-004](docs/adr/ADR-004-hospedagem-vercel-e-aiven.md) |
+| 005 | Soft-delete de questões, para as provas antigas não perderem a questão | [ADR-005](docs/adr/ADR-005-soft-delete-questao.md) |
+
+## 8. Arquitetura
+
+```mermaid
+flowchart LR
+    P["Professor<br/>(computador ou celular)"] --> W["Web Vue 3<br/>sgp-provas.vercel.app"]
+    W -- "HTTPS + JWT<br/>(VITE_API_URL)" --> A["API NestJS<br/>função na Vercel"]
+    A -- "Prisma" --> D[("MySQL 8.4<br/>Aiven")]
+```
+
+**Camadas da API.** Cada módulo de `apps/api/src/` (auth, classes, questions,
+exams, applications, corrections, reports) segue o mesmo caminho:
+
+```
+controller  →  service  →  repository  →  Prisma  →  MySQL
+(rotas e DTOs)  (regras)    (consultas)
+```
+
+O controller recebe a requisição e valida o corpo com os DTOs (class-validator);
+o service aplica as regras de negócio; só o repository fala com o banco, pelo
+Prisma. As regras que não dependem do banco ficam em arquivos próprios e têm
+testes: `validacao-questao.ts`, `regras-prova.ts`, `versoes.ts`,
+`calculo-nota.ts` e `estatisticas.ts`.
+
+**Autenticação.** Um guard JWT global protege todas as rotas: rota nova já nasce
+exigindo login. As exceções são marcadas com o decorator `@Publica()`: o
+`/health` e o cadastro, login e renovação de sessão de `/auth`. O access token
+vale 1 hora; o refresh token vale 7 dias, fica no banco só como hash e é trocado a
+cada uso ([ADR-003](docs/adr/ADR-003-autenticacao-jwt.md)).
+
+**Isolamento entre professores.** O `professorId` vem sempre do token, nunca do
+corpo da requisição, e toda consulta do repository filtra por ele. Pedir um
+registro de outro professor responde 404, igual a um registro que não existe.
+
+**Como a web e a API conversam.** A web é uma SPA estática. No build, a URL da API
+vem da variável `VITE_API_URL`, e a web chama a API direto. No `npm run dev`, a
+web chama `/api` no próprio endereço e o Vite repassa para o `VITE_API_URL`
+(`apps/web-professor/vite.config.ts`). Isso é necessário porque a API publicada
+só libera o CORS para o endereço de produção da web. Todas as chamadas passam por
+`src/services/http.ts`, que envia o token, renova a sessão quando a API responde
+401 e devolve para a tela a mensagem de erro da API.
+
+## 9. Especificação da API
+
+Base: https://sgp-provas-api.vercel.app. As rotas abaixo foram conferidas nos
+controllers de `apps/api/src/`. Todas usam JSON, menos as que devolvem CSV. As
+rotas não públicas exigem o cabeçalho `Authorization: Bearer <accessToken>`.
+
+| Método | Caminho | O que faz | Pública |
+| --- | --- | --- | --- |
+| GET | `/health` | Confere se a API está no ar | ✅ |
+| POST | `/auth/register` | Cadastra um professor e já abre a sessão | ✅ |
+| POST | `/auth/login` | Login com e-mail e senha; devolve access token, refresh token e o professor | ✅ |
+| POST | `/auth/refresh` | Troca o refresh token por uma sessão nova (o antigo é revogado) | ✅ |
+| POST | `/auth/logout` | Revoga o refresh token deste dispositivo | |
+| GET | `/auth/me` | Professor logado | |
+| GET | `/classes` | Lista as turmas, com os alunos | |
+| POST | `/classes` | Cria turma | |
+| GET | `/classes/:id` | Uma turma, com os alunos | |
+| PATCH | `/classes/:id` | Edita turma | |
+| DELETE | `/classes/:id` | Exclui turma (409 se tiver provas corrigidas) | |
+| POST | `/classes/:id/students` | Adiciona aluno (409 se a matrícula já existir na turma) | |
+| PATCH | `/classes/:id/students/:studentId` | Edita aluno | |
+| DELETE | `/classes/:id/students/:studentId` | Remove aluno (409 se tiver prova corrigida) | |
+| GET | `/questions` | Lista as questões; filtros opcionais `?busca=` e `?tag=` | |
+| POST | `/questions` | Cria questão objetiva ou discursiva | |
+| GET | `/questions/:id` | Uma questão | |
+| PATCH | `/questions/:id` | Edita questão | |
+| DELETE | `/questions/:id` | Exclui questão (soft-delete, [ADR-005](docs/adr/ADR-005-soft-delete-questao.md)) | |
+| GET | `/exams` | Lista as provas | |
+| POST | `/exams` | Cria prova com 1 a 20 questões e a pontuação de cada uma | |
+| GET | `/exams/:id` | Uma prova | |
+| PATCH | `/exams/:id` | Edita prova (409 ao trocar as questões de prova com versões geradas) | |
+| DELETE | `/exams/:id` | Exclui prova (soft-delete; as aplicações antigas continuam com ela) | |
+| GET | `/applications` | Lista as aplicações | |
+| POST | `/applications` | Cria aplicação de uma prova para uma turma | |
+| GET | `/applications/:id` | Uma aplicação | |
+| DELETE | `/applications/:id` | Exclui aplicação (409 se tiver provas corrigidas) | |
+| POST | `/applications/:id/generate` | Gera as versões embaralhadas, cada uma com o conteúdo do QR Code | |
+| GET | `/applications/:id/corrections` | Correções da aplicação; `?assigned=false` traz só as sem aluno | |
+| POST | `/applications/:id/corrections` | Grava uma correção lida pela câmera (a API calcula a nota) ou um lançamento manual; reenviar o mesmo `clientCorrectionId` não duplica | |
+| PATCH | `/applications/:id/corrections/:correctionId` | Atribui o aluno e/ou ajusta a nota | |
+| GET | `/reports/summary` | Números do dashboard, últimas aplicações e média de cada aplicação | |
+| GET | `/reports/consolidated` | CSV com as notas de todas as aplicações (`?format=csv`, o único formato por enquanto) | |
+| GET | `/applications/:id/report` | Relatório da aplicação: estatísticas e a nota de cada aluno | |
+| GET | `/applications/:id/report.csv` | CSV das notas da aplicação | |
+
+Respostas de erro seguem o formato do NestJS (`{ "statusCode", "message", "error" }`),
+com a mensagem em português pronta para a tela.
+
+## 10. Stack Tecnológica
 
 ![Vue](https://img.shields.io/badge/Vue.js-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat-square&logo=nestjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
-A arquitetura de alto nível prevê um cliente web, exclusivo do professor, consumindo uma API comum:
+Versões lidas dos `package.json`:
 
-- **Web Professor**: **Vite + Vue 3 (TypeScript)**, com **Vue Router** e **Pinia**, responsiva (abaixo de 768px a sidebar vira menu recolhível). Concentra login, turmas (com cadastro de alunos como registros simples), banco de questões, provas, aplicações, geração de PDF, relatórios e a **correção pela câmera do celular** (`getUserMedia`, único ponto de acesso do sistema à leitura de QR Code). O funcionamento offline e a fila local de sincronização serão feitos como **PWA** (service worker + **IndexedDB**).
-- **API Gateway**: **NestJS** (decidido na N1, entre as duas opções avaliadas — NestJS e Fastify — pela estrutura modular em camadas já pronta), expondo os módulos de Auth (professor), Class (turmas e alunos cadastrados), Exam/Application, Grade (notas) e Sync Service (recebe lotes de correções da fila local, aplica deduplicação por `clientCorrectionId` e resolve conflitos).
-- **Persistência**: **MySQL** como banco relacional principal, **Redis** para cache/filas, e **Object Storage** para os PDFs gerados.
-- **Vision Service (opcional)**: componente server-side para fallback/verificação de leitura do cartão-resposta com maior precisão quando há conectividade. A leitura em si ocorre no próprio navegador do celular, garantindo o funcionamento 100% offline da correção.
+| Parte | Tecnologia |
+| --- | --- |
+| Runtime | Node.js 22.x (`engines` da API) |
+| Web | Vite 8, Vue 3.5 com TypeScript 6, Vue Router 5, Pinia 4 e `qrcode` para a imagem do QR Code |
+| API | NestJS 12, Prisma 6.19, `@nestjs/jwt`, `bcryptjs` e class-validator |
+| Banco | MySQL 8.4 no Aiven |
+| Hospedagem | Vercel: a web como site estático e a API como função serverless |
+| Testes | Vitest e Supertest na API; Playwright no teste de ponta a ponta |
 
-Bibliotecas de apoio (autenticação JWT + refresh token, hashing de senha, geração de QR Code, leitura de PDF/exportação CSV-Excel-PDF etc.) devem ser listadas aqui conforme forem incorporadas ao projeto.
+Previsto para a N3 e ainda **fora** do código: Redis para cache e filas, object
+storage para os PDFs gerados, PWA (service worker e IndexedDB) para a correção
+offline e um Vision Service no servidor para conferir a leitura do cartão-resposta.
 
-## 6. Estrutura de Pastas
+## 11. Estrutura de Pastas
 
-O projeto reúne a aplicação web do professor e uma API, num monorepo com um pacote por aplicação, mantendo o padrão em camadas (`rota → controle → serviço → repositório → model`) dentro da API. Estrutura já criada no repositório:
+Monorepo com um pacote por aplicação:
 
 ```
 apps/
   api/                      # API NestJS
+    prisma/
+      schema.prisma         # fonte única do modelo de dados
+      migrations/           # migrations versionadas
+      seed.ts               # dados de demonstração (professora Ana Costa)
     src/
-      auth/                 # Feature 1 — cadastro, login e anonimização do professor
-      classes/              # Feature 3 — turmas e cadastro de alunos (registros, sem login)
-      exams/                # Feature 2 e 4 — questões e provas
-      applications/         # Feature 5, 6 e 7 — aplicações, PDF/versões, gabarito
-      corrections/          # Feature 8 e 9 — correção e lançamento manual
-      reports/              # Feature 12 — relatórios exportáveis
-      sync/                 # Sync Service — fila offline, dedup, conflitos
-      common/               # guards, interceptors, pipes + health.controller.ts
+      auth/                 # cadastro, login, refresh e logout (JWT)
+      classes/              # turmas e alunos
+      questions/            # banco de questões
+      exams/                # provas
+      applications/         # aplicações e geração das versões
+      corrections/          # correções e lançamento manual de nota
+      reports/              # resumo, relatório por aplicação e CSVs
+      sync/                 # reservado para a sincronização offline (N3)
+      common/               # Prisma, guard JWT, decorators e /health
       app.module.ts
-      main.ts
+      main.ts               # servidor local e handler da Vercel
+    test/                   # testes e2e (Supertest)
   web-professor/            # Vite + Vue 3 (TypeScript)
     src/
-      pages/                # uma tela por arquivo (evita conflito de merge)
-      components/           # componentes compartilhados (EmConstrucao, LogoSGP)
-      layouts/              # AppShell.vue — sidebar (menu recolhível no celular) + conteúdo
-      router/               # todas as rotas do sistema
-      mocks/                # dados de exemplo tipados (fase N1)
-      styles/               # tokens.css — paleta única do sistema
+      pages/                # uma tela por arquivo
+      components/           # LogoSGP, EstadoTela, ConfirmarExclusao, QrCode
+      layouts/              # AppShell.vue: menu lateral (recolhível no celular) + conteúdo
+      router/               # rotas e guarda de login
+      services/             # http.ts, sessão e um service por área
+      stores/               # auth.ts (Pinia): professor logado
+      types/                # tipos no formato que a API devolve
+      styles/               # tokens.css: paleta única do sistema
       main.ts
 docs/
-  uml/
-  telas/                    # 16 mockups aprovados pelo cliente (PNG)
-  arquitetura/
-  adr/
-  modelo-dados/
-  api/
+  adr/                      # decisões arquiteturais
+  arquitetura/              # planos da N2
+  modelo-dados/             # MER e DER
+  telas/                    # protótipos aprovados e prints do sistema
+  testes/                   # teste de ponta a ponta da N2, com prints
+  uml/                      # caso de uso, atividade, classe e sequência
 ```
 
-> As pastas de banco de dados (`prisma/` ou `migrations/`) entram na N2, junto com a persistência real.
+## 12. Como rodar o projeto
 
-## 7. Como rodar o projeto
+Pré-requisitos: **Node.js 22.x** e um **MySQL 8.4** (o do Aiven ou um local). Cada
+app tem suas próprias dependências; `node_modules/` e `.env` não vão para o Git.
 
-Pré-requisito: **Node.js 22+**. Cada app tem suas próprias dependências — instale só a do app em que você vai trabalhar (`node_modules/` não vai versionado; os `package-lock.json` sim).
+### API (http://localhost:3000)
 
 ```bash
-# API  → http://localhost:3000/health
-cd apps/api && npm install --legacy-peer-deps && npm run start:dev
-
-# Web  → http://localhost:5173
-cd apps/web-professor && npm install && npm run dev
+cd apps/api
+npm install --legacy-peer-deps
+cp .env.example .env        # preencha DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET e WEB_ORIGIN
+npx prisma migrate deploy   # cria as tabelas
+npx prisma db seed          # dados de demonstração (Ana Costa)
+npm run start:dev           # http://localhost:3000/health
+npm test                    # testes unitários
+npm run test:e2e            # testes e2e
 ```
 
-Para testar a correção no celular, abra a web no navegador do aparelho. A câmera só abre em contexto seguro (HTTPS ou `localhost`): use o link publicado ou o preview da Vercel do PR. Sem câmera, a tela mostra o quadro escuro com a instrução e o botão **Simular leitura** continua funcionando.
+O `.env.example` explica o formato de cada variável. O `--legacy-peer-deps` é
+necessário só na API: o npm 10.9.x quebra ao resolver os peers opcionais do
+vitest 4, e o flag contorna o bug sem alterar versão nenhuma.
 
-O `--legacy-peer-deps` é necessário apenas na API: o npm 10.9.x quebra ao resolver os peers opcionais do vitest 4 (dependência do scaffold do NestJS). O flag contorna o bug sem alterar versão nenhuma.
+### Web (http://localhost:5173)
 
-Antes de implementar qualquer tela, leia o [CONTRIBUTING.md](CONTRIBUTING.md) — ele traz a convenção de commit, o fluxo de branch/PR e a regra de não criar cor nem dado mock novo.
+```bash
+cd apps/web-professor
+npm install
+cp .env.example .env        # VITE_API_URL: a API publicada ou http://localhost:3000
+npm run dev
+```
 
-### Deploy da web (Vercel)
+No `npm run dev`, a web chama `/api` e o Vite repassa para o `VITE_API_URL`
+(seção 8). Para testar a correção no celular, abra a web no navegador do aparelho.
+A câmera só abre em contexto seguro (HTTPS ou `localhost`), então use o link
+publicado. Sem câmera, a tela mostra o quadro com a instrução e o botão
+**Simular leitura** continua funcionando.
 
-A web do professor é uma SPA estática (na N1 roda só com dados mock, sem API), então
-o deploy é direto:
+Antes de mexer em qualquer tela, leia o [CONTRIBUTING.md](CONTRIBUTING.md): ele
+traz a convenção de commit e o fluxo de branch e PR.
 
-| Configuração | Valor |
+## 13. Sistema hospedado
+
+| | |
 | --- | --- |
-| Root Directory | `apps/web-professor` |
-| Framework Preset | Vite |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Install Command | `npm install` |
+| **Web** | https://sgp-provas.vercel.app |
+| **API** | https://sgp-provas-api.vercel.app/health |
+| **Conta de demonstração** | `ana.costa@escola.edu.br` / `sgp2026` |
 
-O arquivo `apps/web-professor/vercel.json` já redireciona todas as rotas para o
-`index.html`. Sem isso, recarregar a página em `/dashboard` ou abrir um link direto
-retorna 404, porque o Vue Router usa modo history e quem resolve a rota é o
-navegador, não o servidor.
+A conta de demonstração vem do seed: a professora Ana Costa, com 4 turmas, 115
+alunos, 10 questões, 5 provas e 5 aplicações.
 
-Cada push na `main` publica automaticamente. Pull requests ganham uma URL de preview,
-útil para revisar tela sem precisar rodar o projeto na própria máquina.
+> **Primeiro acesso pode demorar.** O banco está no plano gratuito do Aiven e a API
+> é uma função serverless: depois de um tempo sem uso, a primeira requisição pode
+> levar alguns segundos enquanto tudo acorda. Se o login demorar, espere e tente de
+> novo.
 
-## 8. Estado atual (N1)
+## 14. Deploy
 
-O que já está no repositório:
+São dois projetos na Vercel, ligados ao repositório. Cada push na `main` publica
+os dois; cada pull request ganha uma URL de preview.
+
+| | Web | API |
+| --- | --- | --- |
+| Projeto Vercel | `sgp-provas` | `sgp-provas-api` |
+| Root Directory | `apps/web-professor` | `apps/api` |
+| Framework Preset | Vite | NestJS |
+| Node | 22.x | 22.x |
+| Variáveis de ambiente | `VITE_API_URL` | `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `WEB_ORIGIN` |
+
+- **Web:** o build gera o site estático em `dist`. O
+  `apps/web-professor/vercel.json` redireciona todas as rotas para o `index.html`,
+  para que recarregar a página numa rota interna (ex.: `/turmas`) não dê 404.
+- **API:** roda como função serverless. O `npm install` roda o `prisma generate`
+  (`postinstall`), e o `schema.prisma` inclui os motores do Prisma para o Linux da
+  Vercel. O app Nest é criado na primeira requisição e reaproveitado nas seguintes.
+- **Migrations:** não rodam no build. Quando o schema muda, aplique com
+  `npx prisma migrate deploy` apontando para o banco de produção.
+- **Segredos:** os valores das variáveis ficam só na Vercel (marcados como
+  sensíveis) e no `.env` local de quem roda a API, nunca no repositório.
+
+## 15. Testes
+
+### Teste de ponta a ponta no sistema publicado
+
+Os 13 passos do fluxo do professor foram executados no site publicado com o
+Playwright: login, CRUD de turmas, alunos, questões e provas, aplicação com
+versões, correção no celular, nota manual, relatório com CSV, mensagens 409 da
+API, recarregar rota interna e sair. Dois problemas encontrados (imagem do QR
+Code e nome do CSV) foram corrigidos e o teste repetido: **13 de 13**. O registro
+completo, com um print de cada passo, está em
+[`docs/testes/n2-ponta-a-ponta.md`](docs/testes/n2-ponta-a-ponta.md).
+
+<img src="docs/testes/n2/07-aplicacao-versoes-corrigido.png" alt="Versões geradas com QR Code" width="560">
+
+<img src="docs/testes/n2/08-celular-revisao.png" alt="Revisão da correção no celular" width="260">
+
+### Testes automatizados da API
+
+```bash
+cd apps/api
+npm test           # 27 testes unitários em 5 arquivos
+npm run test:e2e   # 3 testes e2e em 2 arquivos
+```
+
+- **Unitários** (Vitest): as regras de negócio sem banco: validação de questão e
+  limite de questões por prova, embaralhamento das versões, cálculo da nota e
+  estatísticas (média, mediana e desvio padrão).
+- **E2E** (Vitest e Supertest): o `/health` e a rota do relatório consolidado em
+  CSV, com o repositório trocado por um falso.
+
+## 16. Estado atual (N2)
+
+**Integrado ao banco e funcionando no sistema publicado:**
 
 | Item | Situação |
 | --- | --- |
-| Estrutura do monorepo | ✅ criada (`apps/` + `docs/`) |
-| API NestJS | ✅ sobe com `GET /health` respondendo 200 |
-| Web (Vite + Vue + Router + Pinia) | ✅ scaffold rodando |
-| Design tokens (`styles/tokens.css`) | ✅ paleta única extraída dos mockups |
-| Layout base (`layouts/AppShell.vue`) | ✅ sidebar, menu com item ativo, breadcrumb, ações e slots de conteúdo; responsivo (menu recolhível abaixo de 768px) |
-| Rotas de todas as telas | ✅ 15 rotas navegáveis |
-| Dados mock tipados (`src/mocks/`) | ✅ turmas, questões, provas, aplicações, correções + `types.ts` |
-| Mockups das 16 telas | ✅ em [`docs/telas/`](docs/telas/) |
-| Telas web implementadas | ✅ 15 de 15 (login, dashboard, turmas, questões, provas, aplicações, correção, relatórios) |
-| Correção de provas (web no celular) | ✅ lista, escanear (câmera do navegador) e revisão da nota; leitura simulada |
-| Deploy da web | ✅ publicado em [sgp-provas.vercel.app](https://sgp-provas.vercel.app) |
-| Banco de dados, PDF real e leitura de QR Code | 🔜 escopo da N2/N3 |
+| Login real com JWT (access e refresh token) e logout | ✅ |
+| CRUD de turmas e alunos | ✅ |
+| CRUD de questões (objetivas e discursivas, com soft-delete) | ✅ |
+| CRUD de provas (até 20 questões, pontuação por questão) | ✅ |
+| Aplicações com geração de versões embaralhadas e QR Code | ✅ |
+| Correção pela tela do celular gravando a nota no banco | ✅ (leitura simulada) |
+| Lançamento e edição manual de nota, atribuição de prova sem identificação | ✅ |
+| Relatórios com média, mediana e desvio padrão | ✅ |
+| CSV das notas por aplicação | ✅ |
+| CSV consolidado de todas as aplicações | ✅ na API (`GET /reports/consolidated`) |
+| Nenhuma tela com dado fixo | ✅ (`grep -rni "mock" apps/web-professor/src` vazio) |
 
-Nesta fase as telas são **navegáveis com dados mock**: não há banco, autenticação real nem geração de PDF. Na correção, a câmera do celular abre, mas a leitura do QR Code e do cartão-resposta é simulada pelo botão **Simular leitura**. A tela de login aceita qualquer valor e leva ao dashboard.
+**Fica para a N3:**
 
-Regras que valem para todo mundo nesta fase:
+- PDF real da prova, com as versões e o QR Code impressos.
+- Leitura real do QR Code e do cartão-resposta pela câmera.
+- Funcionamento offline da correção (PWA, fila local e sincronização).
+- Status "Concluída" automático quando todas as provas da aplicação forem corrigidas.
+- Rate limit no login contra força bruta (RNF04).
+- Exportação dos relatórios em xlsx e PDF.
+- Conexão com o banco verificando o certificado (CA) do Aiven.
+- Resolver os avisos do `npm audit` nas dependências de desenvolvimento.
 
-- **Não invente cor:** use exclusivamente as variáveis de `apps/web-professor/src/styles/tokens.css`.
-- **Não duplique dado mock:** importe de `apps/web-professor/src/mocks/` — os dados de exemplo (turma "Matemática — 1º Ano" com 32 alunos, aluna Beatriz Almeida 2026001, professora Ana Costa, prova "Avaliação Bimestral 1") são os mesmos dos mockups aprovados.
-- **Não adicione dependência de banco** (MySQL, Prisma, Redis): isso é N2.
+Regras que continuam valendo para todo mundo:
+
+- **Não invente cor:** use só as variáveis de `apps/web-professor/src/styles/tokens.css`.
+- **Nenhum dado fixo nas telas:** tudo vem da API, pelos services de `src/services/`.
 - **O aluno não acessa o sistema:** nunca crie campo de e-mail, senha ou login para aluno.
+- **Segredos fora do Git:** nunca commite `.env`, `.vercel/`, senha ou URL do banco.
 
 ---
 

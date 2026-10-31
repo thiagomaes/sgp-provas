@@ -21,13 +21,15 @@
 | Etapa | Responsável | PR | Situação |
 |---|---|---|---|
 | Banco MySQL no Aiven (plano Free) | Thiago | | ✅ no ar (`sgp-provas-db`, MySQL 8.4) |
-| API com banco: Prisma, schema, seed, autenticação e todos os módulos | Thiago | #16 | ✅ PR aberto, review do Iago |
-| API publicada na Vercel | Thiago | | ⏳ depois do merge do #16 |
-| Telas ligadas à API, sem mock | Thiago | | ⏳ Prompt 2, depois da API publicada |
-| ADRs da N2 | Amanda | | ⏳ Prompt A, pode começar já |
-| MER/DER e diagrama de classes ajustado | Iago | | ⏳ Prompt I, depois do merge do #16 |
-| README v2 | Hellen | | ⏳ Prompt H, depois do merge do #16 |
-| Teste de ponta a ponta no site publicado | Marceu | | ⏳ Prompt M, depois do merge das telas |
+| API com banco: Prisma, schema, seed, autenticação e todos os módulos | Thiago | #16 | ✅ na main |
+| API publicada na Vercel | Thiago | #20 | ✅ na main (https://sgp-provas-api.vercel.app) |
+| Telas ligadas à API, sem mock | Thiago | #24 | ✅ na main |
+| ADRs 002 a 004 | Amanda | #18, #21 | ✅ na main |
+| Banco de questões ligado à API e ADR-005 | Hellen | #19 | ✅ na main |
+| Relatório consolidado em CSV (`GET /reports/consolidated`) | Marceu | #22 | ✅ na main |
+| MER/DER e diagrama de classes ajustado | Iago | #23 | ⏳ PR aberto, com mudanças pedidas na revisão |
+| Teste de ponta a ponta no site publicado | Thiago | #25 | ✅ na main (13 de 13 passos) |
+| README v2 | Thiago | #26 | ⏳ PR aberto, review do Marceu |
 | Zip, link e envio | Thiago | | ⏳ fim do dia |
 
 ### Revisores
