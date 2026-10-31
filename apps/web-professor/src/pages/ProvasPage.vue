@@ -9,7 +9,7 @@ import { excluirProva, listarProvas } from '../services/provas'
 import type { Exam } from '../types'
 
 /**
- * Lista de provas (RF04) — fiel ao mockup docs/telas/07-provas-lista.png.
+ * Lista de provas (RF04) — fiel ao protótipo docs/telas/07-provas-lista.png.
  *
  * O status é derivado: prova sem questão ainda é rascunho; com questão,
  * está pronta para ser aplicada. Não existe campo `status` em Exam.

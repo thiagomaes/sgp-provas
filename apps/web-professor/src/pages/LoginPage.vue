@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/auth'
 
 /**
  * Login do professor (RF01) — não usa o AppShell.
- * Layout fiel ao mockup docs/telas/01-login-web.png: coluna centralizada
+ * Layout fiel ao protótipo docs/telas/01-login-web.png: coluna centralizada
  * sobre fundo branco, sem card com borda.
  *
  * Chama POST /auth/login; os tokens ficam guardados pela store de

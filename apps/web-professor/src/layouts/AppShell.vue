@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/auth'
 
 /**
  * Layout base de todas as telas internas do SGP.
- * Fiel aos mockups aprovados (docs/telas/02-dashboard.png e 04-turma-detalhe.png).
+ * Fiel aos protótipos aprovados (docs/telas/02-dashboard.png e 04-turma-detalhe.png).
  *
  * Uso numa tela de feature:
  *

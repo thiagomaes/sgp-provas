@@ -10,7 +10,7 @@ import { buscarTurma } from '../services/turmas'
 import type { Application, ApplicationVersion, Class, Exam } from '../types'
 
 /**
- * Configuração do PDF da aplicação (RF06, RF07) — fiel ao mockup
+ * Configuração do PDF da aplicação (RF06, RF07) — fiel ao protótipo
  * docs/telas/10-aplicacao-exportar-pdf.png.
  *
  * "Gerar PDF" chama POST /applications/:id/generate: a API sorteia as

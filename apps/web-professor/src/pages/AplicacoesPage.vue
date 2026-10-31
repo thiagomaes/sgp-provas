@@ -16,7 +16,7 @@ import { listarTurmas } from '../services/turmas'
 import type { Application, Class, Exam } from '../types'
 
 /**
- * Aplicações (RF05) — fiel ao mockup docs/telas/09-aplicacoes-lista.png.
+ * Aplicações (RF05) — fiel ao protótipo docs/telas/09-aplicacoes-lista.png.
  *
  * Criar a aplicação já leva para a configuração do PDF, que é o passo
  * seguinte do fluxo do professor. Excluir pede confirmação na linha; a

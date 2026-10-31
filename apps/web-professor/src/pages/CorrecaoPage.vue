@@ -14,7 +14,7 @@ import type { Application, Class, Exam } from '../types'
  * Lista as aplicações que já têm PDF gerado e ainda não terminaram de ser
  * corrigidas. A tela é pensada para o celular: o professor abre o SGP no
  * navegador do próprio aparelho e usa a câmera para ler as provas (ADR-001).
- * Visual baseado no mockup docs/telas/14-mobile-home-sync.png.
+ * Visual baseado no protótipo docs/telas/14-mobile-home-sync.png.
  */
 
 const listaAplicacoes = ref<Application[]>([])

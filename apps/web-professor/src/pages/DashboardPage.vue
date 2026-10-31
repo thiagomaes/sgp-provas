@@ -9,7 +9,7 @@ import { useAuthStore } from '../stores/auth'
 import type { Application, DashboardSummary } from '../types'
 
 /**
- * Dashboard do professor — fiel ao mockup docs/telas/02-dashboard.png.
+ * Dashboard do professor — fiel ao protótipo docs/telas/02-dashboard.png.
  *
  * Os números e as últimas aplicações vêm de GET /reports/summary, nunca
  * fixos no template: a API conta só o que é do professor logado.
@@ -34,7 +34,7 @@ async function carregar() {
 
 onMounted(carregar)
 
-/** Primeiro nome, como no mockup ("Olá, Ana"). */
+/** Primeiro nome, como no protótipo ("Olá, Ana"). */
 const primeiroNome = computed(() => auth.professor?.nome.split(' ')[0] ?? '')
 
 const totais = computed(() => {
@@ -50,7 +50,7 @@ const totais = computed(() => {
 /** As três aplicações mais recentes, já ordenadas pela API. */
 const ultimasAplicacoes = computed(() => resumo.value?.ultimasAplicacoes ?? [])
 
-/** Data ISO (AAAA-MM-DD) para o formato curto dd/MM do mockup. */
+/** Data ISO (AAAA-MM-DD) para o formato curto dd/MM do protótipo. */
 function dataCurta(iso: string): string {
   const [, mes, dia] = iso.split('-')
   return `${dia}/${mes}`

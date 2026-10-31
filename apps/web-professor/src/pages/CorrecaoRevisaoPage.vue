@@ -12,7 +12,7 @@ import { buscarTurma } from '../services/turmas'
 import type { Application, Class, Correction, CorrectionAnswer, Exam, Question } from '../types'
 
 /**
- * Revisar correção (RF08, RF09) — fiel ao mockup docs/telas/16-mobile-revisao.png.
+ * Revisar correção (RF08, RF09) — fiel ao protótipo docs/telas/16-mobile-revisao.png.
  *
  * Mostra a nota calculada a partir da leitura do cartão-resposta para o
  * professor conferir, ajustar se precisar e confirmar. Confirmar grava a

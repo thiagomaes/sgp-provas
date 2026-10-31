@@ -9,7 +9,7 @@ import { adicionarAluno, buscarTurma, editarAluno, removerAluno } from '../servi
 import type { Class, Student } from '../types'
 
 /**
- * Detalhe da turma (RF03) — fiel ao mockup docs/telas/04-turma-detalhe.png.
+ * Detalhe da turma (RF03) — fiel ao protótipo docs/telas/04-turma-detalhe.png.
  * Aluno aqui é só nome + matrícula: sem e-mail, senha ou login (o aluno
  * não acessa o sistema). Editar troca a linha pelos campos; remover pede
  * confirmação na própria linha.

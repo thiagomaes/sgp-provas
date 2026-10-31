@@ -10,7 +10,7 @@ import { buscarTurma } from '../services/turmas'
 import type { Application, Class, Exam } from '../types'
 
 /**
- * Escanear prova (RF08) — fiel ao mockup docs/telas/15-mobile-scanner.png.
+ * Escanear prova (RF08) — fiel ao protótipo docs/telas/15-mobile-scanner.png.
  *
  * Abre a câmera traseira do celular pelo navegador (getUserMedia) e mostra
  * o vídeo dentro do quadro de leitura. Se o navegador não tiver câmera, o
@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-/* Cantos do alvo de leitura, como no mockup. */
+/* Cantos do alvo de leitura, como no protótipo. */
 .canto {
   position: absolute;
   width: 28px;

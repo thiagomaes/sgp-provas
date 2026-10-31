@@ -9,7 +9,7 @@ import { criarTurma, editarTurma, excluirTurma, listarTurmas } from '../services
 import type { Class, Shift } from '../types'
 
 /**
- * Lista de turmas (RF03) — fiel ao mockup docs/telas/03-turmas-lista.png.
+ * Lista de turmas (RF03) — fiel ao protótipo docs/telas/03-turmas-lista.png.
  * "Período" usa turma.turno (Manhã/Tarde/Noite). O mesmo formulário serve
  * para criar e para editar; excluir pede confirmação na própria linha.
  */

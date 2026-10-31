@@ -9,7 +9,7 @@ import { baixarCsv, buscarRelatorio } from '../services/relatorios'
 import type { ApplicationReport, Correction } from '../types'
 
 /**
- * Notas da aplicação (RF09, RF12) — fiel ao mockup
+ * Notas da aplicação (RF09, RF12) — fiel ao protótipo
  * docs/telas/12-notas-detalhe.png.
  *
  * Aluno sem correção lida pela câmera aparece como "— lançar —": é o

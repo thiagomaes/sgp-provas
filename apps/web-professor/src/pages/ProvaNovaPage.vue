@@ -9,7 +9,7 @@ import { listarQuestoes } from '../services/questoes'
 import type { Exam, Question } from '../types'
 
 /**
- * Montagem de prova (RF04) — fiel ao mockup docs/telas/08-prova-montagem.png.
+ * Montagem de prova (RF04) — fiel ao protótipo docs/telas/08-prova-montagem.png.
  *
  * Duas colunas: à esquerda o banco de questões com seleção, à direita as
  * selecionadas com a pontuação de cada uma. O limite de 20 questões da
@@ -94,7 +94,7 @@ function enunciadoDe(id: string): string {
   return questoes.value.find((questao) => questao.id === id)?.enunciado ?? '(questão excluída do banco)'
 }
 
-/** Corta o enunciado para caber na linha, como no mockup. */
+/** Corta o enunciado para caber na linha, como no protótipo. */
 function resumo(texto: string, limite = 42): string {
   return texto.length > limite ? `${texto.slice(0, limite)}...` : texto
 }
