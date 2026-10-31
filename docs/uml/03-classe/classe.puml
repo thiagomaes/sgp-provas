@@ -1,5 +1,5 @@
 @startuml
-title Diagrama de Classes do SGP
+title Diagrama de Classes do SGP — schema Prisma N2
 skinparam classAttributeIconSize 0
 hide empty members
 
@@ -13,6 +13,15 @@ class Professor {
   +cadastrarTurma() : Turma
   +criarQuestao() : Questao
   +criarProva() : Prova
+}
+
+class RefreshToken {
+  +id : String
+  +professorId : String
+  +tokenHash : String
+  +expiresAt : DateTime
+  +revokedAt : DateTime?
+  +createdAt : DateTime
 }
 
 class Turma {
@@ -29,8 +38,10 @@ class Turma {
 
 class Aluno {
   +id : String
+  +turmaId : String
   +nome : String
   +matricula : String
+  +createdAt : DateTime
 }
 
 class Questao {
@@ -39,11 +50,11 @@ class Questao {
   +enunciado : String
   +tipo : String
   +respostaEsperada : String?
-  +pontuacaoMaxima : Decimal?
+  +pontuacaoMaxima : Float?
   +disciplina : String
-  +tags : String[]
+  +tags : Json
   +deletedAt : DateTime?
-  +createdAt : DateTime
+  +criadaEm : DateTime
   +adicionarAlternativa() : Alternativa
   +validar() : Boolean
 }
@@ -61,10 +72,11 @@ class Prova {
   +professorId : String
   +titulo : String
   +disciplina : String
-  +totalPontos : Decimal
-  +createdAt : DateTime
-  +adicionarQuestao(questao : Questao, ordem : Int, pontuacao : Decimal) : ProvaQuestao
-  +calcularTotalPontos() : Decimal
+  +totalPontos : Float
+  +criadaEm : DateTime
+  +deletedAt : DateTime?
+  +adicionarQuestao(questao : Questao, ordem : Int, pontuacao : Float) : ProvaQuestao
+  +calcularTotalPontos() : Float
 }
 
 class ProvaQuestao {
@@ -72,7 +84,7 @@ class ProvaQuestao {
   +provaId : String
   +questaoId : String
   +ordem : Int
-  +pontuacao : Decimal
+  +pontuacao : Float
 }
 
 class Aplicacao {
@@ -80,15 +92,13 @@ class Aplicacao {
   +provaId : String
   +turmaId : String
   +professorId : String
-  +data : Date
+  +data : DateTime
   +versoes : Int
   +embaralharQuestoes : Boolean
   +embaralharAlternativas : Boolean
   +identificarAluno : Boolean
   +status : String
   +corrigidas : Int
-  +totalProvas : Int
-  +pdfUrl : String?
   +createdAt : DateTime
   +gerarVersoes() : VersaoProva[]
 }
@@ -98,40 +108,37 @@ class VersaoProva {
   +aplicacaoId : String
   +numeroVersao : Int
   +layout : Json
-  +codigoPublico : String
   +qrCodePayload : String
-  +gabaritoPublicado : Boolean
-  +gabaritoPublicadoEm : DateTime?
   +createdAt : DateTime
 }
 
 class Correcao {
   +id : String
   +aplicacaoId : String
-  +versaoProvaId : String
   +alunoId : String?
-  +nomeInformado : String?
-  +matriculaInformada : String?
+  +versao : Int
+  +nota : Float
   +respostas : Json
-  +nota : Decimal
   +origem : String
-  +clientCorrectionId : String?
+  +clientCorrectionId : String
   +statusSync : String
   +corrigidaEm : DateTime
-  +calcularNota() : Decimal
+  +calcularNota() : Float
   +atribuirAluno(aluno : Aluno) : void
 }
 
+Professor "1" -- "0..*" RefreshToken : possui
 Professor "1" -- "0..*" Turma : cadastra
-Professor "1" -- "0..*" Questao : cria
+Professor "1" -- "0..*" Questao : cadastra
 Professor "1" -- "0..*" Prova : cria
-Turma "1" *-- "0..*" Aluno : contém
-Questao "1" *-- "0..5" Alternativa : oferece
-Prova "1" *-- "0..*" ProvaQuestao : organiza
-Questao "1" -- "0..*" ProvaQuestao : selecionada em
-Prova "1" -- "0..*" Aplicacao : aplicada em
+Professor "1" -- "0..*" Aplicacao : registra
+Turma "1" *-- "0..*" Aluno : contem
 Turma "1" -- "0..*" Aplicacao : recebe
-Aplicacao "1" *-- "1..*" VersaoProva : gera
+Questao "1" *-- "0..5" Alternativa : possui
+Questao "1" -- "0..*" ProvaQuestao : selecionada em
+Prova "1" *-- "0..*" ProvaQuestao : organiza
+Prova "1" -- "0..*" Aplicacao : aplicada em
+Aplicacao "1" *-- "0..*" VersaoProva : gera
 Aplicacao "1" -- "0..*" Correcao : recebe
 Aluno "0..1" -- "0..*" Correcao : identificado em
 @enduml
