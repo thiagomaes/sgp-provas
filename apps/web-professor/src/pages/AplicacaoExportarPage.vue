@@ -1,40 +1,75 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { buscarAplicacaoPorId } from '../mocks/aplicacoes'
-import { buscarProvaPorId } from '../mocks/provas'
-import { buscarTurmaPorId } from '../mocks/turmas'
+import { buscarAplicacao, gerarVersoes } from '../services/aplicacoes'
+import { ErroApi, mensagemDeErro } from '../services/http'
+import { buscarProva } from '../services/provas'
+import { buscarTurma } from '../services/turmas'
+import type { Application, ApplicationVersion, Class, Exam } from '../types'
 
 /**
- * Configuração do PDF da aplicação (RF06, RF07) — fiel ao mockup
+ * Configuração do PDF da aplicação (RF06, RF07) — fiel ao protótipo
  * docs/telas/10-aplicacao-exportar-pdf.png.
  *
- * Na N1 o botão "Gerar PDF" só confirma na tela: a geração do arquivo e o
- * QR Code são escopo da N2/N3. O que já vale é salvar a configuração
- * escolhida na aplicação.
+ * "Gerar PDF" chama POST /applications/:id/generate: a API sorteia as
+ * versões embaralhadas, cria o QR Code de cada uma e marca a aplicação
+ * como "PDF gerado". O arquivo PDF em si ainda não é montado pela API.
  */
 
 const route = useRoute()
 const router = useRouter()
+const aplicacaoId = route.params.id as string
 
-const aplicacao = buscarAplicacaoPorId(route.params.id as string)
+const aplicacao = ref<Application | null>(null)
+const prova = ref<Exam | null>(null)
+const turma = ref<Class | null>(null)
+const carregando = ref(true)
+const erroCarga = ref('')
 
-const versoes = ref(aplicacao?.versoes ?? 1)
-const embaralharQuestoes = ref(aplicacao?.embaralharQuestoes ?? true)
-const embaralharAlternativas = ref(aplicacao?.embaralharAlternativas ?? true)
-const identificarAluno = ref(aplicacao?.identificarAluno ?? true)
+const versoes = ref(1)
+const embaralharQuestoes = ref(true)
+const embaralharAlternativas = ref(true)
+const identificarAluno = ref(true)
+
+async function carregar() {
+  carregando.value = true
+  erroCarga.value = ''
+  try {
+    const encontrada = await buscarAplicacao(aplicacaoId)
+    aplicacao.value = encontrada
+    versoes.value = encontrada.versoes
+    embaralharQuestoes.value = encontrada.embaralharQuestoes
+    embaralharAlternativas.value = encontrada.embaralharAlternativas
+    identificarAluno.value = encontrada.identificarAluno
+
+    // A prova pode ter sido excluída depois (soft-delete): a tela segue sem o título.
+    const [provaEncontrada, turmaEncontrada] = await Promise.all([
+      buscarProva(encontrada.provaId).catch(() => null),
+      buscarTurma(encontrada.turmaId),
+    ])
+    prova.value = provaEncontrada
+    turma.value = turmaEncontrada
+  } catch (erro) {
+    erroCarga.value =
+      erro instanceof ErroApi && erro.status === 404
+        ? ''
+        : mensagemDeErro(erro, 'Não foi possível carregar a aplicação.')
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
+
+/** Quantidade máxima de versões: uma por aluno da turma (a API aceita até 200). */
+const maximoVersoes = computed(() => Math.min(Math.max(turma.value?.alunos.length ?? 1, 1), 200))
+
+const gerando = ref(false)
 const mensagem = ref('')
-
-const prova = computed(() =>
-  aplicacao ? buscarProvaPorId(aplicacao.provaId) : undefined,
-)
-const turma = computed(() =>
-  aplicacao ? buscarTurmaPorId(aplicacao.turmaId) : undefined,
-)
-
-/** Quantidade máxima de versões: uma por aluno da turma. */
-const maximoVersoes = computed(() => turma.value?.alunos.length ?? 1)
+const erro = ref('')
+const geradas = ref<ApplicationVersion[]>([])
 
 function alterarVersoes(delta: number) {
   const novo = versoes.value + delta
@@ -43,19 +78,30 @@ function alterarVersoes(delta: number) {
   mensagem.value = ''
 }
 
-function gerarPdf() {
-  if (!aplicacao) return
+async function gerarPdf() {
+  if (!aplicacao.value) return
 
-  // Guarda a configuração escolhida; o arquivo em si é escopo da N2.
-  aplicacao.versoes = versoes.value
-  aplicacao.embaralharQuestoes = embaralharQuestoes.value
-  aplicacao.embaralharAlternativas = embaralharAlternativas.value
-  aplicacao.identificarAluno = identificarAluno.value
-  if (aplicacao.status === 'rascunho') aplicacao.status = 'pdf-gerado'
-
-  mensagem.value = `PDF gerado com ${versoes.value} ${
-    versoes.value === 1 ? 'versão' : 'versões'
-  }. A geração do arquivo entra na N2.`
+  gerando.value = true
+  mensagem.value = ''
+  erro.value = ''
+  try {
+    const resultado = await gerarVersoes(aplicacaoId, {
+      versoes: versoes.value,
+      embaralharQuestoes: embaralharQuestoes.value,
+      embaralharAlternativas: embaralharAlternativas.value,
+      identificarAluno: identificarAluno.value,
+    })
+    aplicacao.value = resultado.aplicacao
+    geradas.value = resultado.versoes
+    mensagem.value = `${resultado.versoes.length} ${
+      resultado.versoes.length === 1 ? 'versão gerada' : 'versões geradas'
+    }, cada uma com o seu QR Code. A aplicação já pode ser corrigida.`
+  } catch (falha) {
+    // 409: a correção já começou e as versões não podem mudar.
+    erro.value = mensagemDeErro(falha, 'Não foi possível gerar as versões.')
+  } finally {
+    gerando.value = false
+  }
 }
 </script>
 
@@ -67,9 +113,12 @@ function gerarPdf() {
     </template>
     <template #titulo>Configurar geração do PDF</template>
 
-    <p v-if="!aplicacao" class="vazio">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando aplicação...</EstadoTela>
+    <EstadoTela v-else-if="erroCarga" tipo="erro" @tentar="carregar">{{ erroCarga }}</EstadoTela>
+    <EstadoTela v-else-if="!aplicacao" tipo="vazio">
       Nenhuma aplicação encontrada com este id.
-    </p>
+      <RouterLink to="/aplicacoes">Voltar para as aplicações</RouterLink>
+    </EstadoTela>
 
     <template v-else>
       <section class="painel">
@@ -144,16 +193,26 @@ function gerarPdf() {
         </div>
       </section>
 
-      <p v-if="mensagem" class="sucesso">{{ mensagem }}</p>
+      <p v-if="mensagem" class="sucesso" role="status">{{ mensagem }}</p>
+      <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
+
+      <ul v-if="geradas.length" class="versoes">
+        <li v-for="versao in geradas" :key="versao.numeroVersao" class="versao">
+          <span class="versao-numero">Versão {{ versao.numeroVersao }}</span>
+          <code class="versao-qr">{{ versao.qrCodePayload }}</code>
+        </li>
+      </ul>
 
       <div class="rodape">
-        <button class="botao" type="button" @click="gerarPdf">Gerar PDF</button>
+        <button class="botao" type="button" :disabled="gerando" @click="gerarPdf">
+          {{ gerando ? 'Gerando...' : 'Gerar PDF' }}
+        </button>
         <button
           class="botao-secundario"
           type="button"
           @click="router.push('/aplicacoes')"
         >
-          Cancelar
+          {{ geradas.length ? 'Voltar' : 'Cancelar' }}
         </button>
       </div>
     </template>
@@ -263,6 +322,58 @@ function gerarPdf() {
   color: var(--accent-dark);
   background: var(--accent-soft);
   border-radius: var(--radius-sm);
+}
+
+.erro {
+  max-width: 720px;
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: var(--radius-sm);
+}
+
+.versoes {
+  display: grid;
+  max-width: 720px;
+  max-height: 260px;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.versao {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.versao:last-child {
+  border-bottom: none;
+}
+
+.versao-numero {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.versao-qr {
+  font-size: var(--text-xs);
+  color: var(--text-soft);
+  word-break: break-all;
+}
+
+.botao:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .rodape {

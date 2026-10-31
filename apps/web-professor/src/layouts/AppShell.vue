@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { RouterLink, useRoute } from 'vue-router'
-import { computed, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
 import LogoSGP from '../components/LogoSGP.vue'
-import { professoraLogada } from '../mocks/turmas'
+import { useAuthStore } from '../stores/auth'
 
 /**
  * Layout base de todas as telas internas do SGP.
- * Fiel aos mockups aprovados (docs/telas/02-dashboard.png e 04-turma-detalhe.png).
+ * Fiel aos protótipos aprovados (docs/telas/02-dashboard.png e 04-turma-detalhe.png).
  *
  * Uso numa tela de feature:
  *
@@ -46,6 +46,23 @@ const menu: ItemMenu[] = [
 ]
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
+
+// Depois de recarregar a página o token continua salvo, mas o nome do
+// professor precisa vir da API de novo (GET /auth/me).
+onMounted(() => {
+  if (!auth.professor) auth.carregarProfessor().catch(() => {})
+})
+
+const saindo = ref(false)
+
+async function sair() {
+  saindo.value = true
+  await auth.sair()
+  saindo.value = false
+  router.push('/login')
+}
 
 const estaAtivo = computed(() => (prefixo: string) => {
   return route.path === prefixo || route.path.startsWith(`${prefixo}/`)
@@ -98,8 +115,13 @@ watch(
       </nav>
 
       <footer class="rodape">
-        <span class="rodape-nome">{{ professoraLogada.nome }}</span>
-        <span class="rodape-papel">Professora</span>
+        <div class="rodape-texto">
+          <span class="rodape-nome">{{ auth.professor?.nome ?? 'Carregando...' }}</span>
+          <span class="rodape-papel">Professor</span>
+        </div>
+        <button class="botao-sair" type="button" :disabled="saindo" @click="sair">
+          {{ saindo ? 'Saindo...' : 'Sair' }}
+        </button>
       </footer>
     </aside>
 
@@ -172,9 +194,34 @@ watch(
 
 .rodape {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   padding: var(--space-4);
   border-top: 1px solid var(--border);
+}
+
+.rodape-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.botao-sair {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-soft);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.botao-sair:hover {
+  color: var(--text);
+  background: var(--bg);
 }
 
 .rodape-nome {

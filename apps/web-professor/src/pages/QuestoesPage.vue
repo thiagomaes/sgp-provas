@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { listarQuestoes } from '../services/questoes'
-import type { Question } from '../mocks/types'
+import { mensagemDeErro } from '../services/http'
+import { excluirQuestao, listarQuestoes } from '../services/questoes'
+import type { Question } from '../types'
 
 const router = useRouter()
 const busca = ref('')
@@ -55,6 +57,31 @@ const irParaNovaQuestao = () => {
 const irParaEdicao = (id: string) => {
   router.push({ name: 'questao-editar', params: { id } })
 }
+
+// Excluir pede confirmação na própria linha. Na API é soft-delete: as
+// provas que já usam a questão continuam com ela.
+const excluindoId = ref<string | null>(null)
+const excluindo = ref(false)
+const erroExclusao = ref('')
+
+const pedirExclusao = (id: string) => {
+  excluindoId.value = id
+  erroExclusao.value = ''
+}
+
+const confirmarExclusao = async (id: string) => {
+  excluindo.value = true
+  erroExclusao.value = ''
+  try {
+    await excluirQuestao(id)
+    questoes.value = questoes.value.filter((questao) => questao.id !== id)
+    excluindoId.value = null
+  } catch (falha) {
+    erroExclusao.value = mensagemDeErro(falha, 'Não foi possível excluir a questão.')
+  } finally {
+    excluindo.value = false
+  }
+}
 </script>
 
 <template>
@@ -99,7 +126,8 @@ const irParaEdicao = (id: string) => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="questao in questoesFiltradas" :key="questao.id">
+            <template v-for="questao in questoesFiltradas" :key="questao.id">
+            <tr>
               <td class="coluna-enunciado">{{ resumirTexto(questao.enunciado) }}</td>
               <td>
                 <span class="badge" :class="questao.tipo === 'objetiva' ? 'objetiva' : 'discursiva'">
@@ -115,8 +143,22 @@ const irParaEdicao = (id: string) => {
               </td>
               <td class="coluna-acoes">
                 <button type="button" class="botao-link" @click="irParaEdicao(questao.id)">Editar</button>
+                <button type="button" class="botao-link" @click="pedirExclusao(questao.id)">Excluir</button>
               </td>
             </tr>
+            <tr v-if="excluindoId === questao.id">
+              <td colspan="4">
+                <ConfirmarExclusao
+                  alvo="esta questão"
+                  detalhe="Ela sai do banco de questões; as provas que já a usam continuam com ela."
+                  :excluindo="excluindo"
+                  :erro="erroExclusao"
+                  @confirmar="confirmarExclusao(questao.id)"
+                  @cancelar="excluindoId = null"
+                />
+              </td>
+            </tr>
+            </template>
           </tbody>
         </table>
       </div>
@@ -279,7 +321,12 @@ tr:last-child td {
 }
 
 .coluna-acoes {
-  width: 90px;
+  width: 150px;
+  white-space: nowrap;
+}
+
+.coluna-acoes .botao-link + .botao-link {
+  margin-left: var(--space-4);
 }
 
 .botao-link {

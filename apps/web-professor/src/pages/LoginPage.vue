@@ -2,20 +2,44 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import LogoSGP from '../components/LogoSGP.vue'
+import { ErroApi, mensagemDeErro } from '../services/http'
+import { useAuthStore } from '../stores/auth'
 
 /**
  * Login do professor (RF01) — não usa o AppShell.
- * Layout fiel ao mockup docs/telas/01-login-web.png: coluna centralizada
+ * Layout fiel ao protótipo docs/telas/01-login-web.png: coluna centralizada
  * sobre fundo branco, sem card com borda.
  *
- * Na N1 não há autenticação real; o botão apenas leva ao dashboard.
+ * Chama POST /auth/login; os tokens ficam guardados pela store de
+ * autenticação e a guarda de rota libera as telas internas.
  */
 const router = useRouter()
+const auth = useAuthStore()
+
 const email = ref('')
 const senha = ref('')
+const entrando = ref(false)
+const erro = ref('')
 
-function entrar() {
-  router.push('/dashboard')
+async function entrar() {
+  erro.value = ''
+  if (!email.value.trim() || !senha.value) {
+    erro.value = 'Informe o e-mail e a senha.'
+    return
+  }
+
+  entrando.value = true
+  try {
+    await auth.entrar(email.value.trim(), senha.value)
+    router.push('/dashboard')
+  } catch (falha) {
+    erro.value =
+      falha instanceof ErroApi && falha.status === 401
+        ? 'E-mail ou senha incorretos.'
+        : mensagemDeErro(falha, 'Não foi possível entrar. Tente de novo.')
+  } finally {
+    entrando.value = false
+  }
 }
 </script>
 
@@ -49,9 +73,13 @@ function entrar() {
         />
       </label>
 
-      <button class="botao" type="submit">Entrar</button>
+      <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
 
-      <!-- Ainda sem ação: recuperação de senha não faz parte da N1. -->
+      <button class="botao" type="submit" :disabled="entrando">
+        {{ entrando ? 'Entrando...' : 'Entrar' }}
+      </button>
+
+      <!-- Ainda sem ação: recuperação de senha não faz parte da N2. -->
       <a class="esqueci" href="#" @click.prevent>Esqueci minha senha</a>
     </form>
   </div>
@@ -120,6 +148,15 @@ input:focus {
   border-color: var(--accent);
 }
 
+.erro {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: var(--radius-sm);
+}
+
 .botao {
   padding: var(--space-3);
   color: var(--surface);
@@ -133,6 +170,11 @@ input:focus {
 .botao:hover {
   background: var(--accent-dark);
   border-color: var(--accent-dark);
+}
+
+.botao:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .esqueci {

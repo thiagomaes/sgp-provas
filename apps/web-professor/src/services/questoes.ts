@@ -1,35 +1,17 @@
-﻿import type { Question } from '../mocks/types'
+import type { Question } from '../types'
+import { http } from './http'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+/** Banco de questões (RF02) — rotas /questions da API. */
 
 type DadosQuestao = Omit<Question, 'id' | 'criadaEm'>
 
-async function chamar<T>(caminho: string, opcoes: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('token')
-  const resposta = await fetch(`${API_URL}${caminho}`, {
-    ...opcoes,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
+export const listarQuestoes = () => http.get<Question[]>('/questions')
 
-  if (!resposta.ok) {
-    throw new Error(`Erro ${resposta.status}`)
-  }
+export const buscarQuestao = (id: string) => http.get<Question>(`/questions/${id}`)
 
-  return resposta.status === 204 ? (undefined as T) : resposta.json()
-}
-
-export const listarQuestoes = () => chamar<Question[]>('/questions')
-
-export const buscarQuestao = (id: string) => chamar<Question>(`/questions/${id}`)
-
-export const criarQuestao = (dados: DadosQuestao) =>
-  chamar<Question>('/questions', { method: 'POST', body: JSON.stringify(dados) })
+export const criarQuestao = (dados: DadosQuestao) => http.post<Question>('/questions', dados)
 
 export const editarQuestao = (id: string, dados: DadosQuestao) =>
-  chamar<Question>(`/questions/${id}`, { method: 'PATCH', body: JSON.stringify(dados) })
+  http.patch<Question>(`/questions/${id}`, dados)
 
-export const excluirQuestao = (id: string) =>
-  chamar<void>(`/questions/${id}`, { method: 'DELETE' })
+export const excluirQuestao = (id: string) => http.delete(`/questions/${id}`)

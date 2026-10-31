@@ -1,42 +1,69 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
+import { listarAplicacoes } from '../services/aplicacoes'
+import { mensagemDeErro } from '../services/http'
+import { listarProvas } from '../services/provas'
+import { buscarResumo } from '../services/relatorios'
+import { listarTurmas } from '../services/turmas'
+import type { Application, Class, Exam } from '../types'
 
-// Importação dos dados e serviços de mock
-import { aplicacoes } from '../mocks/aplicacoes'
-import { turmas } from '../mocks/turmas'
-import { provas } from '../mocks/provas'
-import { buscarCorrecoesPorAplicacao } from '../mocks/correcoes'
+/**
+ * Relatórios e notas (RF12): uma linha por aplicação, com a média que a
+ * API calcula em GET /reports/summary.
+ */
 
-// Função para formatar a data de AAAA-MM-DD para DD/MM
+const aplicacoes = ref<Application[]>([])
+const turmas = ref<Class[]>([])
+const provas = ref<Exam[]>([])
+const medias = ref<Record<string, number | null>>({})
+const carregando = ref(true)
+const erro = ref('')
+
+async function carregar() {
+  carregando.value = true
+  erro.value = ''
+  try {
+    const [listaAplicacoes, listaTurmas, listaProvas, resumo] = await Promise.all([
+      listarAplicacoes(),
+      listarTurmas(),
+      listarProvas(),
+      buscarResumo(),
+    ])
+    aplicacoes.value = listaAplicacoes
+    turmas.value = listaTurmas
+    provas.value = listaProvas
+    medias.value = resumo.medias
+  } catch (falha) {
+    erro.value = mensagemDeErro(falha, 'Não foi possível carregar os relatórios.')
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
+
+// Formata a data de AAAA-MM-DD para DD/MM
 const formatarData = (dataIso: string) => {
-  if (!dataIso) return ''
   const partes = dataIso.split('-')
   if (partes.length < 3) return dataIso
   return `${partes[2]}/${partes[1]}`
 }
 
-// Prepara a lista de relatórios juntando dados e calculando médias
-const relatorios = computed(() => {
-  return aplicacoes.map(aplicacao => {
-    const turma = turmas.find(t => t.id === aplicacao.turmaId)
-    const prova = provas.find(p => p.id === aplicacao.provaId)
-    
-    // Calcula a média a partir das correções (conforme feedback)
-    const correcoes = buscarCorrecoesPorAplicacao(aplicacao.id)
-    const mediaCalculada = correcoes.length
-      ? correcoes.reduce((soma, c) => soma + c.nota, 0) / correcoes.length
-      : null
-
+// Junta os nomes da turma e da prova com a média de cada aplicação
+const relatorios = computed(() =>
+  aplicacoes.value.map((aplicacao) => {
+    const media = medias.value[aplicacao.id] ?? null
     return {
       ...aplicacao,
-      nomeTurma: turma?.nome || 'Turma apagada',
-      tituloProva: prova?.titulo || 'Prova apagada',
+      nomeTurma: turmas.value.find((t) => t.id === aplicacao.turmaId)?.nome ?? 'Turma apagada',
+      tituloProva: provas.value.find((p) => p.id === aplicacao.provaId)?.titulo ?? 'Prova apagada',
       dataFormatada: formatarData(aplicacao.data),
-      mediaExibida: mediaCalculada !== null ? mediaCalculada.toFixed(1) : '—'
+      mediaExibida: media === null ? '—' : media.toFixed(1).replace('.', ','),
     }
-  })
-})
+  }),
+)
 </script>
 
 <template>
@@ -44,7 +71,13 @@ const relatorios = computed(() => {
     <template #titulo>Relatórios e notas</template>
     <template #subtitulo>Notas por aplicação e relatórios consolidados</template>
 
-    <div class="tabela-container">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando relatórios...</EstadoTela>
+    <EstadoTela v-else-if="erro" tipo="erro" @tentar="carregar">{{ erro }}</EstadoTela>
+    <EstadoTela v-else-if="relatorios.length === 0" tipo="vazio">
+      Nenhuma aplicação ainda. As notas aparecem aqui depois que você aplicar uma prova.
+    </EstadoTela>
+
+    <div v-else class="tabela-container">
       <table>
         <thead>
           <tr>
@@ -59,7 +92,7 @@ const relatorios = computed(() => {
           <tr v-for="relatorio in relatorios" :key="relatorio.id">
             <td>{{ relatorio.nomeTurma }}</td>
             <td>{{ relatorio.tituloProva }}</td>
-            <td>{{ relatorio.dataFormatada }}</td> 
+            <td>{{ relatorio.dataFormatada }}</td>
             <td>{{ relatorio.mediaExibida }}</td>
             <td class="coluna-acao">
               <router-link :to="`/relatorios/${relatorio.id}`" class="btn-link">

@@ -1,49 +1,126 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { turmas } from '../mocks/turmas'
-import type { Class } from '../mocks/types'
+import { mensagemDeErro } from '../services/http'
+import { criarTurma, editarTurma, excluirTurma, listarTurmas } from '../services/turmas'
+import type { Class, Shift } from '../types'
 
 /**
- * Lista de turmas (RF03) — fiel ao mockup docs/telas/03-turmas-lista.png.
- * "Período" usa turma.turno (Manhã/Tarde/Noite): é o único dado de período
- * que existe no mock — não há campo de ano letivo/semestre em Class.
+ * Lista de turmas (RF03) — fiel ao protótipo docs/telas/03-turmas-lista.png.
+ * "Período" usa turma.turno (Manhã/Tarde/Noite). O mesmo formulário serve
+ * para criar e para editar; excluir pede confirmação na própria linha.
  */
 
-const listaTurmas = ref<Class[]>(turmas)
+const listaTurmas = ref<Class[]>([])
+const carregando = ref(true)
+const erroLista = ref('')
+
+async function carregar() {
+  carregando.value = true
+  erroLista.value = ''
+  try {
+    listaTurmas.value = await listarTurmas()
+  } catch (erro) {
+    erroLista.value = mensagemDeErro(erro, 'Não foi possível carregar as turmas.')
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
 
 const mostrarFormulario = ref(false)
+/** Turma em edição; null quando o formulário está criando uma nova. */
+const editandoId = ref<string | null>(null)
 const novoNome = ref('')
 const novaDisciplina = ref('')
 const novoAno = ref('')
-const novoTurno = ref<Class['turno']>('Manhã')
+const novoTurno = ref<Shift>('Manhã')
+const salvando = ref(false)
+const erroFormulario = ref('')
 
 function abrirFormulario() {
+  cancelar()
+  mostrarFormulario.value = true
+}
+
+function abrirEdicao(turma: Class) {
+  excluindoId.value = null
+  editandoId.value = turma.id
+  novoNome.value = turma.nome
+  novaDisciplina.value = turma.disciplina
+  novoAno.value = turma.ano
+  novoTurno.value = turma.turno
+  erroFormulario.value = ''
   mostrarFormulario.value = true
 }
 
 function cancelar() {
   mostrarFormulario.value = false
+  editandoId.value = null
   novoNome.value = ''
   novaDisciplina.value = ''
   novoAno.value = ''
   novoTurno.value = 'Manhã'
+  erroFormulario.value = ''
 }
 
-function criarTurma() {
+async function salvarTurma() {
   if (!novoNome.value.trim() || !novaDisciplina.value.trim() || !novoAno.value.trim()) return
 
-  listaTurmas.value.push({
-    id: `turma-${Date.now()}`,
+  const dados = {
     nome: novoNome.value.trim(),
     disciplina: novaDisciplina.value.trim(),
     ano: novoAno.value.trim(),
     turno: novoTurno.value,
-    alunos: [],
-  })
+  }
 
-  cancelar()
+  salvando.value = true
+  erroFormulario.value = ''
+  try {
+    if (editandoId.value) {
+      const atualizada = await editarTurma(editandoId.value, dados)
+      listaTurmas.value = listaTurmas.value.map((turma) =>
+        turma.id === atualizada.id ? atualizada : turma,
+      )
+    } else {
+      listaTurmas.value.push(await criarTurma(dados))
+    }
+    cancelar()
+  } catch (erro) {
+    erroFormulario.value = mensagemDeErro(erro, 'Não foi possível salvar a turma.')
+  } finally {
+    salvando.value = false
+  }
+}
+
+/** Turma com a confirmação de exclusão aberta. */
+const excluindoId = ref<string | null>(null)
+const excluindo = ref(false)
+const erroExclusao = ref('')
+
+function pedirExclusao(id: string) {
+  excluindoId.value = id
+  erroExclusao.value = ''
+}
+
+async function confirmarExclusao(id: string) {
+  excluindo.value = true
+  erroExclusao.value = ''
+  try {
+    await excluirTurma(id)
+    listaTurmas.value = listaTurmas.value.filter((turma) => turma.id !== id)
+    excluindoId.value = null
+    if (editandoId.value === id) cancelar()
+  } catch (erro) {
+    // 409: a turma tem provas corrigidas. A mensagem da API explica.
+    erroExclusao.value = mensagemDeErro(erro, 'Não foi possível excluir a turma.')
+  } finally {
+    excluindo.value = false
+  }
 }
 </script>
 
@@ -55,7 +132,9 @@ function criarTurma() {
       <button class="botao" type="button" @click="abrirFormulario">+ Nova turma</button>
     </template>
 
-    <form v-if="mostrarFormulario" class="formulario" @submit.prevent="criarTurma">
+    <form v-if="mostrarFormulario" class="formulario" @submit.prevent="salvarTurma">
+      <p class="formulario-titulo">{{ editandoId ? 'Editar turma' : 'Nova turma' }}</p>
+
       <label class="campo">
         <span class="rotulo">Nome da turma</span>
         <input v-model="novoNome" type="text" placeholder="Matemática — 1º Ano" required />
@@ -81,12 +160,22 @@ function criarTurma() {
       </label>
 
       <div class="formulario-acoes">
-        <button class="botao" type="submit">Salvar</button>
+        <button class="botao" type="submit" :disabled="salvando">
+          {{ salvando ? 'Salvando...' : 'Salvar' }}
+        </button>
         <button class="botao-secundario" type="button" @click="cancelar">Cancelar</button>
       </div>
+
+      <p v-if="erroFormulario" class="erro" role="alert">{{ erroFormulario }}</p>
     </form>
 
-    <table class="tabela">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando turmas...</EstadoTela>
+    <EstadoTela v-else-if="erroLista" tipo="erro" @tentar="carregar">{{ erroLista }}</EstadoTela>
+    <EstadoTela v-else-if="listaTurmas.length === 0" tipo="vazio">
+      Nenhuma turma cadastrada ainda. Use "+ Nova turma" para começar.
+    </EstadoTela>
+
+    <table v-else class="tabela">
       <thead>
         <tr>
           <th>Turma</th>
@@ -97,15 +186,31 @@ function criarTurma() {
         </tr>
       </thead>
       <tbody>
-        <tr v-for="turma in listaTurmas" :key="turma.id">
-          <td>{{ turma.nome }}</td>
-          <td>{{ turma.disciplina }}</td>
-          <td>{{ turma.alunos.length }}</td>
-          <td>{{ turma.turno }}</td>
-          <td class="tabela-acao">
-            <RouterLink :to="`/turmas/${turma.id}`">Abrir →</RouterLink>
-          </td>
-        </tr>
+        <template v-for="turma in listaTurmas" :key="turma.id">
+          <tr>
+            <td>{{ turma.nome }}</td>
+            <td>{{ turma.disciplina }}</td>
+            <td>{{ turma.alunos.length }}</td>
+            <td>{{ turma.turno }}</td>
+            <td class="tabela-acao">
+              <button class="link-acao" type="button" @click="abrirEdicao(turma)">Editar</button>
+              <button class="link-acao" type="button" @click="pedirExclusao(turma.id)">Excluir</button>
+              <RouterLink :to="`/turmas/${turma.id}`">Abrir →</RouterLink>
+            </td>
+          </tr>
+          <tr v-if="excluindoId === turma.id">
+            <td colspan="5">
+              <ConfirmarExclusao
+                :alvo="`a turma ${turma.nome}`"
+                detalhe="Os alunos cadastrados nela também são removidos."
+                :excluindo="excluindo"
+                :erro="erroExclusao"
+                @confirmar="confirmarExclusao(turma.id)"
+                @cancelar="excluindoId = null"
+              />
+            </td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </AppShell>
@@ -217,9 +322,51 @@ select:focus {
   border-bottom: none;
 }
 
+.tabela-acao {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .tabela-acao a {
   font-weight: 600;
   color: var(--text);
+}
+
+.link-acao {
+  margin-right: var(--space-4);
+  padding: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-acao:hover {
+  color: var(--accent-dark);
+}
+
+.formulario-titulo {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.erro {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: var(--radius-sm);
+}
+
+.botao:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .tabela-acao a:hover {

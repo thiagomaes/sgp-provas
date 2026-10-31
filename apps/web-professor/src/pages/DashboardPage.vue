@@ -1,56 +1,56 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { turmas, professoraLogada, buscarTurmaPorId } from '../mocks/turmas'
-import { provas, buscarProvaPorId } from '../mocks/provas'
-import { aplicacoes } from '../mocks/aplicacoes'
-import type { Application } from '../mocks/types'
+import { mensagemDeErro } from '../services/http'
+import { buscarResumo } from '../services/relatorios'
+import { useAuthStore } from '../stores/auth'
+import type { Application, DashboardSummary } from '../types'
 
 /**
- * Dashboard do professor — fiel ao mockup docs/telas/02-dashboard.png.
+ * Dashboard do professor — fiel ao protótipo docs/telas/02-dashboard.png.
  *
- * Todos os números vêm dos mocks (turmas.length etc.), nunca fixos no
- * template: assim que alguém cadastrar uma turma nova em /turmas, o card
- * daqui acompanha.
+ * Os números e as últimas aplicações vêm de GET /reports/summary, nunca
+ * fixos no template: a API conta só o que é do professor logado.
  */
 
-/** Primeiro nome, como no mockup ("Olá, Ana"). */
-const primeiroNome = computed(() => professoraLogada.nome.split(' ')[0])
+const auth = useAuthStore()
+const resumo = ref<DashboardSummary | null>(null)
+const carregando = ref(true)
+const erro = ref('')
 
-/**
- * Aplicações que já saíram do papel (têm PDF gerado, estão em correção ou
- * concluídas). Rascunho ainda não foi aplicado a ninguém, então não conta.
- */
-const aplicadas = computed(() =>
-  aplicacoes.filter((aplicacao) => aplicacao.status !== 'rascunho'),
-)
-
-const totais = computed(() => [
-  { valor: turmas.length, rotulo: 'Turmas ativas' },
-  { valor: provas.length, rotulo: 'Provas criadas' },
-  { valor: aplicadas.value.length, rotulo: 'Aplicações recentes' },
-])
-
-/** As três aplicações mais recentes, da mais nova para a mais antiga. */
-const ultimasAplicacoes = computed(() =>
-  [...aplicadas.value]
-    .sort((a, b) => b.data.localeCompare(a.data))
-    .slice(0, 3),
-)
-
-/** "Matemática · 1º Ano", como no mockup. */
-function nomeDaTurma(turmaId: string): string {
-  const turma = buscarTurmaPorId(turmaId)
-  if (!turma) return 'Turma removida'
-  return `${turma.disciplina} · ${turma.ano}`
+async function carregar() {
+  carregando.value = true
+  erro.value = ''
+  try {
+    resumo.value = await buscarResumo()
+  } catch (falha) {
+    erro.value = mensagemDeErro(falha, 'Não foi possível carregar o resumo.')
+  } finally {
+    carregando.value = false
+  }
 }
 
-function nomeDaProva(provaId: string): string {
-  return buscarProvaPorId(provaId)?.titulo ?? 'Prova removida'
-}
+onMounted(carregar)
 
-/** Data ISO (AAAA-MM-DD) para o formato curto dd/MM do mockup. */
+/** Primeiro nome, como no protótipo ("Olá, Ana"). */
+const primeiroNome = computed(() => auth.professor?.nome.split(' ')[0] ?? '')
+
+const totais = computed(() => {
+  if (!resumo.value) return []
+  const { turmas, provas, aplicacoesRecentes } = resumo.value.totais
+  return [
+    { valor: turmas, rotulo: 'Turmas ativas' },
+    { valor: provas, rotulo: 'Provas criadas' },
+    { valor: aplicacoesRecentes, rotulo: 'Aplicações recentes' },
+  ]
+})
+
+/** As três aplicações mais recentes, já ordenadas pela API. */
+const ultimasAplicacoes = computed(() => resumo.value?.ultimasAplicacoes ?? [])
+
+/** Data ISO (AAAA-MM-DD) para o formato curto dd/MM do protótipo. */
 function dataCurta(iso: string): string {
   const [, mes, dia] = iso.split('-')
   return `${dia}/${mes}`
@@ -81,50 +81,55 @@ function selo(aplicacao: Application): Selo {
 <template>
   <AppShell>
     <template #caminho>Início</template>
-    <template #titulo>Olá, {{ primeiroNome }}</template>
+    <template #titulo>{{ primeiroNome ? `Olá, ${primeiroNome}` : 'Olá' }}</template>
     <template #subtitulo>Resumo das suas turmas e provas.</template>
 
-    <section class="cards">
-      <article v-for="total in totais" :key="total.rotulo" class="card">
-        <span class="card-valor">{{ total.valor }}</span>
-        <span class="card-rotulo">{{ total.rotulo }}</span>
-      </article>
-    </section>
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando resumo...</EstadoTela>
+    <EstadoTela v-else-if="erro" tipo="erro" @tentar="carregar">{{ erro }}</EstadoTela>
 
-    <section class="secao">
-      <header class="secao-cabecalho">
-        <h2 class="secao-titulo">Últimas aplicações</h2>
-        <RouterLink class="secao-link" to="/aplicacoes">Ver todas</RouterLink>
-      </header>
+    <template v-else>
+      <section class="cards">
+        <article v-for="total in totais" :key="total.rotulo" class="card">
+          <span class="card-valor">{{ total.valor }}</span>
+          <span class="card-rotulo">{{ total.rotulo }}</span>
+        </article>
+      </section>
 
-      <table class="tabela">
-        <thead>
-          <tr>
-            <th>Turma</th>
-            <th>Prova</th>
-            <th>Data</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="aplicacao in ultimasAplicacoes" :key="aplicacao.id">
-            <td>{{ nomeDaTurma(aplicacao.turmaId) }}</td>
-            <td>{{ nomeDaProva(aplicacao.provaId) }}</td>
-            <td>{{ dataCurta(aplicacao.data) }}</td>
-            <td>
-              <span class="selo" :class="selo(aplicacao).tom">
-                {{ selo(aplicacao).texto }}
-              </span>
-            </td>
-          </tr>
-          <tr v-if="ultimasAplicacoes.length === 0">
-            <td class="vazio" colspan="4">
-              Nenhuma prova aplicada ainda.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+      <section class="secao">
+        <header class="secao-cabecalho">
+          <h2 class="secao-titulo">Últimas aplicações</h2>
+          <RouterLink class="secao-link" to="/aplicacoes">Ver todas</RouterLink>
+        </header>
+
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Prova</th>
+              <th>Data</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="aplicacao in ultimasAplicacoes" :key="aplicacao.id">
+              <td>{{ aplicacao.turma.disciplina }} · {{ aplicacao.turma.ano }}</td>
+              <td>{{ aplicacao.prova.titulo }}</td>
+              <td>{{ dataCurta(aplicacao.data) }}</td>
+              <td>
+                <span class="selo" :class="selo(aplicacao).tom">
+                  {{ selo(aplicacao).texto }}
+                </span>
+              </td>
+            </tr>
+            <tr v-if="ultimasAplicacoes.length === 0">
+              <td class="vazio" colspan="4">
+                Nenhuma prova aplicada ainda.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </template>
   </AppShell>
 </template>
 
