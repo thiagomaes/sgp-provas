@@ -1,22 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
-import { questoesState } from '../state/questoes'
+import { listarQuestoes } from '../services/questoes'
+import type { Question } from '../mocks/types'
 
 const router = useRouter()
 const busca = ref('')
 const filtroAtual = ref('Todas')
+const questoes = ref<Question[]>([])
+const carregando = ref(true)
+const erro = ref('')
+
+onMounted(async () => {
+  try {
+    questoes.value = await listarQuestoes()
+  } catch {
+    erro.value = 'Não foi possível carregar as questões.'
+  } finally {
+    carregando.value = false
+  }
+})
 
 const chips = computed(() => {
-  const tags = [...new Set(questoesState.flatMap((questao) => questao.tags))]
+  const tags = [...new Set(questoes.value.flatMap((questao) => questao.tags))]
   return ['Todas', 'Objetivas', 'Discursivas', ...tags]
 })
 
 const questoesFiltradas = computed(() => {
   const termo = busca.value.trim().toLowerCase()
 
-  return questoesState.filter((questao) => {
+  return questoes.value.filter((questao) => {
     const matchBusca =
       termo.length === 0 || questao.enunciado.toLowerCase().includes(termo)
 
@@ -107,6 +121,8 @@ const irParaEdicao = (id: string) => {
         </table>
       </div>
 
+      <div v-else-if="carregando" class="vazio">Carregando...</div>
+      <div v-else-if="erro" class="vazio">{{ erro }}</div>
       <div v-else class="vazio">
         Nenhuma questão encontrada para o filtro atual.
       </div>

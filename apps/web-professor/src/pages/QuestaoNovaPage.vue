@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import type { Question } from '../mocks/types'
-import { questoesState } from '../state/questoes'
+import { buscarQuestao, criarQuestao, editarQuestao } from '../services/questoes'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,6 +13,7 @@ const enunciado = ref('')
 const disciplina = ref('Matemática')
 const tagsTexto = ref('')
 const pontuacaoMaxima = ref(10)
+const respostaEsperada = ref('')
 const erro = ref('')
 const alternativas = ref<Array<{ texto: string; correta: boolean }>>([])
 
@@ -39,6 +40,7 @@ const resetFormulario = (questao?: Question) => {
     disciplina.value = questao.disciplina || 'Matemática'
     tagsTexto.value = questao.tags.join(', ')
     pontuacaoMaxima.value = questao.pontuacaoMaxima ?? 10
+    respostaEsperada.value = questao.respostaEsperada ?? ''
     alternativas.value = (questao.alternativas ?? []).map((alternativa) => ({
       texto: alternativa.texto,
       correta: alternativa.correta,
@@ -56,20 +58,24 @@ const resetFormulario = (questao?: Question) => {
   disciplina.value = 'Matemática'
   tagsTexto.value = ''
   pontuacaoMaxima.value = 10
+  respostaEsperada.value = ''
   alternativas.value = criarAlternativasPadrao()
 }
 
 watch(
   editingId,
-  (id) => {
+  async (id) => {
     erro.value = ''
     if (!id) {
       resetFormulario()
       return
     }
 
-    const questao = questoesState.find((item) => item.id === id)
-    resetFormulario(questao)
+    try {
+      resetFormulario(await buscarQuestao(id))
+    } catch {
+      erro.value = 'Não foi possível carregar a questão.'
+    }
   },
   { immediate: true },
 )
@@ -102,7 +108,7 @@ const parseTags = (valor: string) => {
   return [...new Set(valor.split(',').map((tag) => tag.trim()).filter(Boolean))]
 }
 
-const salvarQuestao = () => {
+const salvarQuestao = async () => {
   erro.value = ''
 
   const enunciadoFormatado = enunciado.value.trim()
@@ -123,15 +129,6 @@ const salvarQuestao = () => {
       return
     }
 
-    const alternativasPreenchidas = alternativas.value.filter(
-      (alternativa) => alternativa.texto.trim().length > 0,
-    )
-
-    if (alternativasPreenchidas.length < 2 || alternativasPreenchidas.length > 5) {
-      erro.value = 'Preencha todas as alternativas com texto válido.'
-      return
-    }
-
     const corretas = alternativas.value.filter((alternativa) => alternativa.correta).length
     if (corretas !== 1) {
       erro.value = 'Marque exatamente uma alternativa como correta.'
@@ -139,13 +136,16 @@ const salvarQuestao = () => {
     }
   }
 
+  if (tipo.value === 'discursiva' && !respostaEsperada.value.trim()) {
+    erro.value = 'Informe a resposta esperada.'
+    return
+  }
+
   const dadosQuestao = {
-    id: editingId.value ?? `questao-${Date.now()}`,
     enunciado: enunciadoFormatado,
     tipo: tipo.value,
     disciplina: disciplina.value,
     tags: parseTags(tagsTexto.value),
-    criadaEm: new Date().toISOString().slice(0, 10),
     ...(tipo.value === 'objetiva'
       ? {
           alternativas: alternativas.value.map((alternativa, index) => ({
@@ -155,21 +155,21 @@ const salvarQuestao = () => {
           })),
         }
       : {
-          respostaEsperada: '',
+          respostaEsperada: respostaEsperada.value.trim(),
           pontuacaoMaxima: Number(pontuacaoMaxima.value) || 10,
         }),
   }
 
-  if (editingId.value) {
-    const index = questoesState.findIndex((item) => item.id === editingId.value)
-    if (index >= 0) {
-      questoesState[index] = dadosQuestao
+  try {
+    if (editingId.value) {
+      await editarQuestao(editingId.value, dadosQuestao)
+    } else {
+      await criarQuestao(dadosQuestao)
     }
-  } else {
-    questoesState.push(dadosQuestao)
+    router.push('/questoes')
+  } catch {
+    erro.value = 'Não foi possível salvar a questão.'
   }
-
-  router.push('/questoes')
 }
 
 const cancelar = () => {
@@ -186,16 +186,17 @@ const cancelar = () => {
 
     <section class="pagina-nova-questao">
       <div class="area-formulario">
-      <div class="campo-grupo">
-        <label class="label" for="disciplina">Disciplina</label>
-        <input
-          id="disciplina"
-          v-model="disciplina"
-          type="text"
-          class="input"
-          placeholder="Ex.: Matemática, História, Física"
-        />
-      </div>
+        <div class="campo-grupo">
+          <label class="label" for="disciplina">Disciplina</label>
+          <input
+            id="disciplina"
+            v-model="disciplina"
+            type="text"
+            class="input-texto"
+            placeholder="Ex.: Matemática, História, Física"
+          />
+        </div>
+
         <div class="campo-grupo tipo-grupo">
           <label class="label">Tipo</label>
 
@@ -230,7 +231,7 @@ const cancelar = () => {
           <div class="alternativas">
             <div
               v-for="(alternativa, index) in alternativas"
-              :key="`${index}-${alternativa.texto}`"
+              :key="index"
               class="alternativa-item"
               :class="{ correta: alternativa.correta }"
             >
@@ -271,13 +272,22 @@ const cancelar = () => {
             min="1"
             class="input-texto"
           />
+
+          <label class="label" for="respostaEsperada">Resposta esperada</label>
+          <textarea id="respostaEsperada" v-model="respostaEsperada" rows="3" class="input-texto" />
         </div>
       </div>
 
       <aside class="area-meta">
         <div class="meta-box">
           <label class="label" for="tags">Tags</label>
-          <input id="tags" v-model="tagsTexto" type="text" class="input-texto" placeholder="Ex.: equações, álgebra" />
+          <input
+            id="tags"
+            v-model="tagsTexto"
+            type="text"
+            class="input-texto"
+            placeholder="Ex.: equações, álgebra"
+          />
         </div>
       </aside>
 
