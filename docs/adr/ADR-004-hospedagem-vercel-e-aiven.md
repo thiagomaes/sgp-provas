@@ -37,15 +37,19 @@ Directory: `apps/web-professor` (build do Vite, servido como site estático) e
 `apps/api` (Root Directory `apps/api`).
 
 A **API NestJS roda como função serverless**, não como servidor sempre ligado:
-cada requisição HTTP é atendida por uma invocação da função. Isso tem três
+cada requisição HTTP é atendida por uma invocação da função. Isso tem quatro
 consequências que moldaram o resto da arquitetura:
 
 - Não há memória entre requisições, o que reforça a autenticação stateless do
   [ADR-003](ADR-003-autenticacao-jwt.md).
-- O Prisma precisa do binário do ambiente da Vercel. Por isso o
-  `schema.prisma` declara `binaryTargets = ["native", "rhel-openssl-3.0.x"]` e
-  o `package.json` roda `prisma generate` no `postinstall` — sem os dois, o
-  deploy sobe e quebra na primeira consulta.
+- Na Vercel, o `src/main.ts` exporta um handler em vez de chamar `app.listen()`,
+  que travava a função e fazia toda rota responder 500. O `app.listen()` continua
+  sendo usado fora da Vercel, no desenvolvimento local.
+- O Prisma precisa do binário do ambiente da Vercel. Por isso o `schema.prisma`
+  declara
+  `binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]`
+  e o `package.json` roda `prisma generate` no `postinstall` — sem os dois, a API
+  quebra em produção.
 - Migration nunca roda no build: o banco é migrado com `prisma migrate deploy`
   à parte.
 

@@ -60,4 +60,4 @@ a divisão de tarefas estão em
 | ADR | Integrante | PR |
 | --- | --- | --- |
 | ADR-001 | Thiago Luís Lombardi Maes | [#10](https://github.com/thiagomaes/sgp-provas/pull/10) |
-| ADR-002, ADR-003 e ADR-004 | Amanda Zimmermann | |
+| ADR-002, ADR-003 e ADR-004 | Amanda Zimmermann | [#18](https://github.com/thiagomaes/sgp-provas/pull/18) |

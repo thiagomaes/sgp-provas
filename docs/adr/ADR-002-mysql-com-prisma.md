@@ -43,7 +43,8 @@ MER/DER e o diagrama de classes são derivados.
 A partir do schema:
 
 - **Migrations versionadas no Git.** A migration `20261030202801_init_schema`
-  cria todas as tabelas; em produção o deploy roda `prisma migrate deploy`.
+  cria todas as tabelas; em produção o banco é migrado com
+  `prisma migrate deploy`, rodado à parte (o build não roda migration).
   Ninguém altera tabela na mão pelo painel do Aiven.
 - **Seed idempotente** (`prisma/seed.ts`, rodado por `prisma db seed`), que
   recria os mesmos dados dos mockups da N1 — a turma "Matemática — 1º Ano", a
@@ -97,9 +98,10 @@ justamente o que faz o SGP funcionar hoje:
    os repositories.
 3. **O engine Rust dá lugar a driver adapters.** Cada banco passa a exigir um
    adapter explícito, e o `binaryTargets` deixa de fazer sentido. Hoje o nosso
-   schema declara `binaryTargets = ["native", "rhel-openssl-3.0.x"]` exatamente
-   porque, sem isso, o Prisma não encontra o binário no ambiente das funções da
-   Vercel. Migrar significaria refazer e revalidar o deploy.
+   schema declara
+   `binaryTargets = ["native", "rhel-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]`
+   exatamente porque, sem isso, o Prisma não encontra o binário no ambiente das
+   funções da Vercel. Migrar significaria refazer e revalidar o deploy.
 
 Nenhum desses três pontos traz benefício para o escopo da N2, e os três juntos
 são uma migração de risco numa entrega feita em um dia, com a API já publicada e
