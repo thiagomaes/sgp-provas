@@ -1,6 +1,6 @@
 # Modelo de dados — SGP N2
 
-O diagrama abaixo reproduz os 12 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
+O diagrama abaixo reproduz os 11 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
 
 ```mermaid
 erDiagram
