@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EstadoTela from '../components/EstadoTela.vue'
+import QrCode from '../components/QrCode.vue'
 import AppShell from '../layouts/AppShell.vue'
 import { buscarAplicacao, gerarVersoes } from '../services/aplicacoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
@@ -95,7 +96,7 @@ async function gerarPdf() {
     geradas.value = resultado.versoes
     mensagem.value = `${resultado.versoes.length} ${
       resultado.versoes.length === 1 ? 'versão gerada' : 'versões geradas'
-    }, cada uma com o seu QR Code. A aplicação já pode ser corrigida.`
+    }, cada uma com o QR Code que vai impresso na prova. A aplicação já pode ser corrigida.`
   } catch (falha) {
     // 409: a correção já começou e as versões não podem mudar.
     erro.value = mensagemDeErro(falha, 'Não foi possível gerar as versões.')
@@ -198,8 +199,11 @@ async function gerarPdf() {
 
       <ul v-if="geradas.length" class="versoes">
         <li v-for="versao in geradas" :key="versao.numeroVersao" class="versao">
-          <span class="versao-numero">Versão {{ versao.numeroVersao }}</span>
-          <code class="versao-qr">{{ versao.qrCodePayload }}</code>
+          <QrCode :valor="versao.qrCodePayload" />
+          <div class="versao-texto">
+            <span class="versao-numero">Versão {{ versao.numeroVersao }}</span>
+            <code class="versao-qr">{{ versao.qrCodePayload }}</code>
+          </div>
         </li>
       </ul>
 
@@ -337,7 +341,7 @@ async function gerarPdf() {
 .versoes {
   display: grid;
   max-width: 720px;
-  max-height: 260px;
+  max-height: 480px;
   margin: var(--space-4) 0 0;
   padding: 0;
   overflow-y: auto;
@@ -348,16 +352,22 @@ async function gerarPdf() {
 
 .versao {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);
   border-bottom: 1px solid var(--border);
 }
 
 .versao:last-child {
   border-bottom: none;
+}
+
+.versao-texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .versao-numero {
