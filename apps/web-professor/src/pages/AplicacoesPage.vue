@@ -1,25 +1,60 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { aplicacoes } from '../mocks/aplicacoes'
-import { provas, buscarProvaPorId } from '../mocks/provas'
-import { turmas, buscarTurmaPorId } from '../mocks/turmas'
-import type { Application } from '../types'
+import {
+  criarAplicacao as criarNaApi,
+  dataDeHoje,
+  excluirAplicacao,
+  listarAplicacoes,
+} from '../services/aplicacoes'
+import { mensagemDeErro } from '../services/http'
+import { listarProvas } from '../services/provas'
+import { listarTurmas } from '../services/turmas'
+import type { Application, Class, Exam } from '../types'
 
 /**
  * Aplicações (RF05) — fiel ao mockup docs/telas/09-aplicacoes-lista.png.
  *
  * Criar a aplicação já leva para a configuração do PDF, que é o passo
- * seguinte do fluxo do professor.
+ * seguinte do fluxo do professor. Excluir pede confirmação na linha; a
+ * API recusa (409) quando a aplicação já tem provas corrigidas.
  */
 
 const router = useRouter()
-const listaAplicacoes = ref(aplicacoes)
+const listaAplicacoes = ref<Application[]>([])
+const provas = ref<Exam[]>([])
+const turmas = ref<Class[]>([])
+const carregando = ref(true)
+const erroLista = ref('')
+
+async function carregar() {
+  carregando.value = true
+  erroLista.value = ''
+  try {
+    ;[listaAplicacoes.value, provas.value, turmas.value] = await Promise.all([
+      listarAplicacoes(),
+      listarProvas(),
+      listarTurmas(),
+    ])
+  } catch (erro) {
+    erroLista.value = mensagemDeErro(erro, 'Não foi possível carregar as aplicações.')
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
+
+/** Só provas com questão podem ser aplicadas. */
+const provasProntas = computed(() => provas.value.filter((prova) => prova.questoes.length > 0))
 
 const provaId = ref('')
 const turmaId = ref('')
 const erro = ref('')
+const criando = ref(false)
 
 const rotuloStatus: Record<Application['status'], string> = {
   rascunho: 'Rascunho',
@@ -29,11 +64,11 @@ const rotuloStatus: Record<Application['status'], string> = {
 }
 
 function nomeDaProva(id: string): string {
-  return buscarProvaPorId(id)?.titulo ?? 'Prova removida'
+  return provas.value.find((prova) => prova.id === id)?.titulo ?? 'Prova removida'
 }
 
 function nomeDaTurma(id: string): string {
-  return buscarTurmaPorId(id)?.nome ?? 'Turma removida'
+  return turmas.value.find((turma) => turma.id === id)?.nome ?? 'Turma removida'
 }
 
 /** Com o PDF gerado, as provas impressas já podem ser lidas pela câmera. */
@@ -41,7 +76,7 @@ function podeCorrigir(aplicacao: Application): boolean {
   return aplicacao.status === 'pdf-gerado' || aplicacao.status === 'em-correcao'
 }
 
-function criarAplicacao() {
+async function criarAplicacao() {
   erro.value = ''
 
   if (!provaId.value || !turmaId.value) {
@@ -49,24 +84,46 @@ function criarAplicacao() {
     return
   }
 
-  const turma = buscarTurmaPorId(turmaId.value)
-  const novaAplicacao: Application = {
-    id: `aplicacao-${Date.now()}`,
-    provaId: provaId.value,
-    turmaId: turmaId.value,
-    data: new Date().toISOString().slice(0, 10),
-    // Padrão do fluxo: uma versão embaralhada por aluno da turma.
-    versoes: turma?.alunos.length ?? 1,
-    embaralharQuestoes: true,
-    embaralharAlternativas: true,
-    identificarAluno: true,
-    status: 'rascunho',
-    corrigidas: 0,
-    totalProvas: turma?.alunos.length ?? 0,
+  const turma = turmas.value.find((item) => item.id === turmaId.value)
+  criando.value = true
+  try {
+    const nova = await criarNaApi({
+      provaId: provaId.value,
+      turmaId: turmaId.value,
+      data: dataDeHoje(),
+      // Padrão do fluxo: uma versão embaralhada por aluno da turma.
+      versoes: Math.min(Math.max(turma?.alunos.length ?? 1, 1), 200),
+    })
+    router.push(`/aplicacoes/${nova.id}/exportar`)
+  } catch (falha) {
+    erro.value = mensagemDeErro(falha, 'Não foi possível criar a aplicação.')
+  } finally {
+    criando.value = false
   }
+}
 
-  listaAplicacoes.value.push(novaAplicacao)
-  router.push(`/aplicacoes/${novaAplicacao.id}/exportar`)
+/** Aplicação com a confirmação de exclusão aberta. */
+const excluindoId = ref<string | null>(null)
+const excluindo = ref(false)
+const erroExclusao = ref('')
+
+function pedirExclusao(id: string) {
+  excluindoId.value = id
+  erroExclusao.value = ''
+}
+
+async function confirmarExclusao(id: string) {
+  excluindo.value = true
+  erroExclusao.value = ''
+  try {
+    await excluirAplicacao(id)
+    listaAplicacoes.value = listaAplicacoes.value.filter((aplicacao) => aplicacao.id !== id)
+    excluindoId.value = null
+  } catch (falha) {
+    erroExclusao.value = mensagemDeErro(falha, 'Não foi possível excluir a aplicação.')
+  } finally {
+    excluindo.value = false
+  }
 }
 </script>
 
@@ -77,69 +134,95 @@ function criarAplicacao() {
       Provas aplicadas às turmas e geração do PDF consolidado.
     </template>
 
-    <section class="formulario">
-      <div class="campo">
-        <label class="rotulo" for="prova">Prova</label>
-        <select id="prova" v-model="provaId">
-          <option value="">Selecione a prova</option>
-          <option v-for="prova in provas" :key="prova.id" :value="prova.id">
-            {{ prova.titulo }}
-          </option>
-        </select>
-      </div>
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando aplicações...</EstadoTela>
+    <EstadoTela v-else-if="erroLista" tipo="erro" @tentar="carregar">{{ erroLista }}</EstadoTela>
 
-      <div class="campo">
-        <label class="rotulo" for="turma">Turma</label>
-        <select id="turma" v-model="turmaId">
-          <option value="">Selecione a turma</option>
-          <option v-for="turma in turmas" :key="turma.id" :value="turma.id">
-            {{ turma.nome }}
-          </option>
-        </select>
-      </div>
+    <template v-else>
+      <section class="formulario">
+        <div class="campo">
+          <label class="rotulo" for="prova">Prova</label>
+          <select id="prova" v-model="provaId">
+            <option value="">Selecione a prova</option>
+            <option v-for="prova in provasProntas" :key="prova.id" :value="prova.id">
+              {{ prova.titulo }}
+            </option>
+          </select>
+        </div>
 
-      <button class="botao" type="button" @click="criarAplicacao">
-        Configurar PDF →
-      </button>
-    </section>
+        <div class="campo">
+          <label class="rotulo" for="turma">Turma</label>
+          <select id="turma" v-model="turmaId">
+            <option value="">Selecione a turma</option>
+            <option v-for="turma in turmas" :key="turma.id" :value="turma.id">
+              {{ turma.nome }}
+            </option>
+          </select>
+        </div>
 
-    <p v-if="erro" class="erro">{{ erro }}</p>
+        <button class="botao" type="button" :disabled="criando" @click="criarAplicacao">
+          {{ criando ? 'Criando...' : 'Configurar PDF →' }}
+        </button>
+      </section>
 
-    <table class="tabela">
-      <thead>
-        <tr>
-          <th>Prova</th>
-          <th>Turma</th>
-          <th>Versões</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="aplicacao in listaAplicacoes" :key="aplicacao.id">
-          <td>{{ nomeDaProva(aplicacao.provaId) }}</td>
-          <td>{{ nomeDaTurma(aplicacao.turmaId) }}</td>
-          <td>{{ aplicacao.versoes }}</td>
-          <td>
-            <span class="selo" :class="aplicacao.status === 'concluida' ? 'ok' : 'neutro'">
-              {{ rotuloStatus[aplicacao.status] }}
-            </span>
-          </td>
-          <td class="tabela-acao">
-            <RouterLink
-              v-if="podeCorrigir(aplicacao)"
-              class="botao-corrigir"
-              :to="`/correcao/${aplicacao.id}/escanear`"
-            >
-              Corrigir
-            </RouterLink>
-            <RouterLink :to="`/aplicacoes/${aplicacao.id}/exportar`">
-              Configurar PDF →
-            </RouterLink>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
+
+      <EstadoTela v-if="listaAplicacoes.length === 0" tipo="vazio">
+        Nenhuma aplicação criada ainda. Escolha a prova e a turma acima.
+      </EstadoTela>
+
+      <table v-else class="tabela">
+        <thead>
+          <tr>
+            <th>Prova</th>
+            <th>Turma</th>
+            <th>Versões</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <template v-for="aplicacao in listaAplicacoes" :key="aplicacao.id">
+            <tr>
+              <td>{{ nomeDaProva(aplicacao.provaId) }}</td>
+              <td>{{ nomeDaTurma(aplicacao.turmaId) }}</td>
+              <td>{{ aplicacao.versoes }}</td>
+              <td>
+                <span class="selo" :class="aplicacao.status === 'concluida' ? 'ok' : 'neutro'">
+                  {{ rotuloStatus[aplicacao.status] }}
+                </span>
+              </td>
+              <td class="tabela-acao">
+                <RouterLink
+                  v-if="podeCorrigir(aplicacao)"
+                  class="botao-corrigir"
+                  :to="`/correcao/${aplicacao.id}/escanear`"
+                >
+                  Corrigir
+                </RouterLink>
+                <button class="link-acao" type="button" @click="pedirExclusao(aplicacao.id)">
+                  Excluir
+                </button>
+                <RouterLink :to="`/aplicacoes/${aplicacao.id}/exportar`">
+                  Configurar PDF →
+                </RouterLink>
+              </td>
+            </tr>
+            <tr v-if="excluindoId === aplicacao.id">
+              <td colspan="5">
+                <ConfirmarExclusao
+                  :alvo="`a aplicação de ${nomeDaProva(aplicacao.provaId)} para ${nomeDaTurma(aplicacao.turmaId)}`"
+                  detalhe="As versões geradas para ela também são apagadas."
+                  :excluindo="excluindo"
+                  :erro="erroExclusao"
+                  @confirmar="confirmarExclusao(aplicacao.id)"
+                  @cancelar="excluindoId = null"
+                />
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
   </AppShell>
 </template>
 
@@ -262,6 +345,26 @@ select:focus {
 
 .tabela-acao a:hover {
   color: var(--accent-dark);
+}
+
+.link-acao {
+  margin-right: var(--space-4);
+  padding: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-acao:hover {
+  color: var(--accent-dark);
+}
+
+.botao:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .selo {
