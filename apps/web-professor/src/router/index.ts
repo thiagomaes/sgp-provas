@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { temSessao } from '../services/sessao'
 
 /**
  * Rotas da web do professor.
  *
- * Todas as telas internas já existem como placeholder ("Em construção")
- * dentro do AppShell. Ao implementar sua tela, mexa APENAS no arquivo da
- * sua página em src/pages/ — assim ninguém dá conflito neste arquivo.
- * Só altere este arquivo se precisar de uma rota nova.
+ * Todas as telas internas usam o AppShell e só abrem com o professor
+ * logado (ver a guarda no fim do arquivo). Ao mexer numa tela, altere
+ * APENAS o arquivo da página em src/pages/ — assim ninguém dá conflito
+ * neste arquivo. Só altere este arquivo se precisar de uma rota nova.
  */
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -104,6 +105,14 @@ const router = createRouter({
       component: () => import('../pages/RelatorioDetalhePage.vue'),
     },
   ],
+})
+
+// Sem sessão, qualquer tela interna leva ao login. Já logado, o login
+// leva direto ao dashboard.
+router.beforeEach((to) => {
+  const logado = temSessao()
+  if (to.name === 'login') return logado ? '/dashboard' : true
+  return logado ? true : '/login'
 })
 
 export default router
