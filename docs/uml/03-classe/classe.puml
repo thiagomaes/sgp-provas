@@ -29,6 +29,7 @@ class Turma {
   +ano : String
   +turno : String
   +createdAt : DateTime
+  +adicionarAluno()
 }
 
 class Aluno {
@@ -50,6 +51,7 @@ class Questao {
   +tags : Json
   +deletedAt : DateTime?
   +criadaEm : DateTime
+  +validar() : Boolean
 }
 
 class Alternativa {
@@ -68,6 +70,7 @@ class Prova {
   +totalPontos : Float
   +criadaEm : DateTime
   +deletedAt : DateTime?
+  +calcularTotalPontos() : Float
 }
 
 class ProvaQuestao {
@@ -91,6 +94,7 @@ class Aplicacao {
   +status : String
   +corrigidas : Int
   +createdAt : DateTime
+  +gerarVersoes() : VersaoProva[]
 }
 
 class VersaoProva {
@@ -113,6 +117,8 @@ class Correcao {
   +clientCorrectionId : String
   +statusSync : String
   +corrigidaEm : DateTime
+  +calcularNota() : Float
+  +atribuirAluno()
 }
 
 Professor "1" -- "0..*" RefreshToken : possui
@@ -120,13 +126,13 @@ Professor "1" -- "0..*" Turma : cadastra
 Professor "1" -- "0..*" Questao : cadastra
 Professor "1" -- "0..*" Prova : cria
 Professor "1" -- "0..*" Aplicacao : registra
-Turma "1" -- "0..*" Aluno : contem
+Turma "1" *-- "0..*" Aluno : contem
 Turma "1" -- "0..*" Aplicacao : recebe
-Questao "1" -- "0..*" Alternativa : possui
+Questao "1" *-- "0..*" Alternativa : possui
 Questao "1" -- "0..*" ProvaQuestao : selecionada em
-Prova "1" -- "0..*" ProvaQuestao : organiza
+Prova "1" *-- "0..*" ProvaQuestao : organiza
 Prova "1" -- "0..*" Aplicacao : aplicada em
-Aplicacao "1" -- "0..*" VersaoProva : gera
+Aplicacao "1" *-- "0..*" VersaoProva : gera
 Aplicacao "1" -- "0..*" Correcao : recebe
 Aluno "0..1" -- "0..*" Correcao : identificado em
 @enduml
