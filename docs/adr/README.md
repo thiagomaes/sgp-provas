@@ -29,6 +29,7 @@ Todos os ADRs deste repositório seguem a mesma estrutura, definida pelo ADR-001
 | [ADR-002](ADR-002-mysql-com-prisma.md) | MySQL com Prisma 6 na API NestJS | 30/10/2026 | aceita |
 | [ADR-003](ADR-003-autenticacao-jwt.md) | Autenticação JWT só do professor | 30/10/2026 | aceita |
 | [ADR-004](ADR-004-hospedagem-vercel-e-aiven.md) | Hospedagem na Vercel com banco MySQL no Aiven | 30/10/2026 | aceita |
+| [ADR-005](ADR-005-soft-delete-questao.md) | Soft-delete de questões | 30/10/2026 | aceita |
 
 ## Resumo de cada um
 
@@ -48,12 +49,19 @@ Todos os ADRs deste repositório seguem a mesma estrutura, definida pelo ADR-001
   Vercel, a API como função serverless, e MySQL 8.4 no plano gratuito do Aiven.
   Registra os preços dessa escolha: o banco suspenso por inatividade, a primeira
   requisição lenta e a conexão TLS sem verificação do certificado.
+- **ADR-005: soft-delete de questões.** Excluir uma questão só preenche o
+  `deletedAt`: ela some do banco do professor e não entra em prova nova, mas as
+  provas que já a usam continuam com ela, inclusive no gabarito da correção.
+  Registra por que não foi exclusão física em cascata nem cópia da questão
+  dentro da prova.
 
 ## Decisões da N2 registradas aqui
 
 Os ADRs 002, 003 e 004 documentam as decisões tomadas na integração com banco da
 N2, implementadas no PR
-[#16](https://github.com/thiagomaes/sgp-provas/pull/16). O contexto da entrega e
+[#16](https://github.com/thiagomaes/sgp-provas/pull/16). O ADR-005 registra a
+exclusão de questões do banco de questões, implementada no PR
+[#19](https://github.com/thiagomaes/sgp-provas/pull/19). O contexto da entrega e
 a divisão de tarefas estão em
 [`docs/arquitetura/plano-n2.md`](../arquitetura/plano-n2.md).
 
@@ -61,3 +69,4 @@ a divisão de tarefas estão em
 | --- | --- | --- |
 | ADR-001 | Thiago Luís Lombardi Maes | [#10](https://github.com/thiagomaes/sgp-provas/pull/10) |
 | ADR-002, ADR-003 e ADR-004 | Amanda Zimmermann | [#18](https://github.com/thiagomaes/sgp-provas/pull/18) |
+| ADR-005 | Hellen Cristina de Oliveira | [#19](https://github.com/thiagomaes/sgp-provas/pull/19) |
