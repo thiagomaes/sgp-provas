@@ -65,6 +65,11 @@ const router = createRouter({
       name: 'prova-nova',
       component: () => import('../pages/ProvaNovaPage.vue'),
     },
+    {
+      path: '/provas/:id/editar',
+      name: 'prova-editar',
+      component: () => import('../pages/ProvaNovaPage.vue'),
+    },
 
     {
       path: '/aplicacoes',
