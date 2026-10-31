@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { buscarAplicacaoPorId } from '../mocks/aplicacoes'
-import { buscarProvaPorId } from '../mocks/provas'
-import { buscarTurmaPorId } from '../mocks/turmas'
+import { buscarAplicacao } from '../services/aplicacoes'
+import { ErroApi, mensagemDeErro } from '../services/http'
+import { buscarProva } from '../services/provas'
+import { buscarTurma } from '../services/turmas'
+import type { Application, Class, Exam } from '../types'
 
 /**
  * Escanear prova (RF08) — fiel ao mockup docs/telas/15-mobile-scanner.png.
@@ -18,7 +21,7 @@ import { buscarTurmaPorId } from '../mocks/turmas'
  * TODO(N2/N3): a leitura real ainda não existe. Falta decodificar o QR Code
  * da versão (ex.: BarcodeDetector ou uma lib de QR) e reconhecer as marcações
  * do cartão-resposta. Por enquanto "Simular leitura" leva direto à revisão,
- * que monta uma correção de exemplo.
+ * que monta uma leitura de exemplo e grava a correção de verdade na API.
  */
 
 type EstadoCamera = 'abrindo' | 'ativa' | 'negada' | 'indisponivel'
@@ -27,17 +30,38 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
 
-const aplicacao = computed(() => buscarAplicacaoPorId(id))
-const prova = computed(() =>
-  aplicacao.value ? buscarProvaPorId(aplicacao.value.provaId) : undefined,
-)
-const turma = computed(() =>
-  aplicacao.value ? buscarTurmaPorId(aplicacao.value.turmaId) : undefined,
-)
+const aplicacao = ref<Application | null>(null)
+const prova = ref<Exam | null>(null)
+const turma = ref<Class | null>(null)
+const carregando = ref(true)
+const erroCarga = ref('')
+
+async function carregar() {
+  carregando.value = true
+  erroCarga.value = ''
+  try {
+    const encontrada = await buscarAplicacao(id)
+    const [provaEncontrada, turmaEncontrada] = await Promise.all([
+      buscarProva(encontrada.provaId).catch(() => null),
+      buscarTurma(encontrada.turmaId),
+    ])
+    aplicacao.value = encontrada
+    prova.value = provaEncontrada
+    turma.value = turmaEncontrada
+  } catch (erro) {
+    if (!(erro instanceof ErroApi && erro.status === 404)) {
+      erroCarga.value = mensagemDeErro(erro, 'Não foi possível carregar a aplicação.')
+    }
+  } finally {
+    carregando.value = false
+  }
+}
 
 const video = ref<HTMLVideoElement | null>(null)
 const estado = ref<EstadoCamera>('abrindo')
 let stream: MediaStream | null = null
+/** A tela já foi fechada: uma câmera que abrir depois disso é desligada. */
+let saiu = false
 
 const instrucao = computed(() => {
   if (estado.value === 'negada') {
@@ -60,6 +84,10 @@ async function abrirCamera() {
       video: { facingMode: { ideal: 'environment' } },
       audio: false,
     })
+    if (saiu) {
+      fecharCamera()
+      return
+    }
     if (video.value) {
       video.value.srcObject = stream
     }
@@ -79,9 +107,18 @@ function simularLeitura() {
   router.push(`/correcao/${id}/revisao`)
 }
 
-onMounted(abrirCamera)
+// O quadro do vídeo só aparece depois que a aplicação carrega.
+onMounted(async () => {
+  await carregar()
+  if (!aplicacao.value) return
+  await nextTick()
+  abrirCamera()
+})
 // Sair da tela desliga a câmera (a luz do celular apaga).
-onBeforeUnmount(fecharCamera)
+onBeforeUnmount(() => {
+  saiu = true
+  fecharCamera()
+})
 </script>
 
 <template>
@@ -94,7 +131,10 @@ onBeforeUnmount(fecharCamera)
       <template v-if="turma && prova">{{ turma.nome }} · {{ prova.titulo }}</template>
     </template>
 
-    <div v-if="!aplicacao" class="vazio">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando aplicação...</EstadoTela>
+    <EstadoTela v-else-if="erroCarga" tipo="erro" @tentar="carregar">{{ erroCarga }}</EstadoTela>
+
+    <div v-else-if="!aplicacao" class="vazio">
       Aplicação não encontrada.
       <RouterLink to="/correcao">Voltar para a correção</RouterLink>
     </div>

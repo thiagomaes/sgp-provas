@@ -1,23 +1,25 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { aplicacoes } from '../mocks/aplicacoes'
-import { correcoes } from '../mocks/correcoes'
-import { buscarProvaPorId } from '../mocks/provas'
-import { buscarQuestaoPorId } from '../mocks/questoes'
-import { buscarTurmaPorId } from '../mocks/turmas'
-import type { Correction, CorrectionAnswer } from '../types'
+import { buscarAplicacao } from '../services/aplicacoes'
+import { listarCorrecoes, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
+import { ErroApi, mensagemDeErro } from '../services/http'
+import { buscarProva } from '../services/provas'
+import { listarQuestoes } from '../services/questoes'
+import { buscarTurma } from '../services/turmas'
+import type { Application, Class, Correction, CorrectionAnswer, Exam, Question } from '../types'
 
 /**
  * Revisar correção (RF08, RF09) — fiel ao mockup docs/telas/16-mobile-revisao.png.
  *
  * Mostra a nota calculada a partir da leitura do cartão-resposta para o
  * professor conferir, ajustar se precisar e confirmar. Confirmar grava a
- * correção no array do mock (padrão de estado da N1, ver CONTRIBUTING.md)
- * e soma 1 nas provas corrigidas da aplicação.
+ * correção na API (POST /applications/:id/corrections), que recalcula a
+ * nota com o gabarito do banco e soma 1 nas provas corrigidas.
  *
- * TODO(N2/N3): as respostas abaixo são de exemplo, montadas a partir da
+ * TODO(N3): as respostas abaixo são de exemplo, montadas a partir da
  * prova da aplicação. Com a leitura real, elas vêm do cartão-resposta lido
  * na tela de escanear, e o aluno vem do QR Code da prova identificada.
  */
@@ -26,18 +28,40 @@ const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
 
-const listaAplicacoes = ref(aplicacoes)
-const listaCorrecoes = ref(correcoes)
+const aplicacao = ref<Application | null>(null)
+const prova = ref<Exam | null>(null)
+const turma = ref<Class | null>(null)
+const questoes = ref<Question[]>([])
+const correcoes = ref<Correction[]>([])
+const carregando = ref(true)
+const erroCarga = ref('')
 
-const aplicacao = computed(() =>
-  listaAplicacoes.value.find((item) => item.id === id),
-)
-const prova = computed(() =>
-  aplicacao.value ? buscarProvaPorId(aplicacao.value.provaId) : undefined,
-)
-const turma = computed(() =>
-  aplicacao.value ? buscarTurmaPorId(aplicacao.value.turmaId) : undefined,
-)
+async function carregar() {
+  carregando.value = true
+  erroCarga.value = ''
+  try {
+    const encontrada = await buscarAplicacao(id)
+    const [provaEncontrada, turmaEncontrada, banco, lidas] = await Promise.all([
+      buscarProva(encontrada.provaId),
+      buscarTurma(encontrada.turmaId),
+      listarQuestoes(),
+      listarCorrecoes(id),
+    ])
+    aplicacao.value = encontrada
+    prova.value = provaEncontrada
+    turma.value = turmaEncontrada
+    questoes.value = banco
+    correcoes.value = lidas
+  } catch (erro) {
+    if (!(erro instanceof ErroApi && erro.status === 404)) {
+      erroCarga.value = mensagemDeErro(erro, 'Não foi possível carregar a correção.')
+    }
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
 
 /** A aplicação já teve todas as provas lidas. */
 const semProvasRestantes = computed(
@@ -54,36 +78,37 @@ const aluno = computed(() => {
 
   return (
     turma.value.alunos.find(
-      (item) =>
-        !listaCorrecoes.value.some(
-          (correcao) => correcao.aplicacaoId === id && correcao.alunoId === item.id,
-        ),
+      (item) => !correcoes.value.some((correcao) => correcao.alunoId === item.id),
     ) ?? null
   )
 })
 
 /**
  * Leitura de exemplo: erra algumas questões por uma regra fixa (sem valor
- * aleatório), variando conforme quantas provas já foram corrigidas.
+ * aleatório), variando conforme quantas provas já foram corrigidas. A nota
+ * segue a mesma regra da API: objetiva vale tudo ou nada; discursiva, os
+ * pontos dados.
  */
 const respostas = computed<CorrectionAnswer[]>(() => {
   if (!prova.value || !aplicacao.value) return []
   const jaCorrigidas = aplicacao.value.corrigidas
 
-  return prova.value.questoes.map((item, posicao) => {
-    const questao = buscarQuestaoPorId(item.questaoId)
-    const acertou = (posicao + jaCorrigidas) % 4 !== 1
-    const alternativas = questao?.alternativas ?? []
-    const correta = alternativas.find((alt) => alt.correta)?.letra ?? null
-    const errada = alternativas.find((alt) => !alt.correta)?.letra ?? null
+  return [...prova.value.questoes]
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((item, posicao) => {
+      const questao = questoes.value.find((q) => q.id === item.questaoId)
+      const acertou = !!questao && (posicao + jaCorrigidas) % 4 !== 1
+      const alternativas = questao?.alternativas ?? []
+      const correta = alternativas.find((alt) => alt.correta)?.letra ?? null
+      const errada = alternativas.find((alt) => !alt.correta)?.letra ?? null
 
-    return {
-      questaoId: item.questaoId,
-      marcada: questao?.tipo === 'objetiva' ? (acertou ? correta : errada) : null,
-      correta: acertou,
-      pontuacao: acertou ? item.pontuacao : 0,
-    }
-  })
+      return {
+        questaoId: item.questaoId,
+        marcada: questao?.tipo === 'objetiva' ? (acertou ? correta : errada) : null,
+        correta: acertou,
+        pontuacao: acertou ? item.pontuacao : 0,
+      }
+    })
 })
 
 const notaCalculada = computed(() =>
@@ -124,31 +149,41 @@ function aplicarAjuste() {
   erro.value = ''
 }
 
-function confirmar() {
+/**
+ * Id desta leitura, gerado uma vez: clicar "Confirmar" de novo depois de
+ * uma falha de rede reenvia o mesmo id e a API não duplica (RF10).
+ */
+const clientCorrectionId = novoIdDeCorrecao()
+const enviando = ref(false)
+const erroEnvio = ref('')
+
+async function confirmar() {
   if (!aplicacao.value) return
-  const agora = Date.now()
+  const lida = aplicacao.value
 
-  const correcao: Correction = {
-    id: `correcao-${agora}`,
-    aplicacaoId: aplicacao.value.id,
-    alunoId: aluno.value?.id ?? null,
-    versao: (aplicacao.value.corrigidas % aplicacao.value.versoes) + 1,
-    nota: notaFinal.value,
-    respostas: respostas.value,
-    // 'mobile' = lida pela câmera do celular (o nome do tipo vem da N1).
-    origem: 'mobile',
-    clientCorrectionId: `cli-${agora}`,
-    statusSync: 'sincronizada',
-    corrigidaEm: new Date().toISOString().slice(0, 10),
+  enviando.value = true
+  erroEnvio.value = ''
+  try {
+    await registrarCorrecao(lida.id, {
+      clientCorrectionId,
+      origem: 'mobile',
+      versao: (lida.corrigidas % lida.versoes) + 1,
+      alunoId: aluno.value?.id ?? null,
+      respostas: respostas.value.map((resposta) => {
+        const questao = questoes.value.find((q) => q.id === resposta.questaoId)
+        return questao?.tipo === 'discursiva'
+          ? { questaoId: resposta.questaoId, pontuacao: resposta.pontuacao }
+          : { questaoId: resposta.questaoId, marcada: resposta.marcada }
+      }),
+      ...(notaAjustada.value === null ? {} : { nota: notaAjustada.value }),
+    })
+    router.push('/correcao')
+  } catch (falha) {
+    // Ex.: 409 "Gere o PDF desta aplicação antes de corrigir as provas."
+    erroEnvio.value = mensagemDeErro(falha, 'Não foi possível gravar a correção.')
+  } finally {
+    enviando.value = false
   }
-
-  listaCorrecoes.value.push(correcao)
-  aplicacao.value.corrigidas += 1
-  if (aplicacao.value.status === 'pdf-gerado') {
-    aplicacao.value.status = 'em-correcao'
-  }
-
-  router.push('/correcao')
 }
 </script>
 
@@ -165,7 +200,10 @@ function confirmar() {
       </template>
     </template>
 
-    <div v-if="!aplicacao || !prova" class="vazio">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando a prova lida...</EstadoTela>
+    <EstadoTela v-else-if="erroCarga" tipo="erro" @tentar="carregar">{{ erroCarga }}</EstadoTela>
+
+    <div v-else-if="!aplicacao || !prova" class="vazio">
       Aplicação não encontrada.
       <RouterLink to="/correcao">Voltar para a correção</RouterLink>
     </div>
@@ -216,11 +254,15 @@ function confirmar() {
         <p v-if="erro" class="erro">{{ erro }}</p>
       </div>
 
+      <p v-if="erroEnvio" class="erro" role="alert">{{ erroEnvio }}</p>
+
       <div class="acoes">
-        <button class="botao-secundario" type="button" @click="abrirAjuste">
+        <button class="botao-secundario" type="button" :disabled="enviando" @click="abrirAjuste">
           Ajustar nota
         </button>
-        <button class="botao" type="button" @click="confirmar">Confirmar</button>
+        <button class="botao" type="button" :disabled="enviando" @click="confirmar">
+          {{ enviando ? 'Gravando...' : 'Confirmar' }}
+        </button>
       </div>
     </div>
   </AppShell>
@@ -348,6 +390,12 @@ function confirmar() {
   color: var(--surface);
   background: var(--accent);
   border: 1px solid var(--accent);
+}
+
+.botao:disabled,
+.botao-secundario:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .botao:hover {

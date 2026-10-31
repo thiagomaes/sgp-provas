@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { aplicacoes } from '../mocks/aplicacoes'
-import { buscarProvaPorId } from '../mocks/provas'
-import { buscarTurmaPorId } from '../mocks/turmas'
+import { listarAplicacoes } from '../services/aplicacoes'
+import { mensagemDeErro } from '../services/http'
+import { listarProvas } from '../services/provas'
+import { listarTurmas } from '../services/turmas'
+import type { Application, Class, Exam } from '../types'
 
 /**
  * Correção de provas (RF08) — ponto de entrada do fluxo de correção.
@@ -14,7 +17,29 @@ import { buscarTurmaPorId } from '../mocks/turmas'
  * Visual baseado no mockup docs/telas/14-mobile-home-sync.png.
  */
 
-const listaAplicacoes = ref(aplicacoes)
+const listaAplicacoes = ref<Application[]>([])
+const provas = ref<Exam[]>([])
+const turmas = ref<Class[]>([])
+const carregando = ref(true)
+const erro = ref('')
+
+async function carregar() {
+  carregando.value = true
+  erro.value = ''
+  try {
+    ;[listaAplicacoes.value, provas.value, turmas.value] = await Promise.all([
+      listarAplicacoes(),
+      listarProvas(),
+      listarTurmas(),
+    ])
+  } catch (falha) {
+    erro.value = mensagemDeErro(falha, 'Não foi possível carregar as aplicações.')
+  } finally {
+    carregando.value = false
+  }
+}
+
+onMounted(carregar)
 
 const paraCorrigir = computed(() =>
   listaAplicacoes.value.filter(
@@ -24,11 +49,11 @@ const paraCorrigir = computed(() =>
 )
 
 function nomeDaProva(id: string): string {
-  return buscarProvaPorId(id)?.titulo ?? 'Prova removida'
+  return provas.value.find((prova) => prova.id === id)?.titulo ?? 'Prova removida'
 }
 
 function nomeDaTurma(id: string): string {
-  return buscarTurmaPorId(id)?.nome ?? 'Turma removida'
+  return turmas.value.find((turma) => turma.id === id)?.nome ?? 'Turma removida'
 }
 
 function percentual(corrigidas: number, total: number): number {
@@ -44,7 +69,10 @@ function percentual(corrigidas: number, total: number): number {
       Escolha a aplicação e leia as provas com a câmera do celular.
     </template>
 
-    <ul v-if="paraCorrigir.length" class="lista">
+    <EstadoTela v-if="carregando" tipo="carregando">Carregando aplicações...</EstadoTela>
+    <EstadoTela v-else-if="erro" tipo="erro" @tentar="carregar">{{ erro }}</EstadoTela>
+
+    <ul v-else-if="paraCorrigir.length" class="lista">
       <li v-for="aplicacao in paraCorrigir" :key="aplicacao.id" class="cartao">
         <div class="cartao-topo">
           <div class="cartao-texto">
