@@ -122,6 +122,8 @@ erDiagram
     Aluno o|--o{ Correcao : identificado_em
 ```
 
+![Diagrama Entidade-Relacionamento do SGP](der.png)
+
 ## Dicionário de dados
 
 `Obrigatório` descreve se a coluna aceita `NULL`; valores padrão definidos no schema são indicados na descrição. Tipos apresentados como `String`, `Float` etc. são escalares Prisma; os tipos nativos MySQL aparecem entre parênteses.
