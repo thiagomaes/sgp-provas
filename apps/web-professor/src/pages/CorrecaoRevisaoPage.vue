@@ -7,7 +7,7 @@ import { correcoes } from '../mocks/correcoes'
 import { buscarProvaPorId } from '../mocks/provas'
 import { buscarQuestaoPorId } from '../mocks/questoes'
 import { buscarTurmaPorId } from '../mocks/turmas'
-import type { Correction, CorrectionAnswer } from '../mocks/types'
+import type { Correction, CorrectionAnswer } from '../types'
 
 /**
  * Revisar correção (RF08, RF09) — fiel ao mockup docs/telas/16-mobile-revisao.png.

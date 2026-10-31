@@ -1,4 +1,4 @@
-﻿import type { Question } from '../mocks/types'
+﻿import type { Question } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 

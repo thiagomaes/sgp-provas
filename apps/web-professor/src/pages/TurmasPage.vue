@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import { turmas } from '../mocks/turmas'
-import type { Class } from '../mocks/types'
+import type { Class } from '../types'
 
 /**
  * Lista de turmas (RF03) — fiel ao mockup docs/telas/03-turmas-lista.png.

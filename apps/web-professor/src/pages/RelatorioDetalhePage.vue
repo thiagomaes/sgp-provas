@@ -6,7 +6,7 @@ import { buscarAplicacaoPorId } from '../mocks/aplicacoes'
 import { buscarProvaPorId } from '../mocks/provas'
 import { buscarTurmaPorId } from '../mocks/turmas'
 import { correcoes } from '../mocks/correcoes'
-import type { Correction } from '../mocks/types'
+import type { Correction } from '../types'
 
 /**
  * Notas da aplicação (RF09, RF12) — fiel ao mockup

@@ -5,7 +5,7 @@ import AppShell from '../layouts/AppShell.vue'
 import { turmas, professoraLogada, buscarTurmaPorId } from '../mocks/turmas'
 import { provas, buscarProvaPorId } from '../mocks/provas'
 import { aplicacoes } from '../mocks/aplicacoes'
-import type { Application } from '../mocks/types'
+import type { Application } from '../types'
 
 /**
  * Dashboard do professor — fiel ao mockup docs/telas/02-dashboard.png.

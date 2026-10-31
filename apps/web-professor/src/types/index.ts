@@ -1,10 +1,11 @@
 /**
- * SGP — Entidades do domínio (fase N1, ainda sem banco real).
+ * SGP — Entidades do domínio, no formato que a API (apps/api) devolve.
  *
- * Estes tipos seguem os modelos descritos no README e são a referência
- * única para todas as telas. Se sua tela precisa de um campo que não
- * existe aqui, adicione o campo neste arquivo (e avise o grupo) em vez
- * de criar um tipo paralelo dentro da tela.
+ * Estes tipos são a referência única para todas as telas e para os
+ * services de src/services. Se sua tela precisa de um campo que não
+ * existe aqui, confira primeiro se a API devolve esse campo e adicione
+ * neste arquivo (e avise o grupo) em vez de criar um tipo paralelo
+ * dentro da tela.
  */
 
 /** Professor — único usuário com login no sistema (RF01). */
@@ -12,6 +13,13 @@ export interface Teacher {
   id: string
   nome: string
   email: string
+}
+
+/** Resposta de POST /auth/login e POST /auth/refresh. */
+export interface Session {
+  accessToken: string
+  refreshToken: string
+  professor: Teacher
 }
 
 /**
@@ -24,6 +32,8 @@ export interface Student {
   matricula: string
 }
 
+export type Shift = 'Manhã' | 'Tarde' | 'Noite'
+
 /** Turma do professor, com a lista de alunos cadastrados. */
 export interface Class {
   id: string
@@ -31,16 +41,18 @@ export interface Class {
   disciplina: string
   ano: string
   /** Turno em que a turma tem aula. */
-  turno: 'Manhã' | 'Tarde' | 'Noite'
+  turno: Shift
   alunos: Student[]
 }
 
 export type QuestionType = 'objetiva' | 'discursiva'
 
+export type OptionLetter = 'A' | 'B' | 'C' | 'D' | 'E'
+
 /** Alternativa de uma questão objetiva (2 a 5 por questão — RF02). */
 export interface QuestionOption {
   /** Letra exibida na prova antes do embaralhamento. */
-  letra: 'A' | 'B' | 'C' | 'D' | 'E'
+  letra: OptionLetter
   texto: string
   correta: boolean
 }
@@ -74,7 +86,7 @@ export interface Exam {
   titulo: string
   disciplina: string
   questoes: ExamQuestion[]
-  /** Soma das pontuações das questões. */
+  /** Soma das pontuações das questões, calculada pela API. */
   totalPontos: number
   criadaEm: string
 }
@@ -92,30 +104,39 @@ export interface Application {
   turmaId: string
   /** Data prevista/realizada da aplicação (ISO, AAAA-MM-DD). */
   data: string
-  /** Quantidade de versões embaralhadas geradas no PDF. */
+  /** Quantidade de versões embaralhadas geradas. */
   versoes: number
   embaralharQuestoes: boolean
   embaralharAlternativas: boolean
   /**
-   * Quando true, o PDF sai identificado por aluno e a nota é atribuída
+   * Quando true, a prova sai identificada por aluno e a nota é atribuída
    * automaticamente na correção; quando false, o lançamento é manual (RF09).
    */
   identificarAluno: boolean
   status: ApplicationStatus
   /** Quantas provas da turma já foram corrigidas. */
   corrigidas: number
+  /** Quantidade de alunos da turma, calculada pela API. */
   totalProvas: number
 }
 
-/** Resposta marcada pelo aluno em uma questão, lida pelo app mobile. */
+/** Uma versão gerada em POST /applications/:id/generate. */
+export interface ApplicationVersion {
+  numeroVersao: number
+  /** Conteúdo do QR Code impresso nesta versão. */
+  qrCodePayload: string
+}
+
+/** Resposta marcada pelo aluno em uma questão, lida pela câmera. */
 export interface CorrectionAnswer {
   questaoId: string
   /** Alternativa marcada no cartão-resposta; null quando em branco. */
-  marcada: 'A' | 'B' | 'C' | 'D' | 'E' | null
+  marcada: OptionLetter | null
   correta: boolean
   pontuacao: number
 }
 
+/** 'mobile' = lida pela câmera do celular; 'manual' = nota lançada à mão. */
 export type CorrectionOrigin = 'mobile' | 'manual'
 export type CorrectionSyncStatus = 'sincronizada' | 'pendente' | 'conflito'
 
@@ -128,10 +149,53 @@ export interface Correction {
   /** Versão embaralhada lida no QR Code. */
   versao: number
   nota: number
+  /** Vazio no lançamento manual, que não passa pelo cartão-resposta. */
   respostas: CorrectionAnswer[]
   origem: CorrectionOrigin
-  /** Id gerado no app para deduplicação na sincronização (RF10). */
+  /** Id gerado pela tela para deduplicação no envio (RF10). */
   clientCorrectionId: string
   statusSync: CorrectionSyncStatus
   corrigidaEm: string
+}
+
+/** Turma resumida, como vem no dashboard e nos relatórios. */
+export interface ClassSummary {
+  id: string
+  nome: string
+  disciplina: string
+  ano: string
+}
+
+/** Resposta de GET /reports/summary. */
+export interface DashboardSummary {
+  totais: { turmas: number; provas: number; aplicacoesRecentes: number }
+  /** As 3 aplicações com PDF gerado mais recentes. */
+  ultimasAplicacoes: (Application & {
+    turma: ClassSummary
+    prova: { id: string; titulo: string }
+  })[]
+  /** Média das notas de cada aplicação (null sem notas), pelo id. */
+  medias: Record<string, number | null>
+}
+
+export interface Statistics {
+  quantidade: number
+  media: number
+  mediana: number
+  desvioPadrao: number
+  maior: number
+  menor: number
+}
+
+/** Resposta de GET /applications/:id/report. */
+export interface ApplicationReport {
+  aplicacao: Application
+  prova: { id: string; titulo: string; totalPontos: number }
+  turma: ClassSummary
+  /** null enquanto não há nenhuma nota. */
+  estatisticas: Statistics | null
+  /** Um item por aluno da turma; correcao null = nota ainda não lançada. */
+  notas: { aluno: Student; correcao: Correction | null }[]
+  /** Provas lidas sem identificação que ainda não têm aluno (RF09). */
+  semAluno: Correction[]
 }

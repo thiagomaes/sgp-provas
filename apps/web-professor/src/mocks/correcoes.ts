@@ -1,4 +1,4 @@
-import type { Correction, CorrectionAnswer } from './types'
+import type { Correction, CorrectionAnswer } from '../types'
 import { provaExemplo } from './provas'
 import { turmaExemplo } from './turmas'
 import { questoes } from './questoes'

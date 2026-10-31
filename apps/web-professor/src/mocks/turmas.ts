@@ -1,4 +1,4 @@
-import type { Class, Student, Teacher } from './types'
+import type { Class, Student, Teacher } from '../types'
 
 /**
  * Turmas e alunos de exemplo (dados dos mockups aprovados).

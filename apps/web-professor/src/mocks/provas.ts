@@ -1,4 +1,4 @@
-import type { Exam } from './types'
+import type { Exam } from '../types'
 
 /**
  * Provas de exemplo (mockups aprovados).

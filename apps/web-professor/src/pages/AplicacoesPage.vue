@@ -5,7 +5,7 @@ import AppShell from '../layouts/AppShell.vue'
 import { aplicacoes } from '../mocks/aplicacoes'
 import { provas, buscarProvaPorId } from '../mocks/provas'
 import { turmas, buscarTurmaPorId } from '../mocks/turmas'
-import type { Application } from '../mocks/types'
+import type { Application } from '../types'
 
 /**
  * Aplicações (RF05) — fiel ao mockup docs/telas/09-aplicacoes-lista.png.

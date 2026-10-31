@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import { listarQuestoes } from '../services/questoes'
-import type { Question } from '../mocks/types'
+import type { Question } from '../types'
 
 const router = useRouter()
 const busca = ref('')

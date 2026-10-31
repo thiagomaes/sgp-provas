@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
-import type { Question } from '../mocks/types'
+import type { Question } from '../types'
 import { buscarQuestao, criarQuestao, editarQuestao } from '../services/questoes'
 
 const router = useRouter()
