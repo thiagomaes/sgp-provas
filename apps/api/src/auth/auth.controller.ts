@@ -1,7 +1,8 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { CurrentProfessor } from '../common/current-professor.decorator.js';
 import { Publica } from '../common/publica.decorator.js';
-import { AuthService } from './auth.service.js';
+import { AuthService, LoginBloqueadoException } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshDto } from './dto/refresh.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -19,8 +20,19 @@ export class AuthController {
   @Publica()
   @Post('login')
   @HttpCode(200)
-  login(@Body() dto: LoginDto) {
-    return this.auth.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Req() requisicao: Request,
+    @Res({ passthrough: true }) resposta: Response,
+  ) {
+    // A coluna ip tem 45 caracteres, o tamanho de um IPv6 completo.
+    const ip = (requisicao.ip ?? 'desconhecido').slice(0, 45);
+    try {
+      return await this.auth.login(dto, ip);
+    } catch (erro) {
+      if (erro instanceof LoginBloqueadoException) resposta.setHeader('Retry-After', String(erro.segundos));
+      throw erro;
+    }
   }
 
   @Publica()

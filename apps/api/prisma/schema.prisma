@@ -49,6 +49,20 @@ model RefreshToken {
   @@index([professorId])
 }
 
+/// Tentativas de login, guardadas no banco porque cada requisição pode cair numa
+/// instância diferente da função na Vercel: um contador em memória não serviria.
+/// Sem chave para Professor: e-mail que não existe também conta. Só guarda 1 dia.
+model TentativaLogin {
+  id       String   @id @default(cuid())
+  email    String   @db.VarChar(255)
+  ip       String   @db.VarChar(45)
+  sucesso  Boolean
+  criadaEm DateTime @default(now())
+
+  @@index([email, criadaEm])
+  @@index([ip, criadaEm])
+}
+
 model Turma {
   id          String      @id @default(cuid())
   professorId String

@@ -26,6 +26,26 @@ export class AuthRepository {
     return this.prisma.refreshToken.findUnique({ where: { tokenHash } });
   }
 
+  tentativasDoEmail(email: string, desde: Date) {
+    return this.prisma.tentativaLogin.findMany({
+      where: { email, criadaEm: { gte: desde } },
+      select: { sucesso: true, criadaEm: true },
+    });
+  }
+
+  tentativasDoIp(ip: string, desde: Date) {
+    return this.prisma.tentativaLogin.findMany({
+      where: { ip, sucesso: false, criadaEm: { gte: desde } },
+      select: { sucesso: true, criadaEm: true },
+    });
+  }
+
+  /** Grava a tentativa e apaga as antigas, para a tabela não crescer. */
+  async registrarTentativa(email: string, ip: string, sucesso: boolean, apagarAntesDe: Date) {
+    await this.prisma.tentativaLogin.create({ data: { email, ip, sucesso } });
+    await this.prisma.tentativaLogin.deleteMany({ where: { criadaEm: { lt: apagarAntesDe } } });
+  }
+
   /** Revoga só se ainda estiver ativo; devolve quantos foram revogados (0 ou 1). */
   async revogarRefreshToken(tokenHash: string): Promise<number> {
     const { count } = await this.prisma.refreshToken.updateMany({

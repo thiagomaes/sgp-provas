@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Professor } from '@prisma/client';
@@ -8,6 +8,7 @@ import type { PayloadAcesso } from '../common/jwt-auth.guard.js';
 import { AuthRepository } from './auth.repository.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
+import { JANELA_MS, mensagemDeBloqueio, verificarLimite } from './limite-login.js';
 
 /** Mesmo formato do tipo Teacher da web. */
 export interface ProfessorResposta {
@@ -23,6 +24,14 @@ export interface SessaoResposta {
 }
 
 const VALIDADE_REFRESH_MS = 7 * 24 * 60 * 60 * 1000;
+const RETENCAO_TENTATIVAS_MS = 24 * 60 * 60 * 1000;
+
+/** Resposta 429 do login; o controller usa os segundos no Retry-After. */
+export class LoginBloqueadoException extends HttpException {
+  constructor(readonly segundos: number) {
+    super(mensagemDeBloqueio(segundos), HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
 
 function hashDoToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -31,7 +40,8 @@ function hashDoToken(token: string): string {
 /**
  * Autenticação do professor (RF01, RNF04): access token JWT de 1h e refresh
  * token de 7 dias. O refresh token é guardado só como hash e é trocado a cada
- * uso (o antigo é revogado), então um token roubado só serve uma vez.
+ * uso (o antigo é revogado), então um token roubado só serve uma vez. O login
+ * tem limite de tentativas guardado no banco (limite-login.ts).
  */
 @Injectable()
 export class AuthService {
@@ -55,13 +65,20 @@ export class AuthService {
     return this.abrirSessao(professor);
   }
 
-  async login(dto: LoginDto): Promise<SessaoResposta> {
-    const professor = await this.repositorio.buscarPorEmail(dto.email.trim().toLowerCase());
+  async login(dto: LoginDto, ip: string): Promise<SessaoResposta> {
+    const email = dto.email.trim().toLowerCase();
+    // Antes da senha, para não gastar bcrypt em quem já está bloqueado. A tentativa
+    // bloqueada não é gravada: senão, insistir manteria o bloqueio para sempre.
+    await this.conferirLimite(email, ip);
+
+    const professor = await this.repositorio.buscarPorEmail(email);
     // Mesma mensagem para e-mail e senha errados: não revela quais e-mails existem.
     const senhaConfere = professor ? await bcrypt.compare(dto.senha, professor.passwordHash) : false;
     if (!professor || !senhaConfere || professor.anonymizedAt) {
+      await this.registrarTentativa(email, ip, false);
       throw new UnauthorizedException('E-mail ou senha incorretos.');
     }
+    await this.registrarTentativa(email, ip, true);
     return this.abrirSessao(professor);
   }
 
@@ -108,6 +125,21 @@ export class AuthService {
       throw new UnauthorizedException('Faça login para acessar o sistema.');
     }
     return paraResposta(professor);
+  }
+
+  private async conferirLimite(email: string, ip: string): Promise<void> {
+    const agora = new Date();
+    const desde = new Date(agora.getTime() - JANELA_MS);
+    const [doEmail, doIp] = await Promise.all([
+      this.repositorio.tentativasDoEmail(email, desde),
+      this.repositorio.tentativasDoIp(ip, desde),
+    ]);
+    const limite = verificarLimite(doEmail, doIp, agora);
+    if (limite.bloqueado) throw new LoginBloqueadoException(limite.segundos);
+  }
+
+  private registrarTentativa(email: string, ip: string, sucesso: boolean) {
+    return this.repositorio.registrarTentativa(email, ip, sucesso, new Date(Date.now() - RETENCAO_TENTATIVAS_MS));
   }
 
   private async abrirSessao(professor: Professor): Promise<SessaoResposta> {
