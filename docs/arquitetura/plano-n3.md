@@ -60,56 +60,56 @@ planilha e nas Issues.
 
 | ID | Tarefa | Prazo | Depende de |
 |---|---|---|---|
-| T01 | Issues da N3 e este plano no repositório | 09/11 | |
-| T02 | Layout do cartão-resposta (`docs/arquitetura/cartao-resposta.md`) | 10/11 | |
-| T10 | Rate limit no login e CA do Aiven | 12/11 | |
-| T07 | Ler o QR Code pela câmera | 14/11 | T02 |
-| T08 | Reconhecer as marcações do cartão-resposta | 20/11 | T02, T03 |
-| T09 | Atribuir a nota ao aluno identificado | 21/11 | T04, T07 |
-| T30 | Montar e enviar a entrega | 27/11 | T21, T28 |
+| T01 (#61) | Issues da N3 e este plano no repositório | 09/11 | |
+| T02 (#62) | Layout do cartão-resposta (`docs/arquitetura/cartao-resposta.md`) | 10/11 | |
+| T10 (#53) | Rate limit no login e CA do Aiven | 12/11 | |
+| T07 (#50) | Ler o QR Code pela câmera | 14/11 | T02 |
+| T08 (#65) | Reconhecer as marcações do cartão-resposta | 20/11 | T02, T03 |
+| T09 (#66) | Atribuir a nota ao aluno identificado | 21/11 | T04, T07 |
+| T30 (#80) | Montar e enviar a entrega | 27/11 | T21, T28 |
 
 **Iago: provas e aplicações (27 h)**
 
 | ID | Tarefa | Prazo | Depende de |
 |---|---|---|---|
-| T06 | Status "Concluída" automático e várias turmas | 13/11 | |
-| T03 | Gerar o PDF consolidado da aplicação | 16/11 | T02 |
-| T04 | Prova identificada: versão e QR Code por aluno | 18/11 | T03 |
-| T05 | Tela de gabarito por versão | 19/11 | T03 |
-| T26 | Atualizar UML e MER/DER | 23/11 | T04, T17, T23 |
-| T28 | Manual do usuário | 25/11 | T27 |
+| T06 (#52) | Status "Concluída" automático e várias turmas | 13/11 | |
+| T03 (#49) | Gerar o PDF consolidado da aplicação | 16/11 | T02 |
+| T04 (#63) | Prova identificada: versão e QR Code por aluno | 18/11 | T03 |
+| T05 (#64) | Tela de gabarito por versão | 19/11 | T03 |
+| T26 (#76) | Atualizar UML e MER/DER | 23/11 | T04, T17, T23 |
+| T28 (#78) | Manual do usuário | 25/11 | T27 |
 
 **Marceu: relatórios, offline e apresentação (29 h)**
 
 | ID | Tarefa | Prazo | Depende de |
 |---|---|---|---|
-| T12 | Estatística por questão (acerto e alternativa mais marcada) | 14/11 | |
-| T13 | Exportar notas em Excel com a alternativa marcada | 16/11 | T12 |
-| T14 | Relatório consolidado na web e PDF | 18/11 | T13 |
-| T11 | Correção offline (PWA) | 22/11 | T08 |
-| T29 | Teste de uso com uma pessoa de fora | 24/11 | T27 |
-| T15 | Apresentação (pitch) para o cliente | 26/11 | T27 |
+| T12 (#67) | Estatística por questão (acerto e alternativa mais marcada) | 14/11 | |
+| T13 (#56) | Exportar notas em Excel com a alternativa marcada | 16/11 | T12 |
+| T14 (#68) | Relatório consolidado na web e PDF | 18/11 | T13 |
+| T11 (#51) | Correção offline (PWA) | 22/11 | T08 |
+| T29 (#79) | Teste de uso com uma pessoa de fora | 24/11 | T27 |
+| T15 (#69) | Apresentação (pitch) para o cliente | 26/11 | T27 |
 
 **Amanda: conta do professor, alunos e README (25 h)**
 
 | ID | Tarefa | Prazo | Depende de |
 |---|---|---|---|
-| T16 | Tela de cadastro do professor | 12/11 | |
-| T18 | Importar alunos por planilha | 16/11 | |
-| T20 | Backup e disponibilidade | 19/11 | |
-| T17 | Recuperação de senha | 20/11 | T16 |
-| T19 | Anonimização da conta (LGPD) | 21/11 | |
-| T21 | README final e novos ADRs | 25/11 | T03, T08, T11 |
+| T16 (#70) | Tela de cadastro do professor | 12/11 | |
+| T18 (#71) | Importar alunos por planilha | 16/11 | |
+| T20 (#72) | Backup e disponibilidade | 19/11 | |
+| T17 (#54) | Recuperação de senha | 20/11 | T16 |
+| T19 (#55) | Anonimização da conta (LGPD) | 21/11 | |
+| T21 (#59) | README final e novos ADRs | 25/11 | T03, T08, T11 |
 
 **Hellen: qualidade e testes (23 h)**
 
 | ID | Tarefa | Prazo | Depende de |
 |---|---|---|---|
-| T23 | Logs de acesso e teste de isolamento | 17/11 | |
-| T22 | Validações e mensagens de erro em todas as telas | 18/11 | |
-| T25 | Medir desempenho e corrigir o npm audit | 19/11 | |
-| T24 | Cobertura de testes de 80% | 21/11 | |
-| T27 | Teste de ponta a ponta da N3 | 24/11 | T03 a T14 |
+| T23 (#74) | Logs de acesso e teste de isolamento | 17/11 | |
+| T22 (#73) | Validações e mensagens de erro em todas as telas | 18/11 | |
+| T25 (#58) | Medir desempenho e corrigir o npm audit | 19/11 | |
+| T24 (#75) | Cobertura de testes de 80% | 21/11 | |
+| T27 (#77) | Teste de ponta a ponta da N3 | 24/11 | T03 a T14 |
 
 ## 4. Ordem do trabalho
 
