@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
 import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { atualizarCorrecao, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
+import {
+  atualizarCorrecao,
+  excluirCorrecao,
+  novoIdDeCorrecao,
+  registrarCorrecao,
+} from '../services/correcoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
 import { baixarCsv, buscarRelatorio, nomeDoCsv } from '../services/relatorios'
 import type { ApplicationReport, Correction } from '../types'
@@ -117,6 +123,29 @@ async function atribuir(correcao: Correction) {
   }
 }
 
+const excluindoCorrecaoId = ref<string | null>(null)
+const excluindoCorrecao = ref(false)
+const erroExclusaoCorrecao = ref('')
+
+function pedirExclusaoDaCorrecao(correcaoId: string) {
+  excluindoCorrecaoId.value = correcaoId
+  erroExclusaoCorrecao.value = ''
+}
+
+async function confirmarExclusaoDaCorrecao(correcaoId: string) {
+  excluindoCorrecao.value = true
+  erroExclusaoCorrecao.value = ''
+  try {
+    await excluirCorrecao(aplicacaoId, correcaoId)
+    excluindoCorrecaoId.value = null
+    await carregar(false)
+  } catch (falha) {
+    erroExclusaoCorrecao.value = mensagemDeErro(falha, 'Não foi possível excluir a correção.')
+  } finally {
+    excluindoCorrecao.value = false
+  }
+}
+
 const exportando = ref(false)
 const erroExportacao = ref('')
 
@@ -227,6 +256,13 @@ async function exportarCsv() {
                   >
                     editar
                   </button>
+                  <button
+                    class="link-editar"
+                    type="button"
+                    @click="pedirExclusaoDaCorrecao(linha.correcao.id)"
+                  >
+                    excluir
+                  </button>
                 </span>
 
                 <button
@@ -256,6 +292,18 @@ async function exportarCsv() {
             </tr>
             <tr v-if="editandoAluno === linha.aluno.id && erroNota">
               <td colspan="4"><p class="erro" role="alert">{{ erroNota }}</p></td>
+            </tr>
+            <tr v-if="linha.correcao && excluindoCorrecaoId === linha.correcao.id">
+              <td colspan="4">
+                <ConfirmarExclusao
+                  :alvo="`a nota de ${linha.aluno.nome}`"
+                  detalhe="A prova volta a contar como não corrigida e pode ser lida de novo."
+                  :excluindo="excluindoCorrecao"
+                  :erro="erroExclusaoCorrecao"
+                  @confirmar="confirmarExclusaoDaCorrecao(linha.correcao.id)"
+                  @cancelar="excluindoCorrecaoId = null"
+                />
+              </td>
             </tr>
           </template>
         </tbody>
@@ -291,6 +339,19 @@ async function exportarCsv() {
             >
               {{ atribuindo === correcao.id ? 'Atribuindo...' : 'Atribuir' }}
             </button>
+            <button class="link-editar" type="button" @click="pedirExclusaoDaCorrecao(correcao.id)">
+              excluir
+            </button>
+            <ConfirmarExclusao
+              v-if="excluindoCorrecaoId === correcao.id"
+              class="confirmacao-sem-aluno"
+              :alvo="`a prova lida da versão ${correcao.versao}`"
+              detalhe="A prova volta a contar como não corrigida e pode ser lida de novo."
+              :excluindo="excluindoCorrecao"
+              :erro="erroExclusaoCorrecao"
+              @confirmar="confirmarExclusaoDaCorrecao(correcao.id)"
+              @cancelar="excluindoCorrecaoId = null"
+            />
           </li>
         </ul>
       </section>
@@ -406,6 +467,10 @@ async function exportarCsv() {
 
 .item-sem-aluno:last-child {
   border-bottom: none;
+}
+
+.confirmacao-sem-aluno {
+  flex-basis: 100%;
 }
 
 .item-nota {
