@@ -1,10 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
 
 async function criarApp() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // O limite de login conta tentativas por IP. Confia só no primeiro proxy (o da
+  // Vercel): req.ip é o IP que ele registrou no X-Forwarded-For, e o cliente não
+  // consegue trocar esse valor mandando o próprio cabeçalho.
+  app.set('trust proxy', 1);
 
   // CORS só para a web do professor. Em desenvolvimento, o Vite local
   // (localhost:5173) também é liberado.

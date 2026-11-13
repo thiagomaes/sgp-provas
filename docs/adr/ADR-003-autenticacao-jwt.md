@@ -157,9 +157,15 @@ tendo que ser mantido e verificado por nós em cada consulta.
   máximo 1 hora; só o refresh é revogado. Para invalidação imediata seria
   preciso uma lista de bloqueio consultada a cada requisição, o que desfaria o
   ganho de ser stateless.
-- **Rate limiting ainda não está implementado.** O RNF04 pede proteção contra
-  força bruta; hoje existem apenas a mensagem de erro genérica e o custo do
-  bcrypt. Um throttler no `/auth/login` fica como pendência da N3.
+- **O limite de login pode ser usado contra outra pessoa.** Para atender ao RNF04,
+  o `POST /auth/login` bloqueia com 429 depois de 5 senhas erradas para o mesmo
+  e-mail em 15 minutos, desde o último login certo, ou 20 do mesmo IP. Como
+  o bloqueio é por e-mail, quem souber o e-mail de um professor consegue travar o
+  login dele por até 15 minutos, e uma escola inteira atrás do mesmo IP divide o
+  limite de 20. As tentativas ficam na tabela `TentativaLogin` e não em memória,
+  porque cada requisição pode cair numa instância diferente da função. Por isso
+  o `@nestjs/throttler` padrão não serve. A regra está em
+  `apps/api/src/auth/limite-login.ts`, e as tentativas são apagadas depois de 1 dia.
 - **Recuperação de senha não existe.** Professor que esquecer a senha depende de
   intervenção manual no banco.
 - **A tabela de refresh tokens cresce.** Tokens revogados ou expirados ficam

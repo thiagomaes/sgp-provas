@@ -47,8 +47,8 @@ Todos os ADRs deste repositório seguem a mesma estrutura, definida pelo ADR-001
   dados pelo `professorId` que vem do token.
 - **ADR-004 — Hospedagem na Vercel com banco MySQL no Aiven.** Web e API na
   Vercel, a API como função serverless, e MySQL 8.4 no plano gratuito do Aiven.
-  Registra os preços dessa escolha: o banco suspenso por inatividade, a primeira
-  requisição lenta e a conexão TLS sem verificação do certificado.
+  Registra os preços dessa escolha, como o banco suspenso por inatividade e a
+  primeira requisição lenta, e como a conexão verifica o certificado do Aiven.
 - **ADR-005: soft-delete de questões.** Excluir uma questão só preenche o
   `deletedAt`: ela some do banco do professor e não entra em prova nova, mas as
   provas que já a usam continuam com ela, inclusive no gabarito da correção.

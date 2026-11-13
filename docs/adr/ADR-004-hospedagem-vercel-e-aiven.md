@@ -52,6 +52,13 @@ consequências que moldaram o resto da arquitetura:
   quebra em produção.
 - Migration nunca roda no build: o banco é migrado com `prisma migrate deploy`
   à parte.
+- A conexão com o banco verifica o certificado do servidor: a `DATABASE_URL` da
+  Vercel termina em `?sslcert=./aiven-ca.pem&sslaccept=strict`, e a CA pública do
+  projeto Aiven fica versionada em `apps/api/prisma/aiven-ca.pem` (é um certificado
+  público, válido até 2036, sem nenhuma chave privada). Para o arquivo chegar à
+  função, o `PrismaService` referencia o caminho com `new URL(...)`, que o
+  empacotador da Vercel rastreia: o `includeFiles` do `vercel.json` não serve aqui,
+  porque com o preset NestJS o campo `functions` só aceita a pasta `api/`.
 
 A web conversa com a API pela variável `VITE_API_URL`, e a API libera no CORS
 apenas a origem da web, pela variável `WEB_ORIGIN`. Nenhum dos dois endereços
@@ -116,18 +123,11 @@ trabalho ficariam na máquina de uma pessoa. Descartada de saída.
   tela mostra erro sem motivo aparente. **Mitigação operacional:** conferir no
   painel do Aiven se o serviço está "Running" antes de entregar e perto da
   correção, e abrir o sistema alguns minutos antes de apresentar.
-- **A conexão aceita o certificado sem verificar.** A `DATABASE_URL` usa
-  `?sslaccept=accept_invalid_certs`, porque o Aiven apresenta um certificado
-  próprio que não está na lista de raízes confiáveis do ambiente da Vercel. O
-  tráfego **é cifrado**, mas sem validar a identidade do servidor, o que deixa a
-  conexão teoricamente exposta a um ataque de intermediário. É um risco aceito
-  para um trabalho acadêmico, com dados de exemplo.
-
-  **Como trocar pelo CA do Aiven:** baixar o `ca.pem` do serviço (painel do
-  Aiven, nas informações de conexão) e substituir o parâmetro por
-  `?sslcert=caminho/ca.pem` na `DATABASE_URL`, como o
-  `apps/api/.env.example` já documenta. Em função serverless isso exige que o
-  arquivo seja publicado junto do deploy, o que fica como melhoria da N3.
+- **No Mac a conexão local não verifica o certificado.** O certificado do Aiven
+  não tem a extensão `ExtendedKeyUsage`, que o TLS da Apple exige, e o Prisma
+  responde `P1011: The certificate was not trusted` no macOS. Por isso o `.env` de
+  quem desenvolve no Mac continua com `?sslaccept=accept_invalid_certs`. Na Vercel
+  e em Linux, que usam OpenSSL, a conexão é verificada.
 - **Cold start.** Função serverless que não é chamada há um tempo demora mais na
   primeira requisição. Somado ao banco suspenso, o primeiro acesso do dia é
   sensivelmente mais lento que o RNF02 (300ms no p95) — número que vale para a
