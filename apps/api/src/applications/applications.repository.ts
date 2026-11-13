@@ -32,12 +32,17 @@ export class ApplicationsRepository {
     });
   }
 
-  turmaDoProfessor(professorId: string, turmaId: string) {
-    return this.prisma.turma.findFirst({ where: { id: turmaId, professorId }, select: { id: true } });
+  turmasDoProfessor(professorId: string, turmaIds: string[]) {
+    return this.prisma.turma.findMany({
+      where: { id: { in: turmaIds }, professorId },
+      select: { id: true, _count: { select: { alunos: true } } },
+    });
   }
 
-  criar(dados: Prisma.AplicacaoUncheckedCreateInput): Promise<AplicacaoComTotal> {
-    return this.prisma.aplicacao.create({ data: dados, include: incluirTotalDeAlunos });
+  criarVarias(aplicacoes: Prisma.AplicacaoUncheckedCreateInput[]): Promise<AplicacaoComTotal[]> {
+    return this.prisma.$transaction(
+      aplicacoes.map((dados) => this.prisma.aplicacao.create({ data: dados, include: incluirTotalDeAlunos })),
+    );
   }
 
   contarCorrecoes(aplicacaoId: string) {

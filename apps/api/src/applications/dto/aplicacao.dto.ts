@@ -1,13 +1,28 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength } from 'class-validator';
+import {
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateAplicacaoDto {
   @IsString()
   @MinLength(1)
   provaId: string;
 
-  @IsString()
-  @MinLength(1)
-  turmaId: string;
+  @IsArray({ message: 'Escolha pelo menos uma turma.' })
+  @ArrayMinSize(1, { message: 'Escolha pelo menos uma turma.' })
+  @ArrayUnique({ message: 'A mesma turma foi escolhida mais de uma vez.' })
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
+  turmaIds: string[];
 
   /** Data da aplicação, no formato AAAA-MM-DD. */
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'A data deve estar no formato AAAA-MM-DD.' })

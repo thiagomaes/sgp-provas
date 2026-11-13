@@ -5,7 +5,7 @@ import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
 import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
 import {
-  criarAplicacao as criarNaApi,
+  criarAplicacoes,
   dataDeHoje,
   excluirAplicacao,
   listarAplicacoes,
@@ -52,8 +52,9 @@ onMounted(carregar)
 const provasProntas = computed(() => provas.value.filter((prova) => prova.questoes.length > 0))
 
 const provaId = ref('')
-const turmaId = ref('')
+const turmaIds = ref<string[]>([])
 const erro = ref('')
+const aviso = ref('')
 const criando = ref(false)
 
 const rotuloStatus: Record<Application['status'], string> = {
@@ -78,23 +79,27 @@ function podeCorrigir(aplicacao: Application): boolean {
 
 async function criarAplicacao() {
   erro.value = ''
+  aviso.value = ''
 
-  if (!provaId.value || !turmaId.value) {
-    erro.value = 'Escolha a prova e a turma.'
+  if (!provaId.value || turmaIds.value.length === 0) {
+    erro.value = 'Escolha a prova e pelo menos uma turma.'
     return
   }
 
-  const turma = turmas.value.find((item) => item.id === turmaId.value)
   criando.value = true
   try {
-    const nova = await criarNaApi({
+    const novas = await criarAplicacoes({
       provaId: provaId.value,
-      turmaId: turmaId.value,
+      turmaIds: turmaIds.value,
       data: dataDeHoje(),
-      // Padrão do fluxo: uma versão embaralhada por aluno da turma.
-      versoes: Math.min(Math.max(turma?.alunos.length ?? 1, 1), 200),
     })
-    router.push(`/aplicacoes/${nova.id}/exportar`)
+    if (novas.length === 1) {
+      router.push(`/aplicacoes/${novas[0].id}/exportar`)
+      return
+    }
+    listaAplicacoes.value = [...listaAplicacoes.value, ...novas]
+    turmaIds.value = []
+    aviso.value = `${novas.length} aplicações criadas, uma por turma. Configure o PDF de cada uma na lista.`
   } catch (falha) {
     erro.value = mensagemDeErro(falha, 'Não foi possível criar a aplicação.')
   } finally {
@@ -149,15 +154,14 @@ async function confirmarExclusao(id: string) {
           </select>
         </div>
 
-        <div class="campo">
-          <label class="rotulo" for="turma">Turma</label>
-          <select id="turma" v-model="turmaId">
-            <option value="">Selecione a turma</option>
-            <option v-for="turma in turmas" :key="turma.id" :value="turma.id">
-              {{ turma.nome }}
-            </option>
-          </select>
-        </div>
+        <fieldset class="campo turmas">
+          <legend class="rotulo">Turmas</legend>
+          <p v-if="turmas.length === 0" class="sem-turma">Nenhuma turma cadastrada.</p>
+          <label v-for="turma in turmas" :key="turma.id" class="opcao-turma">
+            <input v-model="turmaIds" type="checkbox" :value="turma.id" />
+            {{ turma.nome }}
+          </label>
+        </fieldset>
 
         <button class="botao" type="button" :disabled="criando" @click="criarAplicacao">
           {{ criando ? 'Criando...' : 'Configurar PDF →' }}
@@ -165,9 +169,10 @@ async function confirmarExclusao(id: string) {
       </section>
 
       <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
+      <p v-if="aviso" class="aviso" role="status">{{ aviso }}</p>
 
       <EstadoTela v-if="listaAplicacoes.length === 0" tipo="vazio">
-        Nenhuma aplicação criada ainda. Escolha a prova e a turma acima.
+        Nenhuma aplicação criada ainda. Escolha a prova e as turmas acima.
       </EstadoTela>
 
       <table v-else class="tabela">
@@ -280,12 +285,46 @@ select:focus {
   border-color: var(--accent-dark);
 }
 
+.turmas {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.opcao-turma {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-base);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.opcao-turma input {
+  accent-color: var(--accent);
+}
+
+.sem-turma {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-soft);
+}
+
 .erro {
   margin: 0 0 var(--space-4);
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   color: var(--warn);
   background: var(--warn-soft);
+  border-radius: var(--radius-sm);
+}
+
+.aviso {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--accent-dark);
+  background: var(--accent-soft);
   border-radius: var(--radius-sm);
 }
 

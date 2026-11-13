@@ -46,6 +46,9 @@ export const atualizarCorrecao = (
   dados: { alunoId?: string | null; nota?: number },
 ) => http.patch<Correction>(`/applications/${aplicacaoId}/corrections/${correcaoId}`, dados)
 
+export const excluirCorrecao = (aplicacaoId: string, correcaoId: string) =>
+  http.delete(`/applications/${aplicacaoId}/corrections/${correcaoId}`)
+
 /**
  * Id único gerado na tela para cada correção. crypto.randomUUID só existe
  * em contexto seguro (HTTPS ou localhost); fora dele, um id aleatório basta.
