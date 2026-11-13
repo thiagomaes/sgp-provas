@@ -5,7 +5,7 @@ import { http } from './http'
 
 export interface DadosAplicacao {
   provaId: string
-  turmaId: string
+  turmaIds: string[]
   /** AAAA-MM-DD */
   data: string
   versoes?: number
@@ -25,8 +25,8 @@ export const listarAplicacoes = () => http.get<Application[]>('/applications')
 
 export const buscarAplicacao = (id: string) => http.get<Application>(`/applications/${id}`)
 
-export const criarAplicacao = (dados: DadosAplicacao) =>
-  http.post<Application>('/applications', dados)
+export const criarAplicacoes = (dados: DadosAplicacao) =>
+  http.post<Application[]>('/applications', dados)
 
 /** 409 quando a aplicação já tem provas corrigidas. */
 export const excluirAplicacao = (id: string) => http.delete(`/applications/${id}`)
