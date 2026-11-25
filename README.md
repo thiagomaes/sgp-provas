@@ -325,13 +325,14 @@ rotas não públicas exigem o cabeçalho `Authorization: Bearer <accessToken>`.
 | PATCH | `/exams/:id` | Edita prova (409 ao trocar as questões de prova com versões geradas) | |
 | DELETE | `/exams/:id` | Exclui prova (soft-delete; as aplicações antigas continuam com ela) | |
 | GET | `/applications` | Lista as aplicações | |
-| POST | `/applications` | Cria aplicação de uma prova para uma turma | |
+| POST | `/applications` | Cria uma aplicação da prova para cada turma de `turmaIds` (padrão: uma versão por aluno) | |
 | GET | `/applications/:id` | Uma aplicação | |
 | DELETE | `/applications/:id` | Exclui aplicação (409 se tiver provas corrigidas) | |
 | POST | `/applications/:id/generate` | Gera as versões embaralhadas, cada uma com o conteúdo do QR Code | |
 | GET | `/applications/:id/corrections` | Correções da aplicação; `?assigned=false` traz só as sem aluno | |
 | POST | `/applications/:id/corrections` | Grava uma correção lida pela câmera (a API calcula a nota) ou um lançamento manual; reenviar o mesmo `clientCorrectionId` não duplica | |
 | PATCH | `/applications/:id/corrections/:correctionId` | Atribui o aluno e/ou ajusta a nota | |
+| DELETE | `/applications/:id/corrections/:correctionId` | Exclui a correção; a aplicação concluída volta para "Em correção" | |
 | GET | `/reports/summary` | Números do dashboard, últimas aplicações e média de cada aplicação | |
 | GET | `/reports/consolidated` | CSV com as notas de todas as aplicações (`?format=csv`, o único formato por enquanto) | |
 | GET | `/applications/:id/report` | Relatório da aplicação: estatísticas e a nota de cada aluno | |

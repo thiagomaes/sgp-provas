@@ -26,25 +26,28 @@ export class ApplicationsService {
     return aplicacaoParaResposta(await this.aplicacaoDoProfessor(professorId, id));
   }
 
-  async criar(professorId: string, dto: CreateAplicacaoDto): Promise<AplicacaoResposta> {
+  async criar(professorId: string, dto: CreateAplicacaoDto): Promise<AplicacaoResposta[]> {
     if (!(await this.repositorio.provaDoProfessor(professorId, dto.provaId))) {
       throw new BadRequestException('Prova não encontrada.');
     }
-    if (!(await this.repositorio.turmaDoProfessor(professorId, dto.turmaId))) {
+    const turmas = await this.repositorio.turmasDoProfessor(professorId, dto.turmaIds);
+    if (turmas.length !== dto.turmaIds.length) {
       throw new BadRequestException('Turma não encontrada.');
     }
-    const criada = await this.repositorio.criar({
-      professorId,
-      provaId: dto.provaId,
-      turmaId: dto.turmaId,
-      data: new Date(`${dto.data}T00:00:00Z`),
-      versoes: dto.versoes ?? 1,
-      embaralharQuestoes: dto.embaralharQuestoes ?? true,
-      embaralharAlternativas: dto.embaralharAlternativas ?? true,
-      identificarAluno: dto.identificarAluno ?? true,
-      status: 'rascunho',
-    });
-    return aplicacaoParaResposta(criada);
+    const criadas = await this.repositorio.criarVarias(
+      turmas.map((turma) => ({
+        professorId,
+        provaId: dto.provaId,
+        turmaId: turma.id,
+        data: new Date(`${dto.data}T00:00:00Z`),
+        versoes: dto.versoes ?? versoesPadraoDaTurma(turma._count.alunos),
+        embaralharQuestoes: dto.embaralharQuestoes ?? true,
+        embaralharAlternativas: dto.embaralharAlternativas ?? true,
+        identificarAluno: dto.identificarAluno ?? true,
+        status: 'rascunho',
+      })),
+    );
+    return criadas.map(aplicacaoParaResposta);
   }
 
   async excluir(professorId: string, id: string): Promise<void> {
@@ -113,4 +116,10 @@ export class ApplicationsService {
     if (!aplicacao) throw new NotFoundException('Aplicação não encontrada.');
     return aplicacao;
   }
+}
+
+const MAXIMO_DE_VERSOES = 200;
+
+export function versoesPadraoDaTurma(totalAlunos: number): number {
+  return Math.min(Math.max(totalAlunos, 1), MAXIMO_DE_VERSOES);
 }

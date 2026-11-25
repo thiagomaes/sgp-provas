@@ -83,7 +83,7 @@ export class CorrectionsService {
           clientCorrectionId: dto.clientCorrectionId,
           statusSync: 'sincronizada',
         },
-        aplicacao.status,
+        aplicacao.turma.alunos.length,
       );
       return paraResposta(criada);
     } catch (erro) {
@@ -120,6 +120,14 @@ export class CorrectionsService {
       origem: notaMudou ? 'manual' : undefined,
     });
     return paraResposta(atualizada);
+  }
+
+  async excluir(professorId: string, aplicacaoId: string, correcaoId: string): Promise<void> {
+    const aplicacao = await this.aplicacaoDoProfessor(professorId, aplicacaoId);
+    if (!(await this.repositorio.buscar(aplicacaoId, correcaoId))) {
+      throw new NotFoundException('Correção não encontrada nesta aplicação.');
+    }
+    await this.repositorio.excluir(aplicacaoId, correcaoId, aplicacao.turma.alunos.length);
   }
 
   private reenvio(existente: Correcao, aplicacaoId: string): CorrecaoResposta {
