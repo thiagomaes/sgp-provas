@@ -313,6 +313,36 @@ const imprimir = () => window.print()
         </tbody>
       </table>
 
+      <section v-if="relatorio.questoes?.some((questao) => questao.respondidas)" class="por-questao">
+        <h2 class="secao-titulo">Acerto por questão</h2>
+        <p class="secao-desc">
+          Calculado com as provas lidas pela câmera; notas lançadas à mão não entram.
+        </p>
+
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Questão</th>
+              <th>Acerto</th>
+              <th>Mais marcada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="questao in relatorio.questoes" :key="questao.questaoId">
+              <td>{{ questao.numero }}</td>
+              <td>
+                {{
+                  questao.percentualAcerto === null
+                    ? '—'
+                    : `${Math.round(questao.percentualAcerto)}% (de ${questao.respondidas})`
+                }}
+              </td>
+              <td>{{ questao.maisMarcada ?? '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section v-if="relatorio.semAluno.length" class="sem-aluno">
         <h2 class="secao-titulo">Provas lidas sem identificação</h2>
         <p class="secao-desc">
@@ -435,7 +465,8 @@ const imprimir = () => window.print()
   color: var(--accent-dark);
 }
 
-.sem-aluno {
+.sem-aluno,
+.por-questao {
   margin-top: var(--space-6);
 }
 
