@@ -59,6 +59,8 @@ const incluirRelatorio = {
       alunos: { orderBy: { matricula: 'asc' } },
     },
   },
-  prova: { select: { id: true, titulo: true, totalPontos: true } },
+  prova: {
+    select: { id: true, titulo: true, totalPontos: true, questoes: { select: { questaoId: true, ordem: true } } },
+  },
   correcoes: { orderBy: [{ corrigidaEm: 'asc' }, { id: 'asc' }] },
 } satisfies Prisma.AplicacaoInclude;
