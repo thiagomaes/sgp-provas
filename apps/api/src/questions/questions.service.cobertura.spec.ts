@@ -2,7 +2,11 @@ import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import type { QuestionsRepository } from './questions.repository.js';
 import { QuestionsService } from './questions.service.js';
 
-const alt = (letra: string, correta = false) => ({ letra, texto: `opção ${letra}`, correta });
+const alt = (letra: string, correta = false) => ({
+  letra,
+  texto: `opção ${letra}`,
+  correta,
+});
 
 function questaoBanco(sobrescrever: Record<string, unknown> = {}) {
   return {
@@ -38,7 +42,11 @@ beforeAll(() => {
 describe('QuestionsService.listar', () => {
   const banco = [
     questaoBanco(),
-    questaoBanco({ id: 'q-2', enunciado: 'Capital do Brasil?', tags: ['geografia'] }),
+    questaoBanco({
+      id: 'q-2',
+      enunciado: 'Capital do Brasil?',
+      tags: ['geografia'],
+    }),
   ];
 
   it('devolve todas as questões do professor sem filtro', async () => {
@@ -64,9 +72,15 @@ describe('QuestionsService.listar', () => {
     const { repo, servico } = criarServico();
     repo.listar.mockResolvedValue(banco);
 
-    expect((await servico.listar('prof-1', { busca: 'capital' })).map((q) => q.id)).toEqual(['q-2']);
-    expect((await servico.listar('prof-1', { busca: 'soma' })).map((q) => q.id)).toEqual(['q-1']);
-    expect(await servico.listar('prof-1', { busca: 'inexistente' })).toEqual([]);
+    expect(
+      (await servico.listar('prof-1', { busca: 'capital' })).map((q) => q.id),
+    ).toEqual(['q-2']);
+    expect(
+      (await servico.listar('prof-1', { busca: 'soma' })).map((q) => q.id),
+    ).toEqual(['q-1']);
+    expect(await servico.listar('prof-1', { busca: 'inexistente' })).toEqual(
+      [],
+    );
   });
 
   it('trata tags nulas como lista vazia', async () => {
@@ -95,7 +109,9 @@ describe('QuestionsService.buscar', () => {
     const { repo, servico } = criarServico();
     repo.buscar.mockResolvedValue(null);
 
-    await expect(servico.buscar('prof-1', 'x')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(servico.buscar('prof-1', 'x')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });
 
@@ -129,7 +145,12 @@ describe('QuestionsService.criar', () => {
   it('grava discursiva sem alternativas e com pontuação', async () => {
     const { repo, servico } = criarServico();
     repo.criar.mockResolvedValue(
-      questaoBanco({ tipo: 'discursiva', alternativas: [], respostaEsperada: '4', pontuacaoMaxima: 2 }),
+      questaoBanco({
+        tipo: 'discursiva',
+        alternativas: [],
+        respostaEsperada: '4',
+        pontuacaoMaxima: 2,
+      }),
     );
 
     const resposta = await servico.criar('prof-1', {
@@ -142,7 +163,11 @@ describe('QuestionsService.criar', () => {
 
     expect(repo.criar).toHaveBeenCalledWith(
       'prof-1',
-      expect.objectContaining({ respostaEsperada: '4', pontuacaoMaxima: 2, tags: [] }),
+      expect.objectContaining({
+        respostaEsperada: '4',
+        pontuacaoMaxima: 2,
+        tags: [],
+      }),
       [],
     );
     expect(resposta.alternativas).toBeUndefined();
@@ -154,7 +179,11 @@ describe('QuestionsService.criar', () => {
     const { repo, servico } = criarServico();
 
     await expect(
-      servico.criar('prof-1', { enunciado: 'Explique', tipo: 'discursiva', disciplina: 'Mat' } as never),
+      servico.criar('prof-1', {
+        enunciado: 'Explique',
+        tipo: 'discursiva',
+        disciplina: 'Mat',
+      } as never),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repo.criar).not.toHaveBeenCalled();
   });
@@ -165,9 +194,9 @@ describe('QuestionsService.atualizar', () => {
     const { repo, servico } = criarServico();
     repo.buscar.mockResolvedValue(null);
 
-    await expect(servico.atualizar('prof-1', 'x', { enunciado: 'a' } as never)).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      servico.atualizar('prof-1', 'x', { enunciado: 'a' } as never),
+    ).rejects.toBeInstanceOf(NotFoundException);
     expect(repo.atualizar).not.toHaveBeenCalled();
   });
 
@@ -176,11 +205,18 @@ describe('QuestionsService.atualizar', () => {
     repo.buscar.mockResolvedValue(questaoBanco());
     repo.atualizar.mockResolvedValue(questaoBanco({ enunciado: 'Novo' }));
 
-    const resposta = await servico.atualizar('prof-1', 'q-1', { enunciado: ' Novo ' } as never);
+    const resposta = await servico.atualizar('prof-1', 'q-1', {
+      enunciado: ' Novo ',
+    } as never);
 
     expect(repo.atualizar).toHaveBeenCalledWith(
       'q-1',
-      expect.objectContaining({ enunciado: 'Novo', tipo: 'objetiva', respostaEsperada: null, pontuacaoMaxima: null }),
+      expect.objectContaining({
+        enunciado: 'Novo',
+        tipo: 'objetiva',
+        respostaEsperada: null,
+        pontuacaoMaxima: null,
+      }),
       undefined,
     );
     expect(resposta.enunciado).toBe('Novo');
@@ -191,7 +227,9 @@ describe('QuestionsService.atualizar', () => {
     repo.buscar.mockResolvedValue(questaoBanco());
 
     await expect(
-      servico.atualizar('prof-1', 'q-1', { alternativas: [alt('A', true), alt('B', true)] } as never),
+      servico.atualizar('prof-1', 'q-1', {
+        alternativas: [alt('A', true), alt('B', true)],
+      } as never),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repo.atualizar).not.toHaveBeenCalled();
   });
@@ -200,18 +238,31 @@ describe('QuestionsService.atualizar', () => {
     const { repo, servico } = criarServico();
     repo.buscar.mockResolvedValue(questaoBanco());
 
-    await expect(servico.atualizar('prof-1', 'q-1', { tipo: 'discursiva' } as never)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      servico.atualizar('prof-1', 'q-1', { tipo: 'discursiva' } as never),
+    ).rejects.toBeInstanceOf(BadRequestException);
 
     repo.atualizar.mockResolvedValue(
-      questaoBanco({ tipo: 'discursiva', alternativas: [], pontuacaoMaxima: 3, respostaEsperada: 'resp' }),
+      questaoBanco({
+        tipo: 'discursiva',
+        alternativas: [],
+        pontuacaoMaxima: 3,
+        respostaEsperada: 'resp',
+      }),
     );
-    await servico.atualizar('prof-1', 'q-1', { tipo: 'discursiva', pontuacaoMaxima: 3, respostaEsperada: 'resp' } as never);
+    await servico.atualizar('prof-1', 'q-1', {
+      tipo: 'discursiva',
+      pontuacaoMaxima: 3,
+      respostaEsperada: 'resp',
+    } as never);
 
     expect(repo.atualizar).toHaveBeenCalledWith(
       'q-1',
-      expect.objectContaining({ tipo: 'discursiva', pontuacaoMaxima: 3, respostaEsperada: 'resp' }),
+      expect.objectContaining({
+        tipo: 'discursiva',
+        pontuacaoMaxima: 3,
+        respostaEsperada: 'resp',
+      }),
       [],
     );
   });
@@ -219,15 +270,27 @@ describe('QuestionsService.atualizar', () => {
   it('troca de discursiva para objetiva com novas alternativas', async () => {
     const { repo, servico } = criarServico();
     repo.buscar.mockResolvedValue(
-      questaoBanco({ tipo: 'discursiva', alternativas: [], pontuacaoMaxima: 2, respostaEsperada: 'x' }),
+      questaoBanco({
+        tipo: 'discursiva',
+        alternativas: [],
+        pontuacaoMaxima: 2,
+        respostaEsperada: 'x',
+      }),
     );
     repo.atualizar.mockResolvedValue(questaoBanco());
 
-    await servico.atualizar('prof-1', 'q-1', { tipo: 'objetiva', alternativas: [alt('A', true), alt('B')] } as never);
+    await servico.atualizar('prof-1', 'q-1', {
+      tipo: 'objetiva',
+      alternativas: [alt('A', true), alt('B')],
+    } as never);
 
     expect(repo.atualizar).toHaveBeenCalledWith(
       'q-1',
-      expect.objectContaining({ tipo: 'objetiva', respostaEsperada: null, pontuacaoMaxima: null }),
+      expect.objectContaining({
+        tipo: 'objetiva',
+        respostaEsperada: null,
+        pontuacaoMaxima: null,
+      }),
       [alt('A', true), alt('B')],
     );
   });
@@ -239,7 +302,11 @@ describe('QuestionsService.atualizar', () => {
 
     await servico.atualizar('prof-1', 'q-1', { tags: [' a ', 'a'] } as never);
 
-    expect(repo.atualizar).toHaveBeenCalledWith('q-1', expect.objectContaining({ tags: ['a'] }), undefined);
+    expect(repo.atualizar).toHaveBeenCalledWith(
+      'q-1',
+      expect.objectContaining({ tags: ['a'] }),
+      undefined,
+    );
   });
 });
 
@@ -257,7 +324,9 @@ describe('QuestionsService.excluir', () => {
     const { repo, servico } = criarServico();
     repo.buscar.mockResolvedValue(null);
 
-    await expect(servico.excluir('prof-1', 'q-1')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(servico.excluir('prof-1', 'q-1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(repo.marcarComoExcluida).not.toHaveBeenCalled();
   });
 });

@@ -9,7 +9,9 @@ describe('QuestionsController', () => {
     atualizar: vi.fn(),
     excluir: vi.fn(),
   };
-  const controller = new QuestionsController(servico as unknown as QuestionsService);
+  const controller = new QuestionsController(
+    servico as unknown as QuestionsService,
+  );
 
   beforeEach(() => vi.clearAllMocks());
 

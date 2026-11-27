@@ -13,7 +13,11 @@ const repo = {
   marcarComoExcluida: vi.fn(),
 };
 
-const alt = (letra: string, correta = false) => ({ letra, texto: `opção ${letra}`, correta });
+const alt = (letra: string, correta = false) => ({
+  letra,
+  texto: `opção ${letra}`,
+  correta,
+});
 
 const questaoBanco = (extra: Record<string, unknown> = {}) => ({
   id: 'q-1',
@@ -34,7 +38,10 @@ beforeAll(async () => {
   Logger.overrideLogger(false);
   const modulo = await Test.createTestingModule({
     controllers: [QuestionsController],
-    providers: [QuestionsService, { provide: QuestionsRepository, useValue: repo }],
+    providers: [
+      QuestionsService,
+      { provide: QuestionsRepository, useValue: repo },
+    ],
   }).compile();
 
   app = modulo.createNestApplication();
@@ -59,11 +66,20 @@ describe('Rotas de /questions (ponta a ponta HTTP)', () => {
 
     const resposta = await request(app.getHttpServer())
       .post('/questions')
-      .send({ enunciado: 'Quanto é 2 + 2?', tipo: 'objetiva', disciplina: 'Matemática', alternativas: [alt('A', true), alt('B')] })
+      .send({
+        enunciado: 'Quanto é 2 + 2?',
+        tipo: 'objetiva',
+        disciplina: 'Matemática',
+        alternativas: [alt('A', true), alt('B')],
+      })
       .expect(201);
 
     expect(resposta.body.id).toBe('q-1');
-    expect(repo.criar).toHaveBeenCalledWith('prof-1', expect.anything(), expect.any(Array));
+    expect(repo.criar).toHaveBeenCalledWith(
+      'prof-1',
+      expect.anything(),
+      expect.any(Array),
+    );
   });
 
   it('POST sem enunciado responde 400 e não grava', async () => {
@@ -79,7 +95,12 @@ describe('Rotas de /questions (ponta a ponta HTTP)', () => {
   it('POST objetiva com duas corretas responde 400 pela regra do serviço', async () => {
     await request(app.getHttpServer())
       .post('/questions')
-      .send({ enunciado: 'x', tipo: 'objetiva', disciplina: 'Mat', alternativas: [alt('A', true), alt('B', true)] })
+      .send({
+        enunciado: 'x',
+        tipo: 'objetiva',
+        disciplina: 'Mat',
+        alternativas: [alt('A', true), alt('B', true)],
+      })
       .expect(400);
 
     expect(repo.criar).not.toHaveBeenCalled();
@@ -88,7 +109,9 @@ describe('Rotas de /questions (ponta a ponta HTTP)', () => {
   it('GET lista usando o professor logado e aceita filtro', async () => {
     repo.listar.mockResolvedValue([questaoBanco()]);
 
-    const resposta = await request(app.getHttpServer()).get('/questions?tag=soma').expect(200);
+    const resposta = await request(app.getHttpServer())
+      .get('/questions?tag=soma')
+      .expect(200);
 
     expect(resposta.body).toHaveLength(1);
     expect(repo.listar).toHaveBeenCalledWith('prof-1');
@@ -103,7 +126,10 @@ describe('Rotas de /questions (ponta a ponta HTTP)', () => {
     repo.buscar.mockResolvedValue(questaoBanco());
     repo.atualizar.mockResolvedValue(questaoBanco({ enunciado: 'Novo' }));
 
-    const resposta = await request(app.getHttpServer()).patch('/questions/q-1').send({ enunciado: 'Novo' }).expect(200);
+    const resposta = await request(app.getHttpServer())
+      .patch('/questions/q-1')
+      .send({ enunciado: 'Novo' })
+      .expect(200);
 
     expect(resposta.body.enunciado).toBe('Novo');
   });
@@ -119,7 +145,9 @@ describe('Rotas de /questions (ponta a ponta HTTP)', () => {
 
 describe('Desempenho da listagem (sem banco)', () => {
   it('300 requisições de 50 questões com p95 abaixo de 100 ms', async () => {
-    repo.listar.mockResolvedValue(Array.from({ length: 50 }, (_, i) => questaoBanco({ id: `q-${i}` })));
+    repo.listar.mockResolvedValue(
+      Array.from({ length: 50 }, (_, i) => questaoBanco({ id: `q-${i}` })),
+    );
     const tempos: number[] = [];
 
     for (let i = 0; i < 300; i++) {
@@ -131,7 +159,9 @@ describe('Desempenho da listagem (sem banco)', () => {
     tempos.sort((a, b) => a - b);
     const media = tempos.reduce((soma, t) => soma + t, 0) / tempos.length;
     const p95 = tempos[Math.floor(tempos.length * 0.95)];
-    console.log(`Desempenho GET /questions: média ${media.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms`);
+    console.log(
+      `Desempenho GET /questions: média ${media.toFixed(1)} ms, p95 ${p95.toFixed(1)} ms`,
+    );
 
     expect(p95).toBeLessThan(100);
   });

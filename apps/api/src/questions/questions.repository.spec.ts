@@ -7,10 +7,19 @@ function criarRepositorio() {
     questao: { update: vi.fn() },
   };
   const prisma = {
-    questao: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
-    $transaction: vi.fn(async (callback: (cliente: typeof tx) => unknown) => callback(tx)),
+    questao: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    $transaction: vi.fn(async (callback: (cliente: typeof tx) => unknown) =>
+      callback(tx),
+    ),
   };
-  const repositorio = new QuestionsRepository(prisma as unknown as PrismaService);
+  const repositorio = new QuestionsRepository(
+    prisma as unknown as PrismaService,
+  );
   return { prisma, tx, repositorio };
 }
 
@@ -27,7 +36,9 @@ describe('QuestionsRepository', () => {
     await repositorio.listar('prof-1');
 
     expect(prisma.questao.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { professorId: 'prof-1', deletedAt: null } }),
+      expect.objectContaining({
+        where: { professorId: 'prof-1', deletedAt: null },
+      }),
     );
   });
 
@@ -38,20 +49,31 @@ describe('QuestionsRepository', () => {
     expect(await repositorio.buscar('prof-1', 'q-1')).toBeNull();
 
     expect(prisma.questao.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'q-1', professorId: 'prof-1', deletedAt: null } }),
+      expect.objectContaining({
+        where: { id: 'q-1', professorId: 'prof-1', deletedAt: null },
+      }),
     );
   });
 
   it('cria a questão ligada ao professor, com as alternativas', async () => {
     const { prisma, repositorio } = criarRepositorio();
     prisma.questao.create.mockResolvedValue({ id: 'q-1' });
-    const dados = { enunciado: 'x', tipo: 'objetiva', disciplina: 'Mat', tags: [] };
+    const dados = {
+      enunciado: 'x',
+      tipo: 'objetiva',
+      disciplina: 'Mat',
+      tags: [],
+    };
 
     await repositorio.criar('prof-1', dados as never, alternativas);
 
     expect(prisma.questao.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { ...dados, professorId: 'prof-1', alternativas: { create: alternativas } },
+        data: {
+          ...dados,
+          professorId: 'prof-1',
+          alternativas: { create: alternativas },
+        },
       }),
     );
   });
@@ -63,12 +85,20 @@ describe('QuestionsRepository', () => {
     await repositorio.atualizar('q-1', { enunciado: 'novo' }, alternativas);
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(tx.alternativa.deleteMany).toHaveBeenCalledWith({ where: { questaoId: 'q-1' } });
+    expect(tx.alternativa.deleteMany).toHaveBeenCalledWith({
+      where: { questaoId: 'q-1' },
+    });
     expect(tx.alternativa.createMany).toHaveBeenCalledWith({
-      data: alternativas.map((alternativa) => ({ ...alternativa, questaoId: 'q-1' })),
+      data: alternativas.map((alternativa) => ({
+        ...alternativa,
+        questaoId: 'q-1',
+      })),
     });
     expect(tx.questao.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'q-1' }, data: { enunciado: 'novo' } }),
+      expect.objectContaining({
+        where: { id: 'q-1' },
+        data: { enunciado: 'novo' },
+      }),
     );
   });
 
