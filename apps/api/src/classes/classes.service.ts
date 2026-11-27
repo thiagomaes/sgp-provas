@@ -1,7 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ClassesRepository, type TurmaComAlunos } from './classes.repository.js';
-import type { CreateAlunoDto, UpdateAlunoDto } from './dto/aluno.dto.js';
+import type { CreateAlunoDto, ImportarAlunosDto, UpdateAlunoDto } from './dto/aluno.dto.js';
+import { conferirImportacao } from './importacao-alunos.js';
 import type { CreateTurmaDto, UpdateTurmaDto } from './dto/turma.dto.js';
 
 /** Mesmo formato do tipo Student da web. */
@@ -63,6 +64,25 @@ export class ClassesService {
         this.repositorio.criarAluno(turmaId, { nome: dto.nome.trim(), matricula: dto.matricula.trim() }),
       ),
     );
+  }
+
+  /**
+   * Importa os alunos de uma planilha (RF03). Confere a lista inteira antes:
+   * se uma matrícula repetir na planilha ou já existir na turma, nada é gravado.
+   * Devolve a turma atualizada, com todos os alunos.
+   */
+  async importarAlunos(professorId: string, turmaId: string, dto: ImportarAlunosDto): Promise<TurmaResposta> {
+    const turma = await this.turmaDoProfessor(professorId, turmaId);
+    const alunos = dto.alunos.map((aluno) => ({ nome: aluno.nome.trim(), matricula: aluno.matricula.trim() }));
+
+    const problemas = conferirImportacao(
+      alunos,
+      turma.alunos.map((aluno) => aluno.matricula),
+    );
+    if (problemas.length > 0) throw new ConflictException(problemas.join(' '));
+
+    await comMatriculaUnica(() => this.repositorio.criarAlunos(turmaId, alunos));
+    return paraResposta(await this.turmaDoProfessor(professorId, turmaId));
   }
 
   async atualizarAluno(

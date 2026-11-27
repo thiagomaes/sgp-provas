@@ -1,5 +1,7 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { MAXIMO_ALUNOS_POR_IMPORTACAO } from '../importacao-alunos.js';
 
 /** Aluno é só nome e matrícula (RF03): sem e-mail, senha ou login. */
 export class CreateAlunoDto {
@@ -15,3 +17,15 @@ export class CreateAlunoDto {
 }
 
 export class UpdateAlunoDto extends PartialType(CreateAlunoDto) {}
+
+/** Importação da planilha: a web já leu o arquivo e manda só a lista. */
+export class ImportarAlunosDto {
+  @IsArray()
+  @ArrayMinSize(1, { message: 'A planilha não tem nenhum aluno para importar.' })
+  @ArrayMaxSize(MAXIMO_ALUNOS_POR_IMPORTACAO, {
+    message: `Importe no máximo ${MAXIMO_ALUNOS_POR_IMPORTACAO} alunos por vez.`,
+  })
+  @ValidateNested({ each: true })
+  @Type(() => CreateAlunoDto)
+  alunos: CreateAlunoDto[];
+}
