@@ -60,6 +60,7 @@ async function pedir() {
           <input
             v-model="email"
             type="email"
+            maxlength="191"
             autocomplete="email"
             placeholder="ana.professora@escola.edu.br"
           />

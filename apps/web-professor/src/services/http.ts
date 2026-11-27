@@ -79,7 +79,10 @@ async function buscar(url: string, init: RequestInit): Promise<Response> {
 }
 
 async function lerErro(resposta: Response): Promise<ErroApi> {
-  let mensagem = `A API respondeu com erro ${resposta.status}.`
+  let mensagem =
+    resposta.status >= 500
+      ? 'O servidor não respondeu direito. Tente de novo em instantes.'
+      : `A API respondeu com erro ${resposta.status}.`
   try {
     const corpo = (await resposta.json()) as { message?: string | string[] }
     if (Array.isArray(corpo.message)) mensagem = corpo.message.join(' ')

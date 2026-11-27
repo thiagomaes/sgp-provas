@@ -159,6 +159,7 @@ async function salvarProva() {
           id="titulo"
           v-model="titulo"
           type="text"
+          maxlength="150"
           placeholder="Ex.: Avaliação Bimestral 2"
         />
       </div>

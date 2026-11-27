@@ -5,14 +5,14 @@ import { MAXIMO_ALUNOS_POR_IMPORTACAO } from '../importacao-alunos.js';
 
 /** Aluno é só nome e matrícula (RF03): sem e-mail, senha ou login. */
 export class CreateAlunoDto {
-  @IsString()
+  @IsString({ message: 'Informe o nome do aluno.' })
   @MinLength(1, { message: 'Informe o nome do aluno.' })
-  @MaxLength(120)
+  @MaxLength(120, { message: 'O nome do aluno pode ter no máximo 120 caracteres.' })
   nome: string;
 
-  @IsString()
+  @IsString({ message: 'Informe a matrícula.' })
   @MinLength(1, { message: 'Informe a matrícula.' })
-  @MaxLength(30)
+  @MaxLength(30, { message: 'A matrícula pode ter no máximo 30 caracteres.' })
   matricula: string;
 }
 

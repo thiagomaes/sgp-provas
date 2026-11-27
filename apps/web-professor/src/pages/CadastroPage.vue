@@ -63,7 +63,7 @@ async function cadastrar() {
 
       <label class="campo">
         <span class="rotulo">Nome</span>
-        <input v-model="nome" type="text" autocomplete="name" placeholder="Ana Costa" />
+        <input v-model="nome" type="text" maxlength="120" autocomplete="name" placeholder="Ana Costa" />
       </label>
 
       <label class="campo">
@@ -71,6 +71,7 @@ async function cadastrar() {
         <input
           v-model="email"
           type="email"
+          maxlength="191"
           autocomplete="email"
           placeholder="ana.professora@escola.edu.br"
         />
@@ -81,6 +82,7 @@ async function cadastrar() {
         <input
           v-model="senha"
           type="password"
+          maxlength="72"
           autocomplete="new-password"
           :placeholder="`Pelo menos ${SENHA_MINIMA} caracteres`"
         />
@@ -88,7 +90,7 @@ async function cadastrar() {
 
       <label class="campo">
         <span class="rotulo">Confirme a senha</span>
-        <input v-model="confirmacao" type="password" autocomplete="new-password" />
+        <input v-model="confirmacao" type="password" maxlength="72" autocomplete="new-password" />
       </label>
 
       <p v-if="erro" class="erro" role="alert">{{ erro }}</p>

@@ -13,8 +13,8 @@ import {
 } from 'class-validator';
 
 export class CreateAplicacaoDto {
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: 'Escolha a prova.' })
+  @MinLength(1, { message: 'Escolha a prova.' })
   provaId: string;
 
   @IsArray({ message: 'Escolha pelo menos uma turma.' })
@@ -29,9 +29,9 @@ export class CreateAplicacaoDto {
   data: string;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(200)
+  @IsInt({ message: 'A quantidade de versões deve ser um número inteiro.' })
+  @Min(1, { message: 'Gere pelo menos 1 versão.' })
+  @Max(200, { message: 'O máximo é 200 versões.' })
   versoes?: number;
 
   @IsOptional()

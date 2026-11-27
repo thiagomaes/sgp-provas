@@ -69,6 +69,7 @@ async function redefinir() {
           <input
             v-model="senha"
             type="password"
+            maxlength="72"
             autocomplete="new-password"
             :placeholder="`Pelo menos ${SENHA_MINIMA} caracteres`"
           />
@@ -76,7 +77,7 @@ async function redefinir() {
 
         <label class="campo">
           <span class="rotulo">Confirme a senha nova</span>
-          <input v-model="confirmacao" type="password" autocomplete="new-password" />
+          <input v-model="confirmacao" type="password" maxlength="72" autocomplete="new-password" />
         </label>
 
         <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
