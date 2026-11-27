@@ -16,6 +16,7 @@ conforme a regra de escopo.
 |---|---|
 | Professor | Usuário que acessa o sistema, cadastra turmas, questões e provas. |
 | RefreshToken | Sessão de login do professor: guarda só o hash do refresh token, a validade e a revogação. |
+| TentativaLogin | Registro de cada tentativa de login (e-mail, IP e resultado), usado para limitar tentativas; não tem relação com as demais classes. |
 | Turma | Grupo de alunos de uma disciplina, ano e turno, pertencente a um professor. |
 | Aluno | Registro de nome e matrícula dentro de uma turma; não tem acesso ao sistema. |
 | Questao | Questão objetiva ou discursiva do banco do professor, com tags em `Json` e exclusão lógica (`deletedAt`). |
@@ -23,7 +24,7 @@ conforme a regra de escopo.
 | Prova | Modelo reutilizável com título, disciplina, questões selecionadas e total de pontos (`Float`). |
 | ProvaQuestao | Associação entre prova e questão, que guarda a ordem e a pontuação (`Float`) naquela prova. |
 | Aplicacao | Preparação da prova para uma turma, com data, configuração de versões, status e provas corrigidas. |
-| VersaoProva | Uma versão gerada para uma aplicação, com o layout embaralhado e o conteúdo do QR Code. |
+| VersaoProva | Uma versão gerada para uma aplicação, com o layout embaralhado e o conteúdo do QR Code; na prova identificada, também o aluno dono da versão. |
 | Correcao | Resultado da leitura ou do lançamento manual de uma prova respondida, com a nota (`Float`). |
 
 #### Interpretando associações e multiplicidades
@@ -41,6 +42,7 @@ A pergunta-chave é: **“Quantos desse podem estar ligados a aquele?”**
 - **Prova e Aplicacao:** 1 prova pode estar em 0..* aplicações; cada aplicação usa 1 prova.
 - **Turma e Aplicacao:** 1 turma pode receber 0..* aplicações; cada aplicação é destinada a 1 turma.
 - **Aplicacao e VersaoProva:** composição, 1 aplicação gera 0..* versões; cada versão pertence a 1 aplicação. A aplicação nasce como rascunho, sem versões, e as versões são criadas quando o PDF é gerado.
+- **Aluno e VersaoProva:** cada versão pode estar ligada a 0..1 aluno; um aluno pode ter 0..* versões (no máximo uma por aplicação). A ligação só é preenchida quando a aplicação é identificada: o sistema gera uma versão por aluno da turma, e o QR Code e o cartão-resposta levam o nome e a matrícula. Se o aluno é apagado, a versão fica sem aluno.
 - **Aplicacao e Correcao:** 1 aplicação tem 0..* correções; cada correção pertence a 1 aplicação.
 - **Correcao e Aluno:** cada correção pode estar ligada a 0..1 aluno; um aluno pode ter 0..* correções. A associação fica vazia quando a prova não foi identificada e é preenchida no lançamento manual.
 
@@ -54,6 +56,13 @@ A pergunta-chave é: **“Quantos desse podem estar ligados a aquele?”**
 - As relações mantêm as FKs do schema: uma correção referencia uma aplicação e, opcionalmente, um aluno; `VersaoProva` pertence à aplicação, sem FK direta de correção para versão.
 - A associação `Aplicacao` e `VersaoProva` passou de `1..*` para `0..*`, porque a aplicação existe sem versões até o PDF ser gerado. `Questao` e `Alternativa` continua `0..5`, o limite validado pela API.
 - Os métodos de domínio da Parte 1 foram mantidos, com `Float` no lugar de `Decimal` (por exemplo, `Prova.calcularTotalPontos() : Float` e `Correcao.calcularNota() : Float`), assim como as composições de `Turma` e `Aluno`, `Questao` e `Alternativa`, `Prova` e `ProvaQuestao`, e `Aplicacao` e `VersaoProva`.
+
+### O que mudou na N3
+
+- `VersaoProva` ganhou `alunoId` (opcional), para a prova identificada.
+- Incluída a classe `TentativaLogin`, do limite de tentativas de login.
+- `Aplicacao` ganhou as operações `gerarPdf()` e `consultarGabarito()`, que correspondem às rotas `GET /applications/:id/pdf` e `GET /applications/:id/answer-key`.
+- O campo `status` da aplicação passa a ser calculado: vira "concluída" quando todos os alunos distintos da turma têm correção.
 
 ### Diagrama de Classes
 
