@@ -21,6 +21,12 @@ const router = createRouter({
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),
     },
+    // Cadastro do professor, também fora do AppShell e aberto sem sessão.
+    {
+      path: '/cadastro',
+      name: 'cadastro',
+      component: () => import('../pages/CadastroPage.vue'),
+    },
 
     {
       path: '/dashboard',
@@ -112,11 +118,13 @@ const router = createRouter({
   ],
 })
 
-// Sem sessão, qualquer tela interna leva ao login. Já logado, o login
-// leva direto ao dashboard.
+// Sem sessão, qualquer tela interna leva ao login. Já logado, o login e o
+// cadastro levam direto ao dashboard.
+const TELAS_ABERTAS = new Set(['login', 'cadastro'])
+
 router.beforeEach((to) => {
   const logado = temSessao()
-  if (to.name === 'login') return logado ? '/dashboard' : true
+  if (TELAS_ABERTAS.has(String(to.name))) return logado ? '/dashboard' : true
   return logado ? true : '/login'
 })
 
