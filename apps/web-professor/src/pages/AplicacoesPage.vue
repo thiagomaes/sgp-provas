@@ -77,6 +77,10 @@ function podeCorrigir(aplicacao: Application): boolean {
   return aplicacao.status === 'pdf-gerado' || aplicacao.status === 'em-correcao'
 }
 
+function temVersoes(aplicacao: Application): boolean {
+  return aplicacao.status !== 'rascunho'
+}
+
 async function criarAplicacao() {
   erro.value = ''
   aviso.value = ''
@@ -203,6 +207,9 @@ async function confirmarExclusao(id: string) {
                   :to="`/correcao/${aplicacao.id}/escanear`"
                 >
                   Corrigir
+                </RouterLink>
+                <RouterLink v-if="temVersoes(aplicacao)" :to="`/aplicacoes/${aplicacao.id}/gabarito`">
+                  Gabarito
                 </RouterLink>
                 <button class="link-acao" type="button" @click="pedirExclusao(aplicacao.id)">
                   Excluir

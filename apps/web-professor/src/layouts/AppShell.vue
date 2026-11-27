@@ -373,4 +373,18 @@ watch(
     white-space: nowrap;
   }
 }
+
+@media print {
+  .sidebar,
+  .topo-celular,
+  .fundo-menu,
+  .cabecalho {
+    display: none;
+  }
+
+  .conteudo {
+    margin-left: 0;
+    padding: 0;
+  }
+}
 </style>

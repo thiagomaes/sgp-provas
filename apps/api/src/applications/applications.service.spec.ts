@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { ApplicationsRepository } from './applications.repository.js';
 import { ApplicationsService, versoesPadraoDaTurma } from './applications.service.js';
@@ -148,5 +148,32 @@ describe('ApplicationsService.gerarVersoes', () => {
     await expect(
       servico.gerarVersoes('prof-1', 'aplicacao-1', { ...configuracao, identificarAluno: true }),
     ).rejects.toThrow('até 200 alunos');
+  });
+});
+
+describe('ApplicationsService.gabarito', () => {
+  function servicoComAplicacao(aplicacao: unknown) {
+    const repositorio = { buscarParaGabarito: vi.fn(async () => aplicacao) } as unknown as ApplicationsRepository;
+    return new ApplicationsService(repositorio);
+  }
+
+  it('responde 404 quando a aplicação não é do professor', async () => {
+    await expect(servicoComAplicacao(null).gabarito('prof-1', 'aplicacao-1')).rejects.toThrow(NotFoundException);
+  });
+
+  it('responde 409 enquanto as versões não foram geradas', async () => {
+    const servico = servicoComAplicacao({ versoesProva: [] });
+    await expect(servico.gabarito('prof-1', 'aplicacao-1')).rejects.toThrow(ConflictException);
+  });
+
+  it('devolve uma entrada por versão quando as versões existem', async () => {
+    const servico = servicoComAplicacao({
+      data: new Date('2026-11-27T00:00:00Z'),
+      turma: { nome: '3º A' },
+      prova: { titulo: 'Prova', questoes: [] },
+      versoesProva: [{ numeroVersao: 1, aluno: null, layout: { questoes: [] } }],
+    });
+    const gabarito = await servico.gabarito('prof-1', 'aplicacao-1');
+    expect(gabarito.versoes).toEqual([{ numeroVersao: 1, aluno: null, questoes: [] }]);
   });
 });
