@@ -23,9 +23,25 @@ O sistema fica em https://sgp-provas.vercel.app e funciona no computador e no na
 
 ## 1. Entrar no sistema
 
-1. Abra https://sgp-provas.vercel.app.
-2. Digite o e-mail e a senha e clique em **Entrar**.
-3. Você chega ao painel (Dashboard), com as últimas aplicações.
+**Criar conta (primeiro acesso):**
+
+1. Abra https://sgp-provas.vercel.app e clique em **Criar conta**.
+2. Preencha o nome, o e-mail e a senha (mínimo de 6 caracteres) e confirme a senha.
+3. Clique em **Criar conta**. Você já entra no sistema.
+
+**Entrar:**
+
+1. Digite o e-mail e a senha e clique em **Entrar**.
+2. Você chega ao painel (Dashboard), com as últimas aplicações.
+
+Depois de várias tentativas erradas seguidas, o sistema bloqueia o login por um tempo. Espere e tente de novo.
+
+**Esqueci minha senha:**
+
+1. Na tela de entrada, clique em **Esqueci minha senha**, digite o seu e-mail e clique em **Pedir link de redefinição**.
+2. O SGP ainda **não envia e-mail**. O link de redefinição fica no registro do servidor, e quem administra o sistema repassa o link a você. Ele vale por **1 hora** e só pode ser usado **uma vez**.
+3. Abra o link, escolha a senha nova (mínimo de 6 caracteres), confirme e salve. As sessões abertas em outros aparelhos são encerradas.
+4. Volte para a tela de entrada e entre com a senha nova.
 
 Para sair, use o botão **Sair** no canto inferior do menu lateral. No celular, o menu abre pelo botão no topo da tela.
 
@@ -39,6 +55,13 @@ Para sair, use o botão **Sair** no canto inferior do menu lateral. No celular, 
 4. Informe o nome completo e a matrícula. A matrícula não pode se repetir dentro da mesma turma.
 
 Você pode **Editar** uma turma ou um aluno a qualquer momento. Uma turma ou um aluno que já tem provas corrigidas não pode ser excluído, para não perder o histórico de notas.
+
+**Importar vários alunos de uma vez:**
+
+1. Na tela da turma, clique em **Importar alunos**.
+2. Escolha um arquivo **.csv** ou **.xlsx** com uma coluna **Nome** e uma coluna **Matrícula**. Se a primeira linha não tiver esses títulos, o sistema entende que a coluna A é o nome e a B é a matrícula.
+3. Confira a prévia: as linhas com problema ficam marcadas (sem nome, matrícula repetida na planilha ou aluno que já está na turma).
+4. Clique em **Importar** com o total de alunos. Só as linhas sem erro entram, todas de uma vez. O limite é de 500 alunos por arquivo.
 
 **Dica:** cadastre todos os alunos antes de gerar o PDF. Se você for usar a prova identificada (passo 5), o número de versões é o número de alunos da turma.
 
@@ -137,6 +160,9 @@ Quando todos os alunos da turma têm correção, a aplicação passa sozinha par
 |---|---|
 | "A turma não tem alunos" ao gerar o PDF | Cadastre os alunos na turma ou desligue **Identificar aluno na prova**. |
 | "Gere o PDF antes de corrigir" | Abra **Configurar PDF** da aplicação e clique em **Gerar PDF**. |
+| O login foi bloqueado depois de errar a senha | Espere alguns minutos e tente de novo. Se não lembra a senha, use **Esqueci minha senha**. |
+| O link de redefinição de senha não chegou por e-mail | O SGP ainda não envia e-mail. Peça o link a quem administra o sistema. |
+| "Este link de redefinição é inválido ou expirou" | O link vale 1 hora e uma única vez. Peça um novo em **Esqueci minha senha**. |
 | Não consigo gerar versões novas | A correção já começou. Exclua as correções da aplicação, se for o caso, ou crie outra aplicação. |
 | Não consigo excluir a turma, o aluno ou a aplicação | Eles já têm provas corrigidas. O sistema protege as notas. |
 | A câmera não abre no celular | Permita a câmera nas configurações do navegador e confira se o endereço começa com `https`. |

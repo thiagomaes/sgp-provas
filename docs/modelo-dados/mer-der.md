@@ -1,6 +1,6 @@
 # Modelo de dados — SGP N2
 
-O diagrama abaixo reproduz os 12 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
+O diagrama abaixo reproduz os 13 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
 
 ```mermaid
 erDiagram
@@ -18,6 +18,14 @@ erDiagram
         String tokenHash UK
         DateTime expiresAt
         DateTime revokedAt "nullable"
+        DateTime createdAt
+    }
+    RecuperacaoSenha {
+        String id PK
+        String professorId FK
+        String tokenHash UK
+        DateTime expiresAt
+        DateTime usadoEm "nullable"
         DateTime createdAt
     }
     TentativaLogin {
@@ -115,6 +123,7 @@ erDiagram
     }
 
     Professor ||--o{ RefreshToken : possui
+    Professor ||--o{ RecuperacaoSenha : pede
     Professor ||--o{ Turma : cadastra
     Professor ||--o{ Questao : cadastra
     Professor ||--o{ Prova : cria
@@ -157,6 +166,17 @@ erDiagram
 | tokenHash | String | Sim | Hash SHA-256, único. |
 | expiresAt | DateTime | Sim | Data de expiração do token. |
 | revokedAt | DateTime | Não | Data de revogação, se revogado. |
+| createdAt | DateTime | Sim | Criação, padrão `now()`. |
+
+### RecuperacaoSenha
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---:|---|
+| id | String | Sim | Chave primária textual, `cuid()`. |
+| professorId | String | Sim | FK para `Professor.id`; indexada; os pedidos somem se o professor for removido. |
+| tokenHash | String | Sim | Hash SHA-256 do token do link de redefinição, único; o token em si não é guardado. |
+| expiresAt | DateTime | Sim | Validade do link: 1 hora depois do pedido. |
+| usadoEm | DateTime | Não | Preenchido quando a senha é trocada; o link deixa de servir (uso único). |
 | createdAt | DateTime | Sim | Criação, padrão `now()`. |
 
 ### TentativaLogin
@@ -284,4 +304,4 @@ erDiagram
 
 ## Regras importantes
 
-Uma matrícula é única por turma (`@@unique([turmaId, matricula])`), mas pode aparecer em turmas distintas. Questões são excluídas logicamente por `deletedAt`, preservando vínculos e histórico. Na prova identificada, cada aluno da turma tem uma versão (`@@unique([aplicacaoId, alunoId])`). `TentativaLogin` não tem chave para `Professor` e só guarda 1 dia de tentativas. A correção permite `alunoId` nulo para registrar uma prova não identificada; a associação pode ser preenchida posteriormente. `clientCorrectionId` é único para deduplicar correções reenviadas na sincronização. Todos os identificadores são `String` em vez de inteiros para manter os ids textuais iguais aos usados na N1. Campos de valor fixo, como `turno`, `tipo`, `status`, `origem` e `statusSync`, ficam armazenados como texto; a validação dos valores aceitos é feita pela API.
+Uma matrícula é única por turma (`@@unique([turmaId, matricula])`), mas pode aparecer em turmas distintas. Questões são excluídas logicamente por `deletedAt`, preservando vínculos e histórico. Na prova identificada, cada aluno da turma tem uma versão (`@@unique([aplicacaoId, alunoId])`). `RecuperacaoSenha` guarda só o hash do token e vale por 1 hora, uma única vez. `TentativaLogin` não tem chave para `Professor` e só guarda 1 dia de tentativas. A correção permite `alunoId` nulo para registrar uma prova não identificada; a associação pode ser preenchida posteriormente. `clientCorrectionId` é único para deduplicar correções reenviadas na sincronização. Todos os identificadores são `String` em vez de inteiros para manter os ids textuais iguais aos usados na N1. Campos de valor fixo, como `turno`, `tipo`, `status`, `origem` e `statusSync`, ficam armazenados como texto; a validação dos valores aceitos é feita pela API.
