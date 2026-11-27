@@ -1,8 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { dataIso } from '../common/formatos.js';
 import type { CreateQuestaoDto, FiltroQuestoesDto, UpdateQuestaoDto } from './dto/questao.dto.js';
 import { QuestionsRepository, type QuestaoComAlternativas } from './questions.repository.js';
 import { validarQuestao } from './validacao-questao.js';
+
+const logger = new Logger('QuestionsService');
 
 /** Mesmo formato do tipo Question da web. */
 export interface QuestaoResposta {
@@ -60,6 +62,7 @@ export class QuestionsService {
       },
       objetiva ? (dto.alternativas ?? []) : [],
     );
+    logger.log(`Questão ${criada.id} (${dto.tipo}) criada pelo professor ${professorId}`);
     return paraResposta(criada);
   }
 
@@ -87,24 +90,32 @@ export class QuestionsService {
       },
       dto.alternativas || trocouTipo ? (objetiva ? alternativas : []) : undefined,
     );
+    logger.log(`Questão ${id} atualizada pelo professor ${professorId}`);
     return paraResposta(atualizada);
   }
 
   async excluir(professorId: string, id: string): Promise<void> {
     await this.questaoDoProfessor(professorId, id);
     await this.repositorio.marcarComoExcluida(id);
+    logger.log(`Questão ${id} excluída (soft-delete) pelo professor ${professorId}`);
   }
 
   private async questaoDoProfessor(professorId: string, id: string) {
     const questao = await this.repositorio.buscar(professorId, id);
-    if (!questao) throw new NotFoundException('Questão não encontrada.');
+    if (!questao) {
+      logger.warn(`Questão ${id} não encontrada para o professor ${professorId}`);
+      throw new NotFoundException('Questão não encontrada.');
+    }
     return questao;
   }
 }
 
 function exigirValida(questao: Parameters<typeof validarQuestao>[0]) {
   const erro = validarQuestao(questao);
-  if (erro) throw new BadRequestException(erro);
+  if (erro) {
+    logger.warn(`Questão recusada na validação: ${erro}`);
+    throw new BadRequestException(erro);
+  }
 }
 
 function limparTags(tags: string[] | undefined): string[] {
