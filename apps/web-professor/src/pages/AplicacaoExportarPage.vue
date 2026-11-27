@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import EstadoTela from '../components/EstadoTela.vue'
 import QrCode from '../components/QrCode.vue'
 import AppShell from '../layouts/AppShell.vue'
-import { buscarAplicacao, gerarVersoes } from '../services/aplicacoes'
+import { baixarPdfDaAplicacao, buscarAplicacao, gerarVersoes } from '../services/aplicacoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
 import { buscarProva } from '../services/provas'
 import { buscarTurma } from '../services/turmas'
@@ -16,7 +16,7 @@ import type { Application, ApplicationVersion, Class, Exam } from '../types'
  *
  * "Gerar PDF" chama POST /applications/:id/generate: a API sorteia as
  * versões embaralhadas, cria o QR Code de cada uma e marca a aplicação
- * como "PDF gerado". O arquivo PDF em si ainda não é montado pela API.
+ * como "PDF gerado". Em seguida a tela baixa o PDF (GET /applications/:id/pdf).
  */
 
 const route = useRoute()
@@ -68,6 +68,7 @@ onMounted(carregar)
 const maximoVersoes = computed(() => Math.min(Math.max(turma.value?.alunos.length ?? 1, 1), 200))
 
 const gerando = ref(false)
+const baixando = ref(false)
 const mensagem = ref('')
 const erro = ref('')
 const geradas = ref<ApplicationVersion[]>([])
@@ -94,15 +95,37 @@ async function gerarPdf() {
     })
     aplicacao.value = resultado.aplicacao
     geradas.value = resultado.versoes
-    mensagem.value = `${resultado.versoes.length} ${
-      resultado.versoes.length === 1 ? 'versão gerada' : 'versões geradas'
-    }, cada uma com o QR Code que vai impresso na prova. A aplicação já pode ser corrigida.`
   } catch (falha) {
-    // 409: a correção já começou e as versões não podem mudar.
     erro.value = mensagemDeErro(falha, 'Não foi possível gerar as versões.')
-  } finally {
     gerando.value = false
+    return
   }
+
+  await baixarPdf(
+    `${geradas.value.length} ${
+      geradas.value.length === 1 ? 'versão gerada' : 'versões geradas'
+    }. O PDF foi baixado: imprima em escala 100%, sem ajustar à página. A aplicação já pode ser corrigida.`,
+  )
+  gerando.value = false
+}
+
+const jaTemVersoes = computed(() => (aplicacao.value?.status ?? 'rascunho') !== 'rascunho')
+
+async function baixarPdf(mensagemDeSucesso: string) {
+  try {
+    await baixarPdfDaAplicacao(aplicacaoId)
+    mensagem.value = mensagemDeSucesso
+  } catch (falha) {
+    erro.value = mensagemDeErro(falha, 'Não foi possível baixar o PDF.')
+  }
+}
+
+async function baixarNovamente() {
+  baixando.value = true
+  mensagem.value = ''
+  erro.value = ''
+  await baixarPdf('O PDF foi baixado.')
+  baixando.value = false
 }
 </script>
 
@@ -210,6 +233,15 @@ async function gerarPdf() {
       <div class="rodape">
         <button class="botao" type="button" :disabled="gerando" @click="gerarPdf">
           {{ gerando ? 'Gerando...' : 'Gerar PDF' }}
+        </button>
+        <button
+          v-if="jaTemVersoes"
+          class="botao-secundario"
+          type="button"
+          :disabled="baixando || gerando"
+          @click="baixarNovamente"
+        >
+          {{ baixando ? 'Baixando...' : 'Baixar PDF' }}
         </button>
         <button
           class="botao-secundario"
