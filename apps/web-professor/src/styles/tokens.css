@@ -30,6 +30,11 @@
   --warn: #B5641B;
   --warn-soft: #F6E9DD;
 
+  /* destaque amarelo: questões que o professor confere na revisão da leitura (T08) */
+  --highlight: #E8B931;
+  --highlight-soft: #FBF1CF;
+  --highlight-text: #7A5A00;
+
   /* tipografia */
   --font-sans: system-ui, "Helvetica Neue", Arial, sans-serif;
   --text-xs: 12px;

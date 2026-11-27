@@ -529,17 +529,33 @@ export function lerCartao(imagem: Imagem, questoes: QuestaoParaLer[], opcoes: Op
   return { ok: true, questoes: lidas, homografia: naFoto, pixelsPorMm: pixelsPorMm * r }
 }
 
+/** Retângulo do cartão, em mm. */
+export interface Recorte {
+  x: number
+  y: number
+  largura: number
+  altura: number
+}
+
 /**
- * Cartão endireitado a partir da foto, em `pixelsPorMm` (miniatura da revisão).
- * Devolve RGBA, pronto para um ImageData.
+ * Trecho do cartão endireitado a partir da foto, em `pixelsPorMm` (miniatura da
+ * revisão). Devolve RGBA, pronto para um ImageData.
  */
-export function endireitarCartao(imagem: Imagem, homografia: number[], pixelsPorMm: number): Imagem {
-  const largura = Math.round(210 * pixelsPorMm)
-  const altura = Math.round(297 * pixelsPorMm)
+export function endireitarCartao(
+  imagem: Imagem,
+  homografia: number[],
+  pixelsPorMm: number,
+  recorte: Recorte = { x: 0, y: 0, largura: 210, altura: 297 },
+): Imagem {
+  const largura = Math.round(recorte.largura * pixelsPorMm)
+  const altura = Math.round(recorte.altura * pixelsPorMm)
   const data = new Uint8ClampedArray(largura * altura * 4)
   for (let y = 0; y < altura; y++) {
     for (let x = 0; x < largura; x++) {
-      const p = aplicarHomografia(homografia, { x: (x + 0.5) / pixelsPorMm, y: (y + 0.5) / pixelsPorMm })
+      const p = aplicarHomografia(homografia, {
+        x: recorte.x + (x + 0.5) / pixelsPorMm,
+        y: recorte.y + (y + 0.5) / pixelsPorMm,
+      })
       const fx = Math.floor(p.x)
       const fy = Math.floor(p.y)
       const destino = (y * largura + x) * 4
