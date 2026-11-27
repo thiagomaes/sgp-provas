@@ -21,7 +21,11 @@ export const excluirTurma = (id: string) => http.delete(`/classes/${id}`)
 export const adicionarAluno = (turmaId: string, dados: DadosAluno) =>
   http.post<Student>(`/classes/${turmaId}/students`, dados)
 
-export const editarAluno = (turmaId: string, alunoId: string, dados: Partial<DadosAluno>) =>
+/** Grava a lista toda de uma vez e devolve a turma com todos os alunos. */
+export const importarAlunos = (turmaId: string, alunos: DadosAluno[]) =>
+  http.post<Class>(`/classes/${turmaId}/students/import`, { alunos })
+
+export const editarAluno =(turmaId: string, alunoId: string, dados: Partial<DadosAluno>) =>
   http.patch<Student>(`/classes/${turmaId}/students/${alunoId}`, dados)
 
 /** 409 quando o aluno já tem prova corrigida. */

@@ -37,9 +37,6 @@ export class CorrectionsService {
     if (aplicacao.status === 'rascunho') {
       throw new ConflictException('Gere o PDF desta aplicação antes de corrigir as provas.');
     }
-    if (aplicacao.status === 'concluida') {
-      throw new ConflictException('Esta aplicação já foi concluída e não recebe novas correções.');
-    }
 
     const origem = dto.origem ?? 'mobile';
     const alunoId = dto.alunoId ?? null;
@@ -113,12 +110,17 @@ export class CorrectionsService {
     if (dto.nota !== undefined) exigirNotaValida(dto.nota, aplicacao.prova.totalPontos);
 
     const notaMudou = dto.nota !== undefined && umaCasa(dto.nota) !== correcao.nota;
-    const atualizada = await this.repositorio.atualizar(correcaoId, {
-      alunoId: dto.alunoId,
-      nota: dto.nota === undefined ? undefined : umaCasa(dto.nota),
-      // Nota alterada à mão deixa de ser "automática" no relatório.
-      origem: notaMudou ? 'manual' : undefined,
-    });
+    const atualizada = await this.repositorio.atualizar(
+      aplicacaoId,
+      correcaoId,
+      {
+        alunoId: dto.alunoId,
+        nota: dto.nota === undefined ? undefined : umaCasa(dto.nota),
+        // Nota alterada à mão deixa de ser "automática" no relatório.
+        origem: notaMudou ? 'manual' : undefined,
+      },
+      aplicacao.turma.alunos.length,
+    );
     return paraResposta(atualizada);
   }
 

@@ -43,6 +43,7 @@ const menu: ItemMenu[] = [
   { rotulo: 'Aplicações e PDF', para: '/aplicacoes', prefixo: '/aplicacoes' },
   { rotulo: 'Correção', para: '/correcao', prefixo: '/correcao' },
   { rotulo: 'Relatórios e notas', para: '/relatorios', prefixo: '/relatorios' },
+  { rotulo: 'Minha conta', para: '/conta', prefixo: '/conta' },
 ]
 
 const route = useRoute()
@@ -274,6 +275,13 @@ watch(
   color: var(--text-soft);
 }
 
+/* Mais de um botão no canto (ex.: Importar alunos + Adicionar aluno). */
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 /* Slots opcionais não ocupam espaço quando a tela não os preenche. */
 .caminho:empty,
 .subtitulo:empty,
@@ -363,6 +371,20 @@ watch(
   .corpo :deep(th),
   .corpo :deep(td) {
     white-space: nowrap;
+  }
+}
+
+@media print {
+  .sidebar,
+  .topo-celular,
+  .fundo-menu,
+  .cabecalho {
+    display: none;
+  }
+
+  .conteudo {
+    margin-left: 0;
+    padding: 0;
   }
 }
 </style>

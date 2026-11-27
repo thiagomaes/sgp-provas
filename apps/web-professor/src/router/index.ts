@@ -21,6 +21,23 @@ const router = createRouter({
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),
     },
+    // Cadastro do professor, também fora do AppShell e aberto sem sessão.
+    {
+      path: '/cadastro',
+      name: 'cadastro',
+      component: () => import('../pages/CadastroPage.vue'),
+    },
+    // Recuperação de senha, aberta sem sessão.
+    {
+      path: '/esqueci-senha',
+      name: 'esqueci-senha',
+      component: () => import('../pages/EsqueciSenhaPage.vue'),
+    },
+    {
+      path: '/redefinir-senha',
+      name: 'redefinir-senha',
+      component: () => import('../pages/RedefinirSenhaPage.vue'),
+    },
 
     {
       path: '/dashboard',
@@ -81,6 +98,11 @@ const router = createRouter({
       name: 'aplicacao-exportar',
       component: () => import('../pages/AplicacaoExportarPage.vue'),
     },
+    {
+      path: '/aplicacoes/:id/gabarito',
+      name: 'aplicacao-gabarito',
+      component: () => import('../pages/AplicacaoGabaritoPage.vue'),
+    },
 
     // Correção pela câmera do celular (RF08). Ver ADR-001.
     {
@@ -109,14 +131,25 @@ const router = createRouter({
       name: 'relatorio-detalhe',
       component: () => import('../pages/RelatorioDetalhePage.vue'),
     },
+
+    // Dados da conta e anonimização (RF13, LGPD).
+    {
+      path: '/conta',
+      name: 'conta',
+      component: () => import('../pages/ContaPage.vue'),
+    },
   ],
 })
 
-// Sem sessão, qualquer tela interna leva ao login. Já logado, o login
-// leva direto ao dashboard.
+// Sem sessão, qualquer tela interna leva ao login. Já logado, o login, o
+// cadastro e o "esqueci minha senha" levam direto ao dashboard. O link de
+// redefinição abre sempre: ele pode chegar a quem está logado em outra conta.
+const TELAS_ABERTAS = new Set(['login', 'cadastro', 'esqueci-senha'])
+
 router.beforeEach((to) => {
   const logado = temSessao()
-  if (to.name === 'login') return logado ? '/dashboard' : true
+  if (to.name === 'redefinir-senha') return true
+  if (TELAS_ABERTAS.has(String(to.name))) return logado ? '/dashboard' : true
   return logado ? true : '/login'
 })
 

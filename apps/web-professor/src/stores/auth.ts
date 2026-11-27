@@ -14,9 +14,26 @@ export const useAuthStore = defineStore('auth', () => {
     professor.value = sessao.professor
   }
 
+  /** Cria a conta (POST /auth/register), que já devolve a sessão aberta. */
+  async function cadastrar(nome: string, email: string, senha: string) {
+    const sessao = await http.post<Session>('/auth/register', { nome, email, senha }, true)
+    salvarTokens(sessao.accessToken, sessao.refreshToken)
+    professor.value = sessao.professor
+  }
+
   /** Busca o professor logado (GET /auth/me), ex.: depois de recarregar a página. */
   async function carregarProfessor() {
     professor.value = await http.get<Teacher>('/auth/me')
+  }
+
+  /**
+   * Anonimiza a conta (RF13, POST /auth/anonymize). A API já encerra todas as
+   * sessões, então aqui só falta limpar a sessão local.
+   */
+  async function anonimizarConta(senha: string) {
+    await http.post('/auth/anonymize', { senha })
+    limparSessao()
+    professor.value = null
   }
 
   async function sair() {
@@ -33,5 +50,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { professor, entrar, carregarProfessor, sair }
+  return { professor, entrar, cadastrar, carregarProfessor, anonimizarConta, sair }
 })

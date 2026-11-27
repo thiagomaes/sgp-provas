@@ -43,6 +43,11 @@ export class ApplicationsController {
     return new StreamableFile(arquivo);
   }
 
+  @Get(':id/answer-key')
+  gabarito(@CurrentProfessor() professorId: string, @Param('id') id: string) {
+    return this.aplicacoes.gabarito(professorId, id);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   excluir(@CurrentProfessor() professorId: string, @Param('id') id: string) {

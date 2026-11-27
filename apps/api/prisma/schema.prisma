@@ -22,14 +22,15 @@ datasource db {
 
 /// Único usuário com login no sistema (RF01). O aluno não tem conta.
 model Professor {
-  id            String         @id @default(cuid())
+  id            String             @id @default(cuid())
   nome          String
-  email         String         @unique
+  email         String             @unique
   passwordHash  String
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime           @default(now())
   /// Preenchido na anonimização (RF13); a conta deixa de logar.
   anonymizedAt  DateTime?
   refreshTokens RefreshToken[]
+  recuperacoes  RecuperacaoSenha[]
   turmas        Turma[]
   questoes      Questao[]
   provas        Prova[]
@@ -43,6 +44,21 @@ model RefreshToken {
   tokenHash   String    @unique
   expiresAt   DateTime
   revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
+
+  @@index([professorId])
+}
+
+/// Pedido de "Esqueci minha senha" (RF01): token de uso único, válido por 1 hora.
+/// Só o hash (SHA-256) fica no banco, como no refresh token.
+model RecuperacaoSenha {
+  id          String    @id @default(cuid())
+  professorId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  /// Preenchido quando a senha é trocada; o token não serve mais.
+  usadoEm     DateTime?
   createdAt   DateTime  @default(now())
   professor   Professor @relation(fields: [professorId], references: [id], onDelete: Cascade)
 

@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { aplicacaoParaResposta, type AplicacaoResposta } from './aplicacao.mapper.js';
 import { ApplicationsRepository } from './applications.repository.js';
 import type { CreateAplicacaoDto, GerarVersoesDto } from './dto/aplicacao.dto.js';
+import { montarGabarito, type GabaritoResposta } from './gabarito.js';
 import { questoesImpressas, type QuestaoImpressa } from './gabarito-versao.js';
 import { dadosDoPdf } from './pdf/dados-do-pdf.js';
 import { gerarPdfDaAplicacao } from './pdf/gerar-pdf-aplicacao.js';
@@ -153,6 +154,15 @@ export class ApplicationsService {
       arquivo: await gerarPdfDaAplicacao(dados),
       nome: nomeDoArquivoPdf(dados.tituloDaProva, dados.nomeDaTurma),
     };
+  }
+
+  async gabarito(professorId: string, id: string): Promise<GabaritoResposta> {
+    const aplicacao = await this.repositorio.buscarParaGabarito(professorId, id);
+    if (!aplicacao) throw new NotFoundException('Aplicação não encontrada.');
+    if (aplicacao.versoesProva.length === 0) {
+      throw new ConflictException('Gere as versões da aplicação antes de ver o gabarito.');
+    }
+    return montarGabarito(aplicacao);
   }
 
   async listarVersoes(professorId: string, id: string): Promise<VersaoComGabarito[]> {

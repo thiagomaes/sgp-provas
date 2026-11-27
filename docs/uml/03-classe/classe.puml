@@ -1,5 +1,5 @@
 @startuml
-title Diagrama de Classes do SGP — schema Prisma N2
+title Diagrama de Classes do SGP — schema Prisma N3
 skinparam classAttributeIconSize 0
 hide empty members
 
@@ -22,6 +22,14 @@ class RefreshToken {
   +expiresAt : DateTime
   +revokedAt : DateTime?
   +createdAt : DateTime
+}
+
+class TentativaLogin {
+  +id : String
+  +email : String
+  +ip : String
+  +sucesso : Boolean
+  +criadaEm : DateTime
 }
 
 class Turma {
@@ -101,11 +109,14 @@ class Aplicacao {
   +corrigidas : Int
   +createdAt : DateTime
   +gerarVersoes() : VersaoProva[]
+  +gerarPdf() : Pdf
+  +consultarGabarito() : Gabarito
 }
 
 class VersaoProva {
   +id : String
   +aplicacaoId : String
+  +alunoId : String?
   +numeroVersao : Int
   +layout : Json
   +qrCodePayload : String
@@ -141,4 +152,5 @@ Prova "1" -- "0..*" Aplicacao : aplicada em
 Aplicacao "1" *-- "0..*" VersaoProva : gera
 Aplicacao "1" -- "0..*" Correcao : recebe
 Aluno "0..1" -- "0..*" Correcao : identificado em
+Aluno "0..1" -- "0..*" VersaoProva : dono da versão em
 @enduml

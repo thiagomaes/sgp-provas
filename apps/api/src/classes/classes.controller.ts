@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { CurrentProfessor } from '../common/current-professor.decorator.js';
 import { ClassesService } from './classes.service.js';
-import { CreateAlunoDto, UpdateAlunoDto } from './dto/aluno.dto.js';
+import { CreateAlunoDto, ImportarAlunosDto, UpdateAlunoDto } from './dto/aluno.dto.js';
 import { CreateTurmaDto, UpdateTurmaDto } from './dto/turma.dto.js';
 
 @Controller('classes')
@@ -37,6 +37,15 @@ export class ClassesController {
   @Post(':id/students')
   adicionarAluno(@CurrentProfessor() professorId: string, @Param('id') id: string, @Body() dto: CreateAlunoDto) {
     return this.turmas.adicionarAluno(professorId, id, dto);
+  }
+
+  @Post(':id/students/import')
+  importarAlunos(
+    @CurrentProfessor() professorId: string,
+    @Param('id') id: string,
+    @Body() dto: ImportarAlunosDto,
+  ) {
+    return this.turmas.importarAlunos(professorId, id, dto);
   }
 
   @Patch(':id/students/:studentId')

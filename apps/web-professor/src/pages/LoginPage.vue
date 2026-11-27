@@ -79,8 +79,11 @@ async function entrar() {
         {{ entrando ? 'Entrando...' : 'Entrar' }}
       </button>
 
-      <!-- Ainda sem ação: recuperação de senha não faz parte da N2. -->
-      <a class="esqueci" href="#" @click.prevent>Esqueci minha senha</a>
+      <RouterLink class="esqueci" to="/esqueci-senha">Esqueci minha senha</RouterLink>
+
+      <p class="criar-conta">
+        Ainda não tem conta? <RouterLink to="/cadastro">Criar conta</RouterLink>
+      </p>
     </form>
   </div>
 </template>
@@ -185,5 +188,21 @@ input:focus {
 
 .esqueci:hover {
   color: var(--text-soft);
+}
+
+.criar-conta {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-base);
+  color: var(--text-soft);
+}
+
+.criar-conta a {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.criar-conta a:hover {
+  color: var(--accent-dark);
 }
 </style>

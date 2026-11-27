@@ -1,4 +1,4 @@
-import type { Application, ApplicationVersion, ApplicationVersionKey } from '../types'
+import type { AnswerKey, Application, ApplicationVersion, ApplicationVersionKey } from '../types'
 import { baixarArquivo, http } from './http'
 
 /** Aplicações (RF05, RF06, RF07) — rotas /applications da API. */
@@ -48,6 +48,9 @@ export const listarVersoes = (id: string) =>
 /** PDF com o caderno e o cartão-resposta de cada versão. 409 se as versões não foram geradas. */
 export const baixarPdfDaAplicacao = (id: string) =>
   baixarArquivo(`/applications/${id}/pdf`, 'aplicacao.pdf')
+
+/** Resposta certa de cada questão em cada versão. 409 se as versões não foram geradas. */
+export const buscarGabarito = (id: string) => http.get<AnswerKey>(`/applications/${id}/answer-key`)
 
 /** Data de hoje no fuso do navegador, em AAAA-MM-DD. */
 export function dataDeHoje(): string {

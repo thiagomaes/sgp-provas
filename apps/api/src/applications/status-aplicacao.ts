@@ -1,6 +1,12 @@
 export type StatusDaCorrecao = 'pdf-gerado' | 'em-correcao' | 'concluida';
 
-export function statusPelasCorrecoes(corrigidas: number, totalAlunos: number): StatusDaCorrecao {
-  if (totalAlunos > 0 && corrigidas >= totalAlunos) return 'concluida';
-  return corrigidas > 0 ? 'em-correcao' : 'pdf-gerado';
+export interface ContagemDeCorrecoes {
+  correcoes: number;
+  alunosCorrigidos: number;
+  totalAlunos: number;
+}
+
+export function statusPelasCorrecoes({ correcoes, alunosCorrigidos, totalAlunos }: ContagemDeCorrecoes): StatusDaCorrecao {
+  if (totalAlunos > 0 && alunosCorrigidos >= totalAlunos) return 'concluida';
+  return correcoes > 0 ? 'em-correcao' : 'pdf-gerado';
 }

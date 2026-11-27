@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { CurrentProfessor } from '../common/current-professor.decorator.js';
 import { Publica } from '../common/publica.decorator.js';
 import { AuthService, LoginBloqueadoException } from './auth.service.js';
+import { AnonimizarDto } from './dto/anonimizar.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshDto } from './dto/refresh.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -51,5 +52,12 @@ export class AuthController {
   @Get('me')
   eu(@CurrentProfessor() professorId: string) {
     return this.auth.eu(professorId);
+  }
+
+  /** RF13: anonimiza a conta do professor logado e os alunos das turmas dele. */
+  @Post('anonymize')
+  @HttpCode(204)
+  async anonimizar(@CurrentProfessor() professorId: string, @Body() dto: AnonimizarDto) {
+    await this.auth.anonimizar(professorId, dto.senha);
   }
 }

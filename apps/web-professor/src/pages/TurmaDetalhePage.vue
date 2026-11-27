@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import ConfirmarExclusao from '../components/ConfirmarExclusao.vue'
 import EstadoTela from '../components/EstadoTela.vue'
+import ImportarAlunos from '../components/ImportarAlunos.vue'
 import AppShell from '../layouts/AppShell.vue'
 import { ErroApi, mensagemDeErro } from '../services/http'
 import { adicionarAluno, buscarTurma, editarAluno, removerAluno } from '../services/turmas'
@@ -45,6 +46,7 @@ const salvando = ref(false)
 const erroFormulario = ref('')
 
 function abrirFormulario() {
+  mostrarImportacao.value = false
   mostrarFormulario.value = true
   erroFormulario.value = ''
 }
@@ -74,6 +76,19 @@ async function salvarAluno() {
   } finally {
     salvando.value = false
   }
+}
+
+/** Importação por planilha (componente ImportarAlunos). */
+const mostrarImportacao = ref(false)
+
+function abrirImportacao() {
+  cancelar()
+  mostrarImportacao.value = true
+}
+
+function concluirImportacao(atualizada: Class) {
+  turma.value = atualizada
+  mostrarImportacao.value = false
 }
 
 /** Aluno com a linha em edição. */
@@ -154,6 +169,7 @@ async function confirmarExclusao(alunoId: string) {
       {{ turma.alunos.length }} alunos cadastrados nesta turma.
     </template>
     <template v-if="turma" #acoes>
+      <button class="botao-secundario" type="button" @click="abrirImportacao">Importar alunos</button>
       <button class="botao" type="button" @click="abrirFormulario">+ Adicionar aluno</button>
     </template>
 
@@ -161,6 +177,14 @@ async function confirmarExclusao(alunoId: string) {
     <EstadoTela v-else-if="erroCarga" tipo="erro" @tentar="carregar">{{ erroCarga }}</EstadoTela>
 
     <template v-else-if="turma">
+      <ImportarAlunos
+        v-if="mostrarImportacao"
+        :turma-id="turmaId"
+        :matriculas="turma.alunos.map((aluno) => aluno.matricula)"
+        @importado="concluirImportacao"
+        @cancelar="mostrarImportacao = false"
+      />
+
       <form v-if="mostrarFormulario" class="formulario" @submit.prevent="salvarAluno">
         <label class="campo">
           <span class="rotulo">Nome do aluno</span>
@@ -183,7 +207,7 @@ async function confirmarExclusao(alunoId: string) {
       </form>
 
       <EstadoTela v-if="turma.alunos.length === 0" tipo="vazio">
-        Nenhum aluno cadastrado nesta turma ainda. Use "+ Adicionar aluno".
+        Nenhum aluno cadastrado nesta turma ainda. Use "+ Adicionar aluno" ou "Importar alunos".
       </EstadoTela>
 
       <table v-else class="tabela">

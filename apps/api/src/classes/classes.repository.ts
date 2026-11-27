@@ -47,6 +47,11 @@ export class ClassesRepository {
     return this.prisma.aluno.create({ data: { ...dados, turmaId } });
   }
 
+  /** Grava todos os alunos numa instrução só: ou entram todos, ou nenhum. */
+  criarAlunos(turmaId: string, alunos: { nome: string; matricula: string }[]) {
+    return this.prisma.aluno.createMany({ data: alunos.map((aluno) => ({ ...aluno, turmaId })) });
+  }
+
   atualizarAluno(alunoId: string, dados: Prisma.AlunoUpdateInput) {
     return this.prisma.aluno.update({ where: { id: alunoId }, data: dados });
   }

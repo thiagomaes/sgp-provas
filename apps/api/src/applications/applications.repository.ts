@@ -42,6 +42,34 @@ export class ApplicationsRepository {
     });
   }
 
+  buscarParaGabarito(professorId: string, id: string) {
+    return this.prisma.aplicacao.findFirst({
+      where: { id, professorId },
+      include: {
+        turma: { select: { nome: true } },
+        prova: {
+          select: {
+            titulo: true,
+            questoes: {
+              select: {
+                questaoId: true,
+                pontuacao: true,
+                questao: {
+                  select: {
+                    tipo: true,
+                    respostaEsperada: true,
+                    alternativas: { select: { letra: true, correta: true } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        versoesProva: { orderBy: { numeroVersao: 'asc' }, include: { aluno: { select: { nome: true, matricula: true } } } },
+      },
+    });
+  }
+
   /** Versões com o gabarito original de cada questão, para a tela de correção. */
   buscarVersoesComGabarito(professorId: string, id: string) {
     return this.prisma.aplicacao.findFirst({
