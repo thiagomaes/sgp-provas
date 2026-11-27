@@ -2,36 +2,48 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EstadoTela from '../components/EstadoTela.vue'
+import { desenharMiniatura, fotoDaCamera, quadroDoVideo } from '../correcao/captura'
+import { lerCartao, type Imagem, type ResultadoDoCartao } from '../correcao/leitura-cartao'
+import type { Ponto } from '../correcao/medidas-cartao'
 import { conferirQrCode, MENSAGEM_DE_RECUSA } from '../correcao/qrcode'
 import AppShell from '../layouts/AppShell.vue'
 import { buscarAplicacao, listarVersoes } from '../services/aplicacoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
 import { buscarProva } from '../services/provas'
 import { buscarTurma } from '../services/turmas'
+import { useLeituraStore } from '../stores/leitura'
 import type { Application, ApplicationVersionKey, Class, Exam } from '../types'
 
 /**
  * Escanear prova (RF08) — fiel ao protótipo docs/telas/15-mobile-scanner.png.
  *
  * Abre a câmera traseira do celular pelo navegador (getUserMedia) e lê o QR
- * Code do cartão-resposta uns 8 quadros por segundo, com o BarcodeDetector do
+ * Code do cartão-resposta várias vezes por segundo, com o BarcodeDetector do
  * navegador ou, onde ele não existe (iPhone, por exemplo), com o jsQR. O QR
- * Code válido leva à revisão na versão certa e, na prova identificada, no aluno
- * certo. A câmera só abre em contexto seguro (localhost ou o site publicado);
- * sem ela, "Escolher a versão" faz o mesmo à mão.
- *
- * A leitura das bolinhas do cartão é a T08: por enquanto o professor marca as
- * respostas na tela de revisão.
+ * Code válido identifica a versão e, na prova identificada, o aluno. Em
+ * seguida a tela tira uma foto do cartão na maior resolução que a câmera der e
+ * lê as bolinhas marcadas (correcao/leitura-cartao.ts), tentando os quadros
+ * seguintes por até 2 segundos. A revisão abre com as respostas lidas; se a
+ * leitura falhar, o professor tenta de novo ou marca à mão. A câmera só abre
+ * em contexto seguro (localhost ou o site publicado); sem ela, "Escolher a
+ * versão" leva à revisão para marcar à mão.
  */
 
 type EstadoCamera = 'abrindo' | 'ativa' | 'negada' | 'indisponivel'
 
-/** Largura do quadro analisado: menor que o vídeo, para o celular dar conta. */
-const LARGURA_DE_LEITURA = 640
+/**
+ * Lado menor do quadro em que o QR Code é procurado. Com o cartão inteiro na
+ * imagem o QR Code fica pequeno (o da prova identificada tem 41 módulos em
+ * 35 mm), então só vídeos maiores que 1080p são reduzidos.
+ */
+const LADO_MENOR_DE_LEITURA = 1080
 const INTERVALO_MS = 125
+/** Tempo para achar um quadro em que as bolinhas sejam lidas. */
+const TEMPO_DA_LEITURA_MS = 2000
 
 const route = useRoute()
 const router = useRouter()
+const leituraStore = useLeituraStore()
 const id = route.params.id as string
 
 const aplicacao = ref<Application | null>(null)
@@ -87,8 +99,9 @@ async function abrirCamera() {
   }
 
   try {
+    // Resolução alta: o cartão inteiro precisa caber com as bolinhas nítidas.
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
       audio: false,
     })
     if (saiu) {
@@ -114,26 +127,45 @@ function fecharCamera() {
 // ---------- leitura do QR Code ----------
 
 interface Detector {
-  detect(imagem: CanvasImageSource): Promise<{ rawValue: string }[]>
+  detect(imagem: CanvasImageSource): Promise<{ rawValue: string; cornerPoints: Ponto[] }[]>
 }
 type ConstrutorDeDetector = {
   new (opcoes: { formats: string[] }): Detector
   getSupportedFormats(): Promise<string[]>
 }
 
-type Decodificador = (quadro: HTMLCanvasElement, contexto: CanvasRenderingContext2D) => Promise<string | null>
+/** Texto do QR Code e o centro dele no quadro, para a leitura saber o lado de cima do cartão. */
+interface QrCodeLido {
+  texto: string
+  centro: Ponto | null
+}
+type Decodificador = (quadro: HTMLCanvasElement, contexto: CanvasRenderingContext2D) => Promise<QrCodeLido | null>
+
+function centroDos(pontos: Ponto[]): Ponto | null {
+  if (pontos.length === 0) return null
+  return {
+    x: pontos.reduce((soma, ponto) => soma + ponto.x, 0) / pontos.length,
+    y: pontos.reduce((soma, ponto) => soma + ponto.y, 0) / pontos.length,
+  }
+}
 
 /** BarcodeDetector quando o navegador lê QR Code; senão o jsQR, carregado só aqui. */
 async function criarDecodificador(): Promise<Decodificador> {
   const Nativo = (window as unknown as { BarcodeDetector?: ConstrutorDeDetector }).BarcodeDetector
   if (Nativo && (await Nativo.getSupportedFormats().catch((): string[] => [])).includes('qr_code')) {
     const detector = new Nativo({ formats: ['qr_code'] })
-    return async (quadro) => (await detector.detect(quadro))[0]?.rawValue ?? null
+    return async (quadro) => {
+      const [achado] = await detector.detect(quadro)
+      return achado ? { texto: achado.rawValue, centro: centroDos(achado.cornerPoints ?? []) } : null
+    }
   }
   const { default: jsQR } = await import('jsqr')
   return async (quadro, contexto) => {
     const imagem = contexto.getImageData(0, 0, quadro.width, quadro.height)
-    return jsQR(imagem.data, imagem.width, imagem.height, { inversionAttempts: 'dontInvert' })?.data ?? null
+    const achado = jsQR(imagem.data, imagem.width, imagem.height, { inversionAttempts: 'dontInvert' })
+    if (!achado) return null
+    const { topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner } = achado.location
+    return { texto: achado.data, centro: centroDos([topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner]) }
   }
 }
 
@@ -151,12 +183,16 @@ async function iniciarLeitura() {
   const lerQuadro = async () => {
     const atual = video.value
     if (lendo && atual && atual.readyState >= 2 && atual.videoWidth > 0) {
-      const escala = Math.min(1, LARGURA_DE_LEITURA / atual.videoWidth)
+      const escala = Math.min(1, LADO_MENOR_DE_LEITURA / Math.min(atual.videoWidth, atual.videoHeight))
       quadro.width = Math.round(atual.videoWidth * escala)
       quadro.height = Math.round(atual.videoHeight * escala)
       contexto.drawImage(atual, 0, 0, quadro.width, quadro.height)
-      const texto = await decodificar(quadro, contexto).catch(() => null)
-      if (texto && lendo) tratarLeitura(texto)
+      const lido = await decodificar(quadro, contexto).catch(() => null)
+      if (lido && lendo) {
+        // O centro do QR Code volta para a escala do vídeo, que é a da foto.
+        const centro = lido.centro && { x: lido.centro.x / escala, y: lido.centro.y / escala }
+        tratarLeitura(lido.texto, centro)
+      }
     }
     if (lendo) temporizador = setTimeout(lerQuadro, INTERVALO_MS)
   }
@@ -168,8 +204,8 @@ function pararLeitura() {
   clearTimeout(temporizador)
 }
 
-/** QR Code recusado mostra o motivo e continua lendo; o válido abre a revisão. */
-function tratarLeitura(texto: string) {
+/** QR Code recusado mostra o motivo e continua lendo; o válido passa para a leitura das bolinhas. */
+function tratarLeitura(texto: string, centroDoQr: Ponto | null) {
   const resultado = conferirQrCode(texto, id, versoes.value)
   if (!resultado.ok) {
     mensagem.value = { texto: MENSAGEM_DE_RECUSA[resultado.motivo], tipo: 'erro' }
@@ -179,8 +215,76 @@ function tratarLeitura(texto: string) {
   pararLeitura()
   navigator.vibrate?.(120)
   const { numeroVersao, alunoId } = resultado.qrCode
-  mensagem.value = { texto: `Versão ${numeroVersao} identificada`, tipo: 'ok' }
-  setTimeout(() => abrirRevisao(numeroVersao, alunoId), 600)
+  mensagem.value = { texto: `Versão ${numeroVersao} identificada. Lendo as marcações...`, tipo: 'ok' }
+  lerMarcacoes(numeroVersao, alunoId, centroDoQr)
+}
+
+// ---------- leitura das bolinhas ----------
+
+/** Situação da leitura das bolinhas depois do QR Code. */
+const leituraDasBolinhas = ref<'parada' | 'lendo' | 'falhou'>('parada')
+const falhaDaLeitura = ref('')
+/** Versão e aluno do último QR Code válido, para "Marcar à mão" depois de uma falha. */
+let qrCodeAtual: { numeroVersao: number; alunoId: string | null } | null = null
+
+const esperar = (ms: number) => new Promise((resolver) => setTimeout(resolver, ms))
+
+/**
+ * Primeiro a foto na resolução máxima (onde o navegador deixa); depois os
+ * quadros do vídeo, até um ser lido ou o tempo acabar. O centro do QR Code só
+ * vale para o vídeo: a foto do sensor pode vir girada, e aí o lado de cima sai
+ * da região escura do QR Code no cartão.
+ */
+async function lerMarcacoes(numeroVersao: number, alunoId: string | null, centroDoQr: Ponto | null) {
+  const versao = versoes.value.find((item) => item.numeroVersao === numeroVersao)
+  if (!versao) return
+  qrCodeAtual = { numeroVersao, alunoId }
+  leituraDasBolinhas.value = 'lendo'
+
+  const tela = document.createElement('canvas')
+  let resultado: ResultadoDoCartao | null = null
+  let imagem: Imagem | null = null
+  const trilha = stream?.getVideoTracks()[0]
+  if (trilha) {
+    imagem = await fotoDaCamera(trilha)
+    if (imagem) resultado = lerCartao(imagem, versao.questoes)
+  }
+  const limite = Date.now() + TEMPO_DA_LEITURA_MS
+  while (!resultado?.ok && Date.now() < limite && !saiu) {
+    imagem = video.value ? quadroDoVideo(video.value, tela) : null
+    if (imagem) resultado = lerCartao(imagem, versao.questoes, { centroDoQr })
+    // Deixa a tela respirar entre um quadro e outro.
+    await esperar(80)
+  }
+  if (saiu) return
+
+  if (!resultado?.ok || !imagem) {
+    leituraDasBolinhas.value = 'falhou'
+    mensagem.value = null
+    falhaDaLeitura.value = resultado && !resultado.ok ? resultado.mensagem : 'A câmera não mandou nenhuma imagem'
+    return
+  }
+
+  navigator.vibrate?.([60, 60, 60])
+  leituraStore.guardar({
+    aplicacaoId: id,
+    numeroVersao,
+    questoes: resultado.questoes,
+    miniatura: desenharMiniatura(imagem, resultado.homografia, versao.questoes, resultado.questoes),
+  })
+  abrirRevisao(numeroVersao, alunoId)
+}
+
+function tentarDeNovo() {
+  leituraDasBolinhas.value = 'parada'
+  falhaDaLeitura.value = ''
+  mensagem.value = null
+  qrCodeAtual = null
+  iniciarLeitura()
+}
+
+function marcarAMao() {
+  if (qrCodeAtual) abrirRevisao(qrCodeAtual.numeroVersao, qrCodeAtual.alunoId)
 }
 
 function abrirRevisao(numeroVersao: number, alunoId: string | null) {
@@ -265,9 +369,22 @@ onBeforeUnmount(() => {
       >
         {{ mensagem.texto }}
       </p>
-      <p v-else class="dica">Aponte a câmera para o QR Code do cartão-resposta</p>
+      <div v-else-if="leituraDasBolinhas === 'falhou'" class="falha" role="alert">
+        <p class="falha-titulo">Não deu para ler as marcações</p>
+        <p class="falha-texto">
+          {{ falhaDaLeitura }}. Use um lugar bem iluminado, sem reflexo na folha, e segure o
+          celular parado até a imagem ficar nítida.
+        </p>
+        <div class="acoes">
+          <button class="botao" type="button" @click="tentarDeNovo">Tentar de novo</button>
+          <button class="botao-secundario" type="button" @click="marcarAMao">Marcar à mão</button>
+        </div>
+      </div>
+      <p v-else class="dica">
+        Aponte a câmera para o cartão-resposta, com os 4 quadrados pretos dentro da imagem
+      </p>
 
-      <div class="acoes">
+      <div v-if="leituraDasBolinhas !== 'falhou'" class="acoes">
         <button class="botao" type="button" @click="escolhendo = !escolhendo">
           Escolher a versão
         </button>
@@ -316,7 +433,7 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-/* Cantos do alvo de leitura, como no protótipo. */
+/* Cantos do alvo de leitura: o cartão inteiro (A4 em pé) cabe dentro deles. */
 .canto {
   position: absolute;
   width: 28px;
@@ -327,32 +444,32 @@ onBeforeUnmount(() => {
 }
 
 .canto-se {
-  top: 30%;
-  left: 18%;
+  top: 12%;
+  left: 5%;
   border-top-width: 3px;
   border-left-width: 3px;
   border-top-left-radius: var(--radius-sm);
 }
 
 .canto-sd {
-  top: 30%;
-  right: 18%;
+  top: 12%;
+  right: 5%;
   border-top-width: 3px;
   border-right-width: 3px;
   border-top-right-radius: var(--radius-sm);
 }
 
 .canto-ie {
-  bottom: 30%;
-  left: 18%;
+  bottom: 12%;
+  left: 5%;
   border-bottom-width: 3px;
   border-left-width: 3px;
   border-bottom-left-radius: var(--radius-sm);
 }
 
 .canto-id {
-  right: 18%;
-  bottom: 30%;
+  right: 5%;
+  bottom: 12%;
   border-right-width: 3px;
   border-bottom-width: 3px;
   border-bottom-right-radius: var(--radius-sm);
@@ -391,6 +508,28 @@ onBeforeUnmount(() => {
 .leitura-erro {
   color: var(--warn);
   background: var(--warn-soft);
+}
+
+.falha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--warn-soft);
+  border-radius: var(--radius-md);
+}
+
+.falha-titulo {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.falha-texto {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
 }
 
 .versoes {

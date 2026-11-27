@@ -2,11 +2,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EstadoTela from '../components/EstadoTela.vue'
+import { precisaConferir } from '../correcao/captura'
+import type { QuestaoLida } from '../correcao/leitura-cartao'
 import { LETRAS_IMPRESSAS, notaPrevista, respostasParaApi, type Marcacoes } from '../correcao/respostas'
 import AppShell from '../layouts/AppShell.vue'
 import { buscarAplicacao, listarVersoes } from '../services/aplicacoes'
 import { listarCorrecoes, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
+import { useLeituraStore } from '../stores/leitura'
 import type { Application, ApplicationVersionKey, Correction, OptionLetter, PrintedQuestion } from '../types'
 
 /**
@@ -14,10 +17,13 @@ import type { Application, ApplicationVersionKey, Correction, OptionLetter, Prin
  *
  * Abre na versão lida no QR Code (?versao=N) e, na prova identificada, no
  * aluno dela (&aluno=<id>). As questões aparecem na ordem impressa e com as
- * letras impressas, como no cartão do aluno. Enquanto a leitura das bolinhas
- * (T08) não existe, as respostas começam em branco e o professor marca na tela.
- * Ao confirmar, as letras são convertidas para as originais e a API recalcula
- * a nota com o gabarito do banco.
+ * letras impressas, como no cartão do aluno. Vinda da câmera, a tela já traz as
+ * respostas lidas no cartão, a miniatura da foto e, em amarelo, as questões em
+ * branco, anuladas ou de leitura fraca, para o professor conferir. Sem a
+ * leitura ("Escolher a versão", "Marcar à mão" ou a página recarregada), as
+ * respostas começam em branco e o professor marca na tela. Ao confirmar, as
+ * letras são convertidas para as originais e a API recalcula a nota com o
+ * gabarito do banco.
  */
 
 const route = useRoute()
@@ -26,6 +32,8 @@ const id = route.params.id as string
 const numeroVersao = Number(route.query.versao)
 const alunoDoQrCode = typeof route.query.aluno === 'string' ? route.query.aluno : null
 const telaDeEscanear = `/correcao/${id}/escanear`
+/** Respostas lidas pela câmera, quando a tela veio da leitura do cartão. */
+const leitura = useLeituraStore().retirar(id, numeroVersao)
 
 const aplicacao = ref<Application | null>(null)
 const versao = ref<ApplicationVersionKey | null>(null)
@@ -45,6 +53,7 @@ async function carregar() {
     aplicacao.value = encontrada
     versao.value = versoes.find((item) => item.numeroVersao === numeroVersao) ?? null
     correcoes.value = lidas
+    preencherComALeitura()
   } catch (erro) {
     if (!(erro instanceof ErroApi && erro.status === 404)) {
       erroCarga.value = mensagemDeErro(erro, 'Não foi possível carregar a prova lida.')
@@ -84,6 +93,31 @@ const impedimento = computed(() => {
 const questoes = computed<PrintedQuestion[]>(() => versao.value?.questoes ?? [])
 
 const marcacoes = ref<Marcacoes>({ letras: {}, pontos: {} })
+
+/** Leitura de cada questão objetiva, pelo id da questão. */
+const lidas = ref<Record<string, QuestaoLida>>({})
+
+function preencherComALeitura() {
+  if (!leitura || !versao.value) return
+  const daVersao = new Set(versao.value.questoes.map((questao) => questao.questaoId))
+  for (const lida of leitura.questoes) {
+    if (!daVersao.has(lida.questaoId)) continue
+    lidas.value[lida.questaoId] = lida
+    marcacoes.value.letras[lida.questaoId] = lida.letra
+  }
+}
+
+/** Texto do destaque amarelo, ou null quando a leitura não pede conferência. */
+function avisoDaLeitura(questao: PrintedQuestion): string | null {
+  const lida = lidas.value[questao.questaoId]
+  if (!lida || !precisaConferir(lida)) return null
+  if (lida.estado === 'em-branco') return 'Em branco: confira'
+  if (lida.motivo === 'mais-de-uma') return 'Mais de uma marcação: anulada'
+  if (lida.estado === 'anulada') return 'Marcação duvidosa: confira'
+  return 'Leitura fraca: confira'
+}
+
+const paraConferir = computed(() => questoes.value.filter((questao) => avisoDaLeitura(questao)).length)
 
 function marcar(questao: PrintedQuestion, letra: OptionLetter) {
   const atual = marcacoes.value.letras[questao.questaoId] ?? null
@@ -197,15 +231,42 @@ async function confirmar() {
       <div class="nota">
         <p class="nota-valor">{{ formatarNota(notaFinal) }}</p>
         <p class="nota-legenda">
-          {{ notaAjustada === null ? 'nota calculada pelas respostas marcadas' : 'nota ajustada pelo professor' }}
+          {{
+            notaAjustada !== null
+              ? 'nota ajustada pelo professor'
+              : leitura
+                ? 'nota calculada pelas respostas lidas no cartão'
+                : 'nota calculada pelas respostas marcadas'
+          }}
         </p>
       </div>
 
-      <p class="dica">Marque as respostas como estão no cartão do aluno.</p>
+      <figure v-if="leitura?.miniatura" class="foto">
+        <img :src="leitura.miniatura" alt="Grade do cartão lida pela câmera, com as respostas lidas circuladas" />
+        <figcaption>Foto do cartão: a letra lida está circulada.</figcaption>
+      </figure>
+
+      <p v-if="leitura" class="dica">
+        Respostas lidas no cartão.
+        <template v-if="paraConferir">
+          Confira {{ paraConferir === 1 ? 'a questão destacada' : `as ${paraConferir} questões destacadas` }} em
+          amarelo; para corrigir, toque na letra.
+        </template>
+        <template v-else>Se algo estiver diferente do cartão, toque na letra para corrigir.</template>
+      </p>
+      <p v-else class="dica">Marque as respostas como estão no cartão do aluno.</p>
 
       <ul class="questoes">
-        <li v-for="questao in questoes" :key="questao.questaoId" class="questao">
-          <span class="questao-numero">Questão {{ questao.ordem }}</span>
+        <li
+          v-for="questao in questoes"
+          :key="questao.questaoId"
+          class="questao"
+          :class="{ conferir: avisoDaLeitura(questao) }"
+        >
+          <span class="questao-numero">
+            Questão {{ questao.ordem }}
+            <span v-if="avisoDaLeitura(questao)" class="aviso-leitura">{{ avisoDaLeitura(questao) }}</span>
+          </span>
 
           <span v-if="questao.tipo === 'objetiva'" class="alternativas" role="group" :aria-label="`Questão ${questao.ordem}`">
             <button
@@ -314,7 +375,46 @@ async function confirmar() {
 }
 
 .questao-numero {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.alternativas,
+.discursiva {
   flex-shrink: 0;
+}
+
+/* Leitura que o professor precisa conferir (em branco, anulada ou fraca). */
+.questao.conferir {
+  padding-right: var(--space-2);
+  padding-left: var(--space-2);
+  background: var(--highlight-soft);
+  border-radius: var(--radius-sm);
+}
+
+.aviso-leitura {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--highlight-text);
+}
+
+.foto {
+  margin: 0;
+}
+
+.foto img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.foto figcaption {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-soft);
 }
 
 .alternativas {

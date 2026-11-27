@@ -12,6 +12,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
-  // Testes rodam com o test runner do Node (npm test), fora do build.
-  "exclude": ["src/**/*.test.ts"]
+  // Testes e fixtures rodam com o test runner do Node (npm test), fora do build.
+  "exclude": ["src/**/*.test.ts", "src/**/__fixtures__/**"]
 }
