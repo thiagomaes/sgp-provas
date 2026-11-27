@@ -2,36 +2,33 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EstadoTela from '../components/EstadoTela.vue'
+import { LETRAS_IMPRESSAS, notaPrevista, respostasParaApi, type Marcacoes } from '../correcao/respostas'
 import AppShell from '../layouts/AppShell.vue'
-import { buscarAplicacao } from '../services/aplicacoes'
+import { buscarAplicacao, listarVersoes } from '../services/aplicacoes'
 import { listarCorrecoes, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
-import { buscarProva } from '../services/provas'
-import { listarQuestoes } from '../services/questoes'
-import { buscarTurma } from '../services/turmas'
-import type { Application, Class, Correction, CorrectionAnswer, Exam, Question } from '../types'
+import type { Application, ApplicationVersionKey, Correction, OptionLetter, PrintedQuestion } from '../types'
 
 /**
  * Revisar correção (RF08, RF09) — fiel ao protótipo docs/telas/16-mobile-revisao.png.
  *
- * Mostra a nota calculada a partir da leitura do cartão-resposta para o
- * professor conferir, ajustar se precisar e confirmar. Confirmar grava a
- * correção na API (POST /applications/:id/corrections), que recalcula a
- * nota com o gabarito do banco e soma 1 nas provas corrigidas.
- *
- * TODO(N3): as respostas abaixo são de exemplo, montadas a partir da
- * prova da aplicação. Com a leitura real, elas vêm do cartão-resposta lido
- * na tela de escanear, e o aluno vem do QR Code da prova identificada.
+ * Abre na versão lida no QR Code (?versao=N) e, na prova identificada, no
+ * aluno dela (&aluno=<id>). As questões aparecem na ordem impressa e com as
+ * letras impressas, como no cartão do aluno. Enquanto a leitura das bolinhas
+ * (T08) não existe, as respostas começam em branco e o professor marca na tela.
+ * Ao confirmar, as letras são convertidas para as originais e a API recalcula
+ * a nota com o gabarito do banco.
  */
 
 const route = useRoute()
 const router = useRouter()
 const id = route.params.id as string
+const numeroVersao = Number(route.query.versao)
+const alunoDoQrCode = typeof route.query.aluno === 'string' ? route.query.aluno : null
+const telaDeEscanear = `/correcao/${id}/escanear`
 
 const aplicacao = ref<Application | null>(null)
-const prova = ref<Exam | null>(null)
-const turma = ref<Class | null>(null)
-const questoes = ref<Question[]>([])
+const versao = ref<ApplicationVersionKey | null>(null)
 const correcoes = ref<Correction[]>([])
 const carregando = ref(true)
 const erroCarga = ref('')
@@ -40,82 +37,69 @@ async function carregar() {
   carregando.value = true
   erroCarga.value = ''
   try {
-    const encontrada = await buscarAplicacao(id)
-    const [provaEncontrada, turmaEncontrada, banco, lidas] = await Promise.all([
-      buscarProva(encontrada.provaId),
-      buscarTurma(encontrada.turmaId),
-      listarQuestoes(),
+    const [encontrada, versoes, lidas] = await Promise.all([
+      buscarAplicacao(id),
+      listarVersoes(id),
       listarCorrecoes(id),
     ])
     aplicacao.value = encontrada
-    prova.value = provaEncontrada
-    turma.value = turmaEncontrada
-    questoes.value = banco
+    versao.value = versoes.find((item) => item.numeroVersao === numeroVersao) ?? null
     correcoes.value = lidas
   } catch (erro) {
     if (!(erro instanceof ErroApi && erro.status === 404)) {
-      erroCarga.value = mensagemDeErro(erro, 'Não foi possível carregar a correção.')
+      erroCarga.value = mensagemDeErro(erro, 'Não foi possível carregar a prova lida.')
     }
   } finally {
     carregando.value = false
   }
 }
 
-onMounted(carregar)
-
-/** A aplicação já teve todas as provas lidas. */
-const semProvasRestantes = computed(
-  () => !!aplicacao.value && aplicacao.value.corrigidas >= aplicacao.value.totalProvas,
-)
-
-/**
- * Aluno da prova lida. Na prova identificada, o QR Code diz de quem é: aqui
- * simulamos com o primeiro aluno da turma que ainda não tem correção. Na
- * prova sem identificação, não há aluno: a nota é lançada depois (RF09).
- */
-const aluno = computed(() => {
-  if (!aplicacao.value?.identificarAluno || !turma.value) return null
-
-  return (
-    turma.value.alunos.find(
-      (item) => !correcoes.value.some((correcao) => correcao.alunoId === item.id),
-    ) ?? null
-  )
+onMounted(() => {
+  // Sem a versão lida no QR Code não há o que revisar: volta para a câmera.
+  if (!Number.isInteger(numeroVersao) || numeroVersao < 1) {
+    router.replace(telaDeEscanear)
+    return
+  }
+  carregar()
 })
 
-/**
- * Leitura de exemplo: erra algumas questões por uma regra fixa (sem valor
- * aleatório), variando conforme quantas provas já foram corrigidas. A nota
- * segue a mesma regra da API: objetiva vale tudo ou nada; discursiva, os
- * pontos dados.
- */
-const respostas = computed<CorrectionAnswer[]>(() => {
-  if (!prova.value || !aplicacao.value) return []
-  const jaCorrigidas = aplicacao.value.corrigidas
+/** Aluno da prova identificada: vem da versão guardada, não só do QR Code. */
+const aluno = computed(() => versao.value?.aluno ?? null)
 
-  return [...prova.value.questoes]
-    .sort((a, b) => a.ordem - b.ordem)
-    .map((item, posicao) => {
-      const questao = questoes.value.find((q) => q.id === item.questaoId)
-      const acertou = !!questao && (posicao + jaCorrigidas) % 4 !== 1
-      const alternativas = questao?.alternativas ?? []
-      const correta = alternativas.find((alt) => alt.correta)?.letra ?? null
-      const errada = alternativas.find((alt) => !alt.correta)?.letra ?? null
-
-      return {
-        questaoId: item.questaoId,
-        marcada: questao?.tipo === 'objetiva' ? (acertou ? correta : errada) : null,
-        correta: acertou,
-        pontuacao: acertou ? item.pontuacao : 0,
-      }
-    })
+/** Motivo para não deixar revisar esta prova, ou null se pode. */
+const impedimento = computed(() => {
+  if (!aplicacao.value) return null
+  if (!versao.value) return `Versão ${numeroVersao} não encontrada nesta aplicação.`
+  if (alunoDoQrCode && alunoDoQrCode !== aluno.value?.id) {
+    return 'O aluno do QR Code não é o desta versão. Gere o PDF de novo e use o cartão atual.'
+  }
+  if (aplicacao.value.status === 'concluida') return 'Todas as provas desta aplicação já foram corrigidas.'
+  const atual = aluno.value
+  if (atual && correcoes.value.some((correcao) => correcao.alunoId === atual.id)) {
+    return `A prova de ${atual.nome} já foi corrigida. Para mudar a nota, use "Ver notas".`
+  }
+  return null
 })
 
-const notaCalculada = computed(() =>
-  Number(respostas.value.reduce((soma, item) => soma + item.pontuacao, 0).toFixed(1)),
-)
+const questoes = computed<PrintedQuestion[]>(() => versao.value?.questoes ?? [])
 
-const totalPontos = computed(() => prova.value?.totalPontos ?? 10)
+const marcacoes = ref<Marcacoes>({ letras: {}, pontos: {} })
+
+function marcar(questao: PrintedQuestion, letra: OptionLetter) {
+  const atual = marcacoes.value.letras[questao.questaoId] ?? null
+  // Tocar de novo na letra marcada deixa a questão em branco.
+  marcacoes.value.letras[questao.questaoId] = atual === letra ? null : letra
+}
+
+function letrasImpressas(questao: PrintedQuestion): OptionLetter[] {
+  return LETRAS_IMPRESSAS.slice(0, questao.alternativas.length)
+}
+
+const notaCalculada = computed(() => notaPrevista(questoes.value, marcacoes.value))
+
+const totalPontos = computed(() =>
+  Math.round(questoes.value.reduce((soma, questao) => soma + questao.pontuacao, 0) * 10) / 10,
+)
 
 /** Nota digitada pelo professor em "Ajustar nota"; null usa a calculada. */
 const notaAjustada = ref<number | null>(null)
@@ -158,28 +142,22 @@ const enviando = ref(false)
 const erroEnvio = ref('')
 
 async function confirmar() {
-  if (!aplicacao.value) return
-  const lida = aplicacao.value
+  if (!versao.value) return
 
   enviando.value = true
   erroEnvio.value = ''
   try {
-    await registrarCorrecao(lida.id, {
+    await registrarCorrecao(id, {
       clientCorrectionId,
       origem: 'mobile',
-      versao: (lida.corrigidas % lida.versoes) + 1,
+      versao: versao.value.numeroVersao,
       alunoId: aluno.value?.id ?? null,
-      respostas: respostas.value.map((resposta) => {
-        const questao = questoes.value.find((q) => q.id === resposta.questaoId)
-        return questao?.tipo === 'discursiva'
-          ? { questaoId: resposta.questaoId, pontuacao: resposta.pontuacao }
-          : { questaoId: resposta.questaoId, marcada: resposta.marcada }
-      }),
+      respostas: respostasParaApi(questoes.value, marcacoes.value),
       ...(notaAjustada.value === null ? {} : { nota: notaAjustada.value }),
     })
-    router.push('/correcao')
+    // Volta para a câmera, para ler a próxima prova.
+    router.push(telaDeEscanear)
   } catch (falha) {
-    // Ex.: 409 "Gere o PDF desta aplicação antes de corrigir as provas."
     erroEnvio.value = mensagemDeErro(falha, 'Não foi possível gravar a correção.')
   } finally {
     enviando.value = false
@@ -190,12 +168,14 @@ async function confirmar() {
 <template>
   <AppShell>
     <template #caminho>
-      <RouterLink to="/correcao">Correção</RouterLink>
+      <RouterLink to="/correcao">Correção</RouterLink> /
+      <RouterLink :to="telaDeEscanear">Escanear</RouterLink>
     </template>
     <template #titulo>Revisar correção</template>
     <template #subtitulo>
+      <template v-if="versao">Versão {{ versao.numeroVersao }} · </template>
       <template v-if="aluno">{{ aluno.nome }} · matrícula {{ aluno.matricula }}</template>
-      <template v-else-if="aplicacao">
+      <template v-else-if="versao">
         Aluno não identificado · a nota é lançada depois em "Ver notas"
       </template>
     </template>
@@ -203,34 +183,56 @@ async function confirmar() {
     <EstadoTela v-if="carregando" tipo="carregando">Carregando a prova lida...</EstadoTela>
     <EstadoTela v-else-if="erroCarga" tipo="erro" @tentar="carregar">{{ erroCarga }}</EstadoTela>
 
-    <div v-else-if="!aplicacao || !prova" class="vazio">
+    <div v-else-if="!aplicacao" class="vazio">
       Aplicação não encontrada.
       <RouterLink to="/correcao">Voltar para a correção</RouterLink>
     </div>
 
-    <div v-else-if="semProvasRestantes || (aplicacao.identificarAluno && !aluno)" class="vazio">
-      Todas as provas desta aplicação já foram corrigidas.
-      <RouterLink to="/correcao">Voltar para a correção</RouterLink>
+    <div v-else-if="impedimento" class="vazio">
+      {{ impedimento }}
+      <RouterLink :to="telaDeEscanear">Ler outra prova</RouterLink>
     </div>
 
     <div v-else class="revisao">
       <div class="nota">
         <p class="nota-valor">{{ formatarNota(notaFinal) }}</p>
         <p class="nota-legenda">
-          {{ notaAjustada === null ? 'nota calculada automaticamente' : 'nota ajustada pelo professor' }}
+          {{ notaAjustada === null ? 'nota calculada pelas respostas marcadas' : 'nota ajustada pelo professor' }}
         </p>
       </div>
 
+      <p class="dica">Marque as respostas como estão no cartão do aluno.</p>
+
       <ul class="questoes">
-        <li v-for="(resposta, indice) in respostas" :key="resposta.questaoId" class="questao">
-          <span>Questão {{ indice + 1 }}</span>
-          <span
-            class="marca"
-            :class="resposta.correta ? 'marca-acerto' : 'marca-erro'"
-            :aria-label="resposta.correta ? 'acertou' : 'errou'"
-          >
-            {{ resposta.correta ? '✓' : '✕' }}
+        <li v-for="questao in questoes" :key="questao.questaoId" class="questao">
+          <span class="questao-numero">Questão {{ questao.ordem }}</span>
+
+          <span v-if="questao.tipo === 'objetiva'" class="alternativas" role="group" :aria-label="`Questão ${questao.ordem}`">
+            <button
+              v-for="letra in letrasImpressas(questao)"
+              :key="letra"
+              type="button"
+              class="alternativa"
+              :class="{ marcada: marcacoes.letras[questao.questaoId] === letra }"
+              :aria-pressed="marcacoes.letras[questao.questaoId] === letra"
+              @click="marcar(questao, letra)"
+            >
+              {{ letra }}
+            </button>
           </span>
+
+          <label v-else class="discursiva">
+            <span class="rotulo">Pontos (0 a {{ formatarNota(questao.pontuacao) }})</span>
+            <input
+              v-model.number="marcacoes.pontos[questao.questaoId]"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              :max="questao.pontuacao"
+              step="0.5"
+              :aria-label="`Pontos da questão ${questao.ordem}`"
+            />
+          </label>
         </li>
       </ul>
 
@@ -304,30 +306,60 @@ async function confirmar() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-4) 0;
   font-size: var(--text-lg);
   color: var(--text);
   border-bottom: 1px solid var(--border);
 }
 
-.marca {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  font-size: var(--text-sm);
-  font-weight: 700;
-  color: var(--surface);
+.questao-numero {
+  flex-shrink: 0;
+}
+
+.alternativas {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.alternativa {
+  width: 38px;
+  height: 38px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
+  cursor: pointer;
 }
 
-.marca-acerto {
+.alternativa.marcada {
+  color: var(--surface);
   background: var(--accent);
+  border-color: var(--accent);
 }
 
-.marca-erro {
-  background: var(--warn);
+.discursiva {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.discursiva input {
+  width: 80px;
+  padding: var(--space-1) var(--space-2);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.dica {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-soft);
 }
 
 .ajuste {
