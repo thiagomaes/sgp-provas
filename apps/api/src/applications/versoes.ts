@@ -93,3 +93,13 @@ export function montarLayout(
     })),
   };
 }
+
+export function payloadDoQrCode(
+  aplicacaoId: string,
+  numeroVersao: number,
+  hash: string,
+  alunoId?: string,
+): string {
+  const base = `sgp:${aplicacaoId}:v${numeroVersao}:${hash}`;
+  return alunoId ? `${base}:a${alunoId}` : base;
+}

@@ -125,6 +125,7 @@ export interface ApplicationVersion {
   numeroVersao: number
   /** Conteúdo do QR Code impresso nesta versão. */
   qrCodePayload: string
+  aluno: { nome: string; matricula: string } | null
 }
 
 /** Resposta marcada pelo aluno em uma questão, lida pela câmera. */

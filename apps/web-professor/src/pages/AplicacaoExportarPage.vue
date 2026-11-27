@@ -67,6 +67,10 @@ onMounted(carregar)
 /** Quantidade máxima de versões: uma por aluno da turma (a API aceita até 200). */
 const maximoVersoes = computed(() => Math.min(Math.max(turma.value?.alunos.length ?? 1, 1), 200))
 
+const totalDeAlunos = computed(() => turma.value?.alunos.length ?? 0)
+const versoesEfetivas = computed(() => (identificarAluno.value ? totalDeAlunos.value : versoes.value))
+const turmaSemAlunos = computed(() => identificarAluno.value && totalDeAlunos.value === 0)
+
 const gerando = ref(false)
 const baixando = ref(false)
 const mensagem = ref('')
@@ -74,6 +78,7 @@ const erro = ref('')
 const geradas = ref<ApplicationVersion[]>([])
 
 function alterarVersoes(delta: number) {
+  if (identificarAluno.value) return
   const novo = versoes.value + delta
   if (novo < 1 || novo > maximoVersoes.value) return
   versoes.value = novo
@@ -88,7 +93,7 @@ async function gerarPdf() {
   erro.value = ''
   try {
     const resultado = await gerarVersoes(aplicacaoId, {
-      versoes: versoes.value,
+      versoes: Math.max(versoesEfetivas.value, 1),
       embaralharQuestoes: embaralharQuestoes.value,
       embaralharAlternativas: embaralharAlternativas.value,
       identificarAluno: identificarAluno.value,
@@ -149,14 +154,28 @@ async function baixarNovamente() {
         <div class="linha">
           <div class="linha-texto">
             <span class="linha-titulo">Quantidade de versões</span>
-            <span class="linha-desc">Uma versão embaralhada por aluno da turma</span>
+            <span class="linha-desc">{{
+              identificarAluno
+                ? `Uma versão por aluno da turma (${totalDeAlunos} ${totalDeAlunos === 1 ? 'aluno' : 'alunos'})`
+                : 'Uma versão embaralhada por aluno da turma'
+            }}</span>
           </div>
           <div class="stepper">
-            <button type="button" aria-label="Menos uma versão" @click="alterarVersoes(-1)">
+            <button
+              type="button"
+              aria-label="Menos uma versão"
+              :disabled="identificarAluno"
+              @click="alterarVersoes(-1)"
+            >
               −
             </button>
-            <span class="stepper-valor">{{ versoes }}</span>
-            <button type="button" aria-label="Mais uma versão" @click="alterarVersoes(1)">
+            <span class="stepper-valor">{{ versoesEfetivas }}</span>
+            <button
+              type="button"
+              aria-label="Mais uma versão"
+              :disabled="identificarAluno"
+              @click="alterarVersoes(1)"
+            >
               +
             </button>
           </div>
@@ -217,6 +236,9 @@ async function baixarNovamente() {
         </div>
       </section>
 
+      <p v-if="turmaSemAlunos" class="erro" role="alert">
+        Esta turma não tem alunos. Cadastre-os na turma ou desligue "Identificar aluno na prova".
+      </p>
       <p v-if="mensagem" class="sucesso" role="status">{{ mensagem }}</p>
       <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
 
@@ -224,14 +246,22 @@ async function baixarNovamente() {
         <li v-for="versao in geradas" :key="versao.numeroVersao" class="versao">
           <QrCode :valor="versao.qrCodePayload" />
           <div class="versao-texto">
-            <span class="versao-numero">Versão {{ versao.numeroVersao }}</span>
+            <span class="versao-numero">
+              Versão {{ versao.numeroVersao }}
+              <template v-if="versao.aluno"> · {{ versao.aluno.nome }} ({{ versao.aluno.matricula }})</template>
+            </span>
             <code class="versao-qr">{{ versao.qrCodePayload }}</code>
           </div>
         </li>
       </ul>
 
       <div class="rodape">
-        <button class="botao" type="button" :disabled="gerando" @click="gerarPdf">
+        <button
+          class="botao"
+          type="button"
+          :disabled="gerando || turmaSemAlunos"
+          @click="gerarPdf"
+        >
           {{ gerando ? 'Gerando...' : 'Gerar PDF' }}
         </button>
         <button
@@ -301,6 +331,11 @@ async function baixarNovamente() {
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .stepper button {
