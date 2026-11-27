@@ -7,25 +7,28 @@
 🔗 **Sistema hospedado:** https://sgp-provas.vercel.app · **API:** https://sgp-provas-api.vercel.app/health
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-F5A623?style=flat-square)
-![Entrega](https://img.shields.io/badge/entrega%20atual-N2-3D348B?style=flat-square)
+![Entrega](https://img.shields.io/badge/entrega%20atual-N3-3D348B?style=flat-square)
 ![Licença](https://img.shields.io/badge/licença-uso%20acadêmico-7B4FA6?style=flat-square)
 
 </div>
 
 ## 👥 Equipe (Grupo 10)
 
-| Nome completo               | Papel na N2                                                                                                   |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Thiago Luís Lombardi Maes   | Banco no Aiven, API com Prisma e JWT, deploy da API, telas ligadas à API e teste de ponta a ponta (#16, #20, #24, #25) |
-| Amanda Zimmermann           | ADRs 002 a 004 (#18, #21)                                                                                     |
-| Hellen Cristina de Oliveira | Banco de questões ligado à API e ADR-005 (#19)                                                                |
-| Iago Henrique Pinto Bogler  | MER/DER e diagrama de classes ajustado (#23)                                                                  |
-| Marceu Lago Pontes Schmidt  | Relatório consolidado em CSV (#22) e revisões                                                                 |
+| Nome completo               | Papel na N2                                                                                                   | Responsável na N3 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Thiago Luís Lombardi Maes   | Banco no Aiven, API com Prisma e JWT, deploy da API, telas ligadas à API e teste de ponta a ponta (#16, #20, #24, #25) | Correção pela câmera, segurança do login e entrega |
+| Amanda Zimmermann           | ADRs 002 a 004 (#18, #21)                                                                                     | Conta do professor, importação de alunos, LGPD, backup e README |
+| Hellen Cristina de Oliveira | Banco de questões ligado à API e ADR-005 (#19)                                                                | Qualidade e testes |
+| Iago Henrique Pinto Bogler  | MER/DER e diagrama de classes ajustado (#23)                                                                  | PDF, prova identificada, gabarito, UML e manual |
+| Marceu Lago Pontes Schmidt  | Relatório consolidado em CSV (#22) e revisões                                                                 | Relatórios, correção offline e apresentação |
 
 Os números são os pull requests no GitHub. Na N1 cada integrante ficou com um
 grupo de telas; na N2 o Thiago fez a base de código (API e integração das telas)
 e cada integrante ficou com uma entrega própria, como registrado em
-[`docs/arquitetura/plano-n2.md`](docs/arquitetura/plano-n2.md).
+[`docs/arquitetura/plano-n2.md`](docs/arquitetura/plano-n2.md). A divisão da N3,
+com uma tarefa e uma Issue por item, está em
+[`docs/arquitetura/plano-n3.md`](docs/arquitetura/plano-n3.md); o andamento de
+cada uma fica na [seção 16](#16-estado-atual-n3).
 
 ## 📑 Sumário
 
@@ -48,7 +51,7 @@ e cada integrante ficou com uma entrega própria, como registrado em
 - [13. Sistema hospedado](#13-sistema-hospedado)
 - [14. Deploy](#14-deploy)
 - [15. Testes](#15-testes)
-- [16. Estado atual (N2)](#16-estado-atual-n2)
+- [16. Estado atual (N3)](#16-estado-atual-n3)
 
 ---
 
@@ -276,7 +279,8 @@ testes: `validacao-questao.ts`, `regras-prova.ts`, `versoes.ts`,
 
 **Autenticação.** Um guard JWT global protege todas as rotas: rota nova já nasce
 exigindo login. As exceções são marcadas com o decorator `@Publica()`: o
-`/health` e o cadastro, login e renovação de sessão de `/auth`. O access token
+`/health` e o cadastro, login, renovação de sessão e recuperação de senha de
+`/auth`. O access token
 vale 1 hora; o refresh token vale 7 dias, fica no banco só como hash e é trocado a
 cada uso ([ADR-003](docs/adr/ADR-003-autenticacao-jwt.md)).
 
@@ -306,12 +310,16 @@ rotas não públicas exigem o cabeçalho `Authorization: Bearer <accessToken>`.
 | POST | `/auth/refresh` | Troca o refresh token por uma sessão nova (o antigo é revogado) | ✅ |
 | POST | `/auth/logout` | Revoga o refresh token deste dispositivo | |
 | GET | `/auth/me` | Professor logado | |
+| POST | `/auth/forgot-password` | Gera um link de redefinição de senha válido por 1 hora (responde igual exista ou não o e-mail; ver [limitações](#limitações-conhecidas)) | ✅ |
+| POST | `/auth/reset-password` | Troca a senha com o token do link (uso único) e encerra as sessões abertas | ✅ |
+| POST | `/auth/anonymize` | Anonimiza a conta do professor e os alunos das turmas dele (LGPD), mantendo as notas; pede a senha | |
 | GET | `/classes` | Lista as turmas, com os alunos | |
 | POST | `/classes` | Cria turma | |
 | GET | `/classes/:id` | Uma turma, com os alunos | |
 | PATCH | `/classes/:id` | Edita turma | |
 | DELETE | `/classes/:id` | Exclui turma (409 se tiver provas corrigidas) | |
 | POST | `/classes/:id/students` | Adiciona aluno (409 se a matrícula já existir na turma) | |
+| POST | `/classes/:id/students/import` | Importa uma lista de alunos lida de planilha; grava todos juntos ou nenhum (409 se alguma matrícula repetir) | |
 | PATCH | `/classes/:id/students/:studentId` | Edita aluno | |
 | DELETE | `/classes/:id/students/:studentId` | Remove aluno (409 se tiver prova corrigida) | |
 | GET | `/questions` | Lista as questões; filtros opcionais `?busca=` e `?tag=` | |
@@ -461,10 +469,16 @@ traz a convenção de commit e o fluxo de branch e PR.
 A conta de demonstração vem do seed: a professora Ana Costa, com 4 turmas, 115
 alunos, 10 questões, 5 provas e 5 aplicações.
 
-> **Primeiro acesso pode demorar.** O banco está no plano gratuito do Aiven e a API
-> é uma função serverless: depois de um tempo sem uso, a primeira requisição pode
-> levar alguns segundos enquanto tudo acorda. Se o login demorar, espere e tente de
+> **Primeiro acesso pode demorar.** A API é uma função serverless e o banco fica
+> num plano básico do Aiven: depois de um tempo sem uso, a primeira requisição pode
+> levar alguns segundos enquanto tudo acorda (medido em 27/11: 3,2 s na primeira
+> chamada, menos de 0,3 s nas seguintes). Se o login demorar, espere e tente de
 > novo.
+
+**Backup e disponibilidade.** O monitor do `/health`, o backup do banco e a
+comparação com o RNF03 (99,5% de disponibilidade) e o RNF07 (backup diário com 30
+dias de retenção) estão em
+[`docs/arquitetura/backup-e-disponibilidade.md`](docs/arquitetura/backup-e-disponibilidade.md).
 
 ## 14. Deploy
 
@@ -510,44 +524,70 @@ completo, com um print de cada passo, está em
 
 ```bash
 cd apps/api
-npm test           # 27 testes unitários em 5 arquivos
-npm run test:e2e   # 3 testes e2e em 2 arquivos
+npm test           # testes unitários
+npm run test:e2e   # testes e2e (o do /health precisa do .env com JWT_SECRET)
 ```
 
 - **Unitários** (Vitest): as regras de negócio sem banco: validação de questão e
-  limite de questões por prova, embaralhamento das versões, cálculo da nota e
-  estatísticas (média, mediana e desvio padrão).
-- **E2E** (Vitest e Supertest): o `/health` e a rota do relatório consolidado em
-  CSV, com o repositório trocado por um falso.
+  limite de questões por prova, embaralhamento das versões, cálculo da nota,
+  estatísticas (média, mediana e desvio padrão), limite de tentativas de login e
+  conferência da importação de alunos.
+- **E2E** (Vitest e Supertest), com o repositório trocado por um falso: o
+  `/health`, o relatório consolidado em CSV, o limite de tentativas de login, a
+  importação de alunos, a recuperação de senha e a anonimização da conta.
 
-## 16. Estado atual (N2)
+## 16. Estado atual (N3)
 
-**Integrado ao banco e funcionando no sistema publicado:**
+Situação em **27/11/2026**. "Na main" quer dizer mergeado e publicado; "em
+revisão" quer dizer que o pull request está aberto esperando o Approve do
+revisor. As tarefas são as do [plano da N3](docs/arquitetura/plano-n3.md).
 
-| Item | Situação |
-| --- | --- |
-| Login real com JWT (access e refresh token) e logout | ✅ |
-| CRUD de turmas e alunos | ✅ |
-| CRUD de questões (objetivas e discursivas, com soft-delete) | ✅ |
-| CRUD de provas (até 20 questões, pontuação por questão) | ✅ |
-| Aplicações com geração de versões embaralhadas e QR Code | ✅ |
-| Correção pela tela do celular gravando a nota no banco | ✅ (leitura simulada) |
-| Lançamento e edição manual de nota, atribuição de prova sem identificação | ✅ |
-| Relatórios com média, mediana e desvio padrão | ✅ |
-| CSV das notas por aplicação | ✅ |
-| CSV consolidado de todas as aplicações | ✅ na API (`GET /reports/consolidated`) |
-| Nenhuma tela com dado fixo | ✅ (`grep -rni "mock" apps/web-professor/src` vazio) |
+**Na main e no sistema publicado (N2):** login real com JWT, CRUD de turmas,
+alunos, questões (com soft-delete) e provas, aplicações com versões embaralhadas e
+QR Code, correção pela tela do celular gravando a nota (leitura ainda simulada),
+lançamento manual de nota, relatórios com média, mediana e desvio padrão, CSV por
+aplicação e consolidado. Nenhuma tela com dado fixo.
 
-**Fica para a N3:**
+**Tarefas da N3:**
 
-- PDF real da prova, com as versões e o QR Code impressos.
-- Leitura real do QR Code e do cartão-resposta pela câmera.
-- Funcionamento offline da correção (PWA, fila local e sincronização).
-- Status "Concluída" automático quando todas as provas da aplicação forem corrigidas.
-- Rate limit no login contra força bruta (RNF04).
-- Exportação dos relatórios em xlsx e PDF.
-- Conexão com o banco verificando o certificado (CA) do Aiven.
-- Resolver os avisos do `npm audit` nas dependências de desenvolvimento.
+| Tarefa | Responsável | Situação |
+| --- | --- | --- |
+| T01 Plano e Issues da N3 | Thiago | ✅ na main (#60) |
+| T02 Layout do cartão-resposta | Thiago | ✅ na main (#81) |
+| T10 Limite de tentativas de login e certificado do Aiven | Thiago | ✅ na main (#82) |
+| T06 Status "Concluída" automático e várias turmas | Iago | ✅ na main (#83) |
+| T03 PDF consolidado da aplicação | Iago | ✅ na main (#86) |
+| T04 Prova identificada: versão e QR Code por aluno | Iago | ✅ na main (#87) |
+| T16 Tela de cadastro do professor | Amanda | 🔎 em revisão (#88) |
+| T19 Anonimização da conta (LGPD) | Amanda | 🔎 em revisão (#89) |
+| T18 Importar alunos por planilha (CSV e Excel) | Amanda | 🔎 em revisão (#90) |
+| T17 Recuperação de senha | Amanda | 🔎 em revisão (#91, depende do #88) |
+| T20 Backup e disponibilidade | Amanda | 🔎 em revisão (#92) |
+| T21 README final | Amanda | 🔎 em revisão (este README) |
+| T05 Tela de gabarito por versão | Iago | ⏳ pendente |
+| T07, T08, T09 Leitura do QR Code e do cartão pela câmera, nota no aluno | Thiago | ⏳ pendente |
+| T11 Correção offline (PWA) | Marceu | ⏳ pendente |
+| T12, T13, T14 Estatística por questão, Excel e relatório consolidado | Marceu | ⏳ pendente |
+| T22 a T25, T27 Validações, logs de acesso, cobertura, desempenho e ponta a ponta | Hellen | ⏳ pendente |
+| T26 UML e MER/DER, T28 manual do usuário | Iago | ⏳ pendente |
+| T15, T29 Apresentação e teste com pessoa de fora | Marceu | ⏳ pendente |
+
+O manual do usuário (`docs/manual-usuario.md`, T28) ainda não existe; o link
+entra aqui quando ele for mergeado. Os ADRs novos da N3 (PDF, leitura do cartão e
+offline) também entram quando essas partes estiverem prontas.
+
+### Limitações conhecidas
+
+- **Recuperação de senha sem e-mail.** O SGP não tem serviço de envio de e-mail.
+  Em "Esqueci minha senha", o link de redefinição é escrito no log da API
+  (Vercel → projeto `sgp-provas-api` → Logs) e quem administra o sistema repassa ao
+  professor. O link vale 1 hora e só uma vez.
+- **Leitura pela câmera ainda simulada** até a T07 e a T08.
+- **Backup e disponibilidade.** Não há SLA de 99,5% (RNF03) nem retenção de 30 dias
+  de backup (RNF07) nos planos usados; detalhes em
+  [`docs/arquitetura/backup-e-disponibilidade.md`](docs/arquitetura/backup-e-disponibilidade.md).
+- **Anonimização sem volta.** Depois de anonimizada, a conta não entra mais e os
+  nomes dos alunos não podem ser recuperados; as notas continuam nos relatórios.
 
 Regras que continuam valendo para todo mundo:
 
