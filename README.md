@@ -579,7 +579,7 @@ correções) estão todos acima de 80%. Detalhes e o que fica abaixo em
 | --- | --- |
 | [Casos de borda dos formulários](docs/testes/n3-casos-de-borda.md) (T22) | 37 de 37 casos na web, com a API simulada; validações dos DTOs com mensagem em português |
 | [Cobertura](docs/testes/n3-cobertura.md) (T24) | 83,85% das linhas; arquivos críticos acima de 80% |
-| [npm audit](docs/testes/n3-npm-audit.md) (T25) | Web: 0 vulnerabilidades. API: de 20 para 6, todas só com major nova (Prisma 7 e exceljs); motivos registrados |
+| [npm audit](docs/testes/n3-npm-audit.md) (T25) | Web: 0 vulnerabilidades. API (`--omit=dev`): de 7, com 1 crítica, para 6 sem crítica, todas só com major nova (Prisma 7 e exceljs); motivos registrados |
 | [Desempenho do sistema publicado](docs/testes/n3-desempenho.md) (T25) | p95 entre 338 e 671 ms, medido do Brasil: **o RNF02 (300 ms) não é atendido**. Boa parte é rede: a função roda em Washington, e o `/health` sem banco já leva 190 ms |
 | Teste de uso com uma pessoa de fora (T29) | Não foi feito |
 
