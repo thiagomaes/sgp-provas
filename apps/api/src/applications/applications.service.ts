@@ -4,9 +4,18 @@ import { aplicacaoParaResposta, type AplicacaoResposta } from './aplicacao.mappe
 import { ApplicationsRepository } from './applications.repository.js';
 import type { CreateAplicacaoDto, GerarVersoesDto } from './dto/aplicacao.dto.js';
 import { montarGabarito, type GabaritoResposta } from './gabarito.js';
+import { questoesImpressas, type QuestaoImpressa } from './gabarito-versao.js';
 import { dadosDoPdf } from './pdf/dados-do-pdf.js';
 import { gerarPdfDaAplicacao } from './pdf/gerar-pdf-aplicacao.js';
-import { montarLayout, payloadDoQrCode, type Letra } from './versoes.js';
+import { montarLayout, payloadDoQrCode, type LayoutVersao, type Letra } from './versoes.js';
+
+/** Uma versão como foi impressa, para a tela de correção ler e revisar o cartão. */
+export interface VersaoComGabarito {
+  numeroVersao: number;
+  qrCodePayload: string;
+  aluno: { id: string; nome: string; matricula: string } | null;
+  questoes: QuestaoImpressa[];
+}
 
 export interface VersaoResposta {
   numeroVersao: number;
@@ -154,6 +163,24 @@ export class ApplicationsService {
       throw new ConflictException('Gere as versões da aplicação antes de ver o gabarito.');
     }
     return montarGabarito(aplicacao);
+  }
+
+  async listarVersoes(professorId: string, id: string): Promise<VersaoComGabarito[]> {
+    const aplicacao = await this.repositorio.buscarVersoesComGabarito(professorId, id);
+    if (!aplicacao) throw new NotFoundException('Aplicação não encontrada.');
+
+    const questoes = aplicacao.prova.questoes.map((item) => ({
+      questaoId: item.questaoId,
+      tipo: item.questao.tipo as 'objetiva' | 'discursiva',
+      pontuacao: item.pontuacao,
+      letraCorreta: (item.questao.alternativas.find((alternativa) => alternativa.correta)?.letra ?? null) as Letra | null,
+    }));
+    return aplicacao.versoesProva.map((versao) => ({
+      numeroVersao: versao.numeroVersao,
+      qrCodePayload: versao.qrCodePayload,
+      aluno: versao.aluno,
+      questoes: questoesImpressas(versao.layout as unknown as LayoutVersao, questoes),
+    }));
   }
 
   private async aplicacaoDoProfessor(professorId: string, id: string) {

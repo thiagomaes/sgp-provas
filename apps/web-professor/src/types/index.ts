@@ -128,6 +128,27 @@ export interface ApplicationVersion {
   aluno: { nome: string; matricula: string } | null
 }
 
+/** Questão de uma versão como foi impressa (GET /applications/:id/versions). */
+export interface PrintedQuestion {
+  ordem: number
+  questaoId: string
+  tipo: QuestionType
+  pontuacao: number
+  /** Letra original de cada alternativa, na ordem impressa (A, B, C...). */
+  alternativas: OptionLetter[]
+  /** Letra da alternativa correta como foi impressa; null nas discursivas. */
+  corretaImpressa: OptionLetter | null
+}
+
+/** Versão com o gabarito impresso, para ler e revisar o cartão-resposta. */
+export interface ApplicationVersionKey {
+  numeroVersao: number
+  qrCodePayload: string
+  /** Aluno da versão na prova identificada; null na prova comum. */
+  aluno: Student | null
+  questoes: PrintedQuestion[]
+}
+
 /** Resposta marcada pelo aluno em uma questão, lida pela câmera. */
 export interface CorrectionAnswer {
   questaoId: string

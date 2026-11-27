@@ -70,6 +70,35 @@ export class ApplicationsRepository {
     });
   }
 
+  /** Versões com o gabarito original de cada questão, para a tela de correção. */
+  buscarVersoesComGabarito(professorId: string, id: string) {
+    return this.prisma.aplicacao.findFirst({
+      where: { id, professorId },
+      select: {
+        prova: {
+          select: {
+            questoes: {
+              select: {
+                questaoId: true,
+                pontuacao: true,
+                questao: { select: { tipo: true, alternativas: { select: { letra: true, correta: true } } } },
+              },
+            },
+          },
+        },
+        versoesProva: {
+          orderBy: { numeroVersao: 'asc' },
+          select: {
+            numeroVersao: true,
+            layout: true,
+            qrCodePayload: true,
+            aluno: { select: { id: true, nome: true, matricula: true } },
+          },
+        },
+      },
+    });
+  }
+
   provaDoProfessor(professorId: string, provaId: string) {
     return this.prisma.prova.findFirst({
       where: { id: provaId, professorId, deletedAt: null },
