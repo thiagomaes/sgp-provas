@@ -24,6 +24,15 @@ class RefreshToken {
   +createdAt : DateTime
 }
 
+class RecuperacaoSenha {
+  +id : String
+  +professorId : String
+  +tokenHash : String
+  +expiresAt : DateTime
+  +usadoEm : DateTime?
+  +createdAt : DateTime
+}
+
 class TentativaLogin {
   +id : String
   +email : String
@@ -139,6 +148,7 @@ class Correcao {
 }
 
 Professor "1" -- "0..*" RefreshToken : possui
+Professor "1" -- "0..*" RecuperacaoSenha : pede
 Professor "1" -- "0..*" Turma : cadastra
 Professor "1" -- "0..*" Questao : cadastra
 Professor "1" -- "0..*" Prova : cria

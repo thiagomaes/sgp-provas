@@ -16,6 +16,7 @@ conforme a regra de escopo.
 |---|---|
 | Professor | Usuário que acessa o sistema, cadastra turmas, questões e provas. |
 | RefreshToken | Sessão de login do professor: guarda só o hash do refresh token, a validade e a revogação. |
+| RecuperacaoSenha | Pedido de "Esqueci minha senha": guarda só o hash do token, a validade de 1 hora e quando foi usado (uso único). |
 | TentativaLogin | Registro de cada tentativa de login (e-mail, IP e resultado), usado para limitar tentativas; não tem relação com as demais classes. |
 | Turma | Grupo de alunos de uma disciplina, ano e turno, pertencente a um professor. |
 | Aluno | Registro de nome e matrícula dentro de uma turma; não tem acesso ao sistema. |
@@ -32,6 +33,7 @@ conforme a regra de escopo.
 A pergunta-chave é: **“Quantos desse podem estar ligados a aquele?”**
 
 - **Professor e RefreshToken:** 1 professor tem 0..* refresh tokens (um por sessão aberta); cada token pertence a 1 professor.
+- **Professor e RecuperacaoSenha:** 1 professor tem 0..* pedidos de redefinição de senha; cada pedido é de 1 professor. Um pedido só vale uma vez e por 1 hora.
 - **Professor e Turma:** 1 professor tem 0..* turmas; cada turma é de 1 professor.
 - **Professor e Questao:** 1 professor cadastra 0..* questões; cada questão pertence a 1 professor.
 - **Professor e Prova:** 1 professor cria 0..* provas; cada prova pertence a 1 professor.
@@ -60,7 +62,7 @@ A pergunta-chave é: **“Quantos desse podem estar ligados a aquele?”**
 ### O que mudou na N3
 
 - `VersaoProva` ganhou `alunoId` (opcional), para a prova identificada.
-- Incluída a classe `TentativaLogin`, do limite de tentativas de login.
+- Incluídas as classes `TentativaLogin` (limite de tentativas de login) e `RecuperacaoSenha` (redefinição de senha por link de uso único).
 - `Aplicacao` ganhou as operações `gerarPdf()` e `consultarGabarito()`, que correspondem às rotas `GET /applications/:id/pdf` e `GET /applications/:id/answer-key`.
 - O campo `status` da aplicação passa a ser calculado: vira "concluída" quando todos os alunos distintos da turma têm correção.
 
