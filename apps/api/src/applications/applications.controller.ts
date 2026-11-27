@@ -23,6 +23,12 @@ export class ApplicationsController {
     return this.aplicacoes.buscar(professorId, id);
   }
 
+  /** Versões na ordem impressa, com o aluno e a letra correta impressa (tela de correção). */
+  @Get(':id/versions')
+  listarVersoes(@CurrentProfessor() professorId: string, @Param('id') id: string) {
+    return this.aplicacoes.listarVersoes(professorId, id);
+  }
+
   @Get(':id/pdf')
   async baixarPdf(
     @CurrentProfessor() professorId: string,
