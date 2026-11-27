@@ -1,25 +1,34 @@
 import { statusPelasCorrecoes } from './status-aplicacao.js';
 
+const turmaDe30 = { totalAlunos: 30 };
+
 describe('status da aplicação pelas correções', () => {
-  it('fica em correção enquanto faltam provas da turma', () => {
-    expect(statusPelasCorrecoes(1, 30)).toBe('em-correcao');
-    expect(statusPelasCorrecoes(29, 30)).toBe('em-correcao');
+  it('fica em correção enquanto faltam alunos da turma', () => {
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 1, alunosCorrigidos: 1 })).toBe('em-correcao');
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 29, alunosCorrigidos: 29 })).toBe('em-correcao');
   });
 
-  it('conclui quando todas as provas da turma foram corrigidas', () => {
-    expect(statusPelasCorrecoes(30, 30)).toBe('concluida');
-    expect(statusPelasCorrecoes(31, 30)).toBe('concluida');
+  it('conclui quando todos os alunos da turma têm correção', () => {
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 30, alunosCorrigidos: 30 })).toBe('concluida');
+  });
+
+  it('não conclui só porque há correções demais: conta alunos distintos', () => {
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 30, alunosCorrigidos: 12 })).toBe('em-correcao');
+  });
+
+  it('não conta correção ainda sem aluno como aluno corrigido', () => {
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 30, alunosCorrigidos: 29 })).toBe('em-correcao');
   });
 
   it('volta para em correção quando uma correção da aplicação concluída é apagada', () => {
-    expect(statusPelasCorrecoes(29, 30)).toBe('em-correcao');
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 29, alunosCorrigidos: 29 })).toBe('em-correcao');
   });
 
   it('volta para PDF gerado quando não sobra nenhuma correção', () => {
-    expect(statusPelasCorrecoes(0, 30)).toBe('pdf-gerado');
+    expect(statusPelasCorrecoes({ ...turmaDe30, correcoes: 0, alunosCorrigidos: 0 })).toBe('pdf-gerado');
   });
 
   it('não conclui turma sem alunos', () => {
-    expect(statusPelasCorrecoes(1, 0)).toBe('em-correcao');
+    expect(statusPelasCorrecoes({ totalAlunos: 0, correcoes: 1, alunosCorrigidos: 0 })).toBe('em-correcao');
   });
 });

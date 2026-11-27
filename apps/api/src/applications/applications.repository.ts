@@ -20,6 +20,28 @@ export class ApplicationsRepository {
     return this.prisma.aplicacao.findFirst({ where: { id, professorId }, include: incluirTotalDeAlunos });
   }
 
+  buscarParaPdf(professorId: string, id: string) {
+    return this.prisma.aplicacao.findFirst({
+      where: { id, professorId },
+      include: {
+        turma: { select: { nome: true } },
+        prova: {
+          select: {
+            titulo: true,
+            questoes: {
+              select: {
+                questaoId: true,
+                pontuacao: true,
+                questao: { select: { enunciado: true, alternativas: { select: { letra: true, texto: true } } } },
+              },
+            },
+          },
+        },
+        versoesProva: { orderBy: { numeroVersao: 'asc' }, include: { aluno: { select: { nome: true, matricula: true } } } },
+      },
+    });
+  }
+
   provaDoProfessor(professorId: string, provaId: string) {
     return this.prisma.prova.findFirst({
       where: { id: provaId, professorId, deletedAt: null },
@@ -45,6 +67,14 @@ export class ApplicationsRepository {
     );
   }
 
+  alunosDaTurma(turmaId: string) {
+    return this.prisma.aluno.findMany({
+      where: { turmaId },
+      select: { id: true, nome: true, matricula: true },
+      orderBy: [{ nome: 'asc' }, { matricula: 'asc' }],
+    });
+  }
+
   contarCorrecoes(aplicacaoId: string) {
     return this.prisma.correcao.count({ where: { aplicacaoId } });
   }
@@ -57,7 +87,7 @@ export class ApplicationsRepository {
   salvarVersoes(
     aplicacaoId: string,
     configuracao: Prisma.AplicacaoUpdateInput,
-    versoes: { numeroVersao: number; layout: Prisma.InputJsonValue; qrCodePayload: string }[],
+    versoes: { numeroVersao: number; alunoId?: string; layout: Prisma.InputJsonValue; qrCodePayload: string }[],
   ) {
     return this.prisma.$transaction(async (tx) => {
       await tx.versaoProva.deleteMany({ where: { aplicacaoId } });

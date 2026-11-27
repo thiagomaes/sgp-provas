@@ -1,5 +1,5 @@
 import type { Application, ApplicationVersion } from '../types'
-import { http } from './http'
+import { baixarArquivo, http } from './http'
 
 /** Aplicações (RF05, RF06, RF07) — rotas /applications da API. */
 
@@ -40,6 +40,10 @@ export const gerarVersoes = (id: string, configuracao: ConfiguracaoVersoes) =>
     `/applications/${id}/generate`,
     configuracao,
   )
+
+/** PDF com o caderno e o cartão-resposta de cada versão. 409 se as versões não foram geradas. */
+export const baixarPdfDaAplicacao = (id: string) =>
+  baixarArquivo(`/applications/${id}/pdf`, 'aplicacao.pdf')
 
 /** Data de hoje no fuso do navegador, em AAAA-MM-DD. */
 export function dataDeHoje(): string {

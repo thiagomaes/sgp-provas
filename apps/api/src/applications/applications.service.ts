@@ -3,16 +3,19 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { aplicacaoParaResposta, type AplicacaoResposta } from './aplicacao.mapper.js';
 import { ApplicationsRepository } from './applications.repository.js';
 import type { CreateAplicacaoDto, GerarVersoesDto } from './dto/aplicacao.dto.js';
-import { montarLayout, type Letra } from './versoes.js';
+import { dadosDoPdf } from './pdf/dados-do-pdf.js';
+import { gerarPdfDaAplicacao } from './pdf/gerar-pdf-aplicacao.js';
+import { montarLayout, payloadDoQrCode, type Letra } from './versoes.js';
 
 export interface VersaoResposta {
   numeroVersao: number;
   qrCodePayload: string;
+  aluno: { nome: string; matricula: string } | null;
 }
 
 /**
  * Aplicações (RF05, RF06, RF07): uma prova aplicada a uma turma, com a
- * geração das versões embaralhadas. O PDF de verdade fica para a próxima fase.
+ * geração das versões embaralhadas e do PDF com caderno e cartão-resposta.
  */
 @Injectable()
 export class ApplicationsService {
@@ -83,21 +86,24 @@ export class ApplicationsService {
       ordem: item.ordem,
       letras: item.questao.alternativas.map((alternativa) => alternativa.letra as Letra),
     }));
+    const alunos = dto.identificarAluno ? await this.alunosParaIdentificar(aplicacao.turmaId) : [];
+    const totalDeVersoes = dto.identificarAluno ? alunos.length : dto.versoes;
     const semente = randomUUID();
-    const versoes = Array.from({ length: dto.versoes }, (_, indice) => {
+    const versoes = Array.from({ length: totalDeVersoes }, (_, indice) => {
       const numeroVersao = indice + 1;
+      const aluno = alunos[indice];
       return {
         numeroVersao,
+        alunoId: aluno?.id,
         layout: montarLayout(questoes, numeroVersao, dto, semente) as object,
-        // O conteúdo do QR Code impresso em cada versão; único no banco.
-        qrCodePayload: `sgp:${id}:v${numeroVersao}:${randomUUID().slice(0, 8)}`,
+        qrCodePayload: payloadDoQrCode(id, numeroVersao, randomUUID().slice(0, 8), aluno?.id),
       };
     });
 
     const atualizada = await this.repositorio.salvarVersoes(
       id,
       {
-        versoes: dto.versoes,
+        versoes: totalDeVersoes,
         embaralharQuestoes: dto.embaralharQuestoes,
         embaralharAlternativas: dto.embaralharAlternativas,
         identificarAluno: dto.identificarAluno,
@@ -105,9 +111,38 @@ export class ApplicationsService {
       },
       versoes,
     );
+
     return {
       aplicacao: aplicacaoParaResposta(atualizada),
-      versoes: versoes.map(({ numeroVersao, qrCodePayload }) => ({ numeroVersao, qrCodePayload })),
+      versoes: versoes.map(({ numeroVersao, qrCodePayload }, indice) => ({
+        numeroVersao,
+        qrCodePayload,
+        aluno: alunos[indice] ? { nome: alunos[indice].nome, matricula: alunos[indice].matricula } : null,
+      })),
+    };
+  }
+
+  private async alunosParaIdentificar(turmaId: string) {
+    const alunos = await this.repositorio.alunosDaTurma(turmaId);
+    if (alunos.length === 0) {
+      throw new BadRequestException('A turma não tem alunos: cadastre-os antes de identificar o aluno na prova.');
+    }
+    if (alunos.length > MAXIMO_DE_VERSOES) {
+      throw new BadRequestException(`A prova identificada aceita até ${MAXIMO_DE_VERSOES} alunos por turma.`);
+    }
+    return alunos;
+  }
+
+  async gerarPdf(professorId: string, id: string): Promise<{ arquivo: Uint8Array; nome: string }> {
+    const aplicacao = await this.repositorio.buscarParaPdf(professorId, id);
+    if (!aplicacao) throw new NotFoundException('Aplicação não encontrada.');
+    if (aplicacao.versoesProva.length === 0) {
+      throw new ConflictException('Gere as versões da aplicação antes de baixar o PDF.');
+    }
+    const dados = dadosDoPdf(aplicacao);
+    return {
+      arquivo: await gerarPdfDaAplicacao(dados),
+      nome: nomeDoArquivoPdf(dados.tituloDaProva, dados.nomeDaTurma),
     };
   }
 
@@ -116,6 +151,16 @@ export class ApplicationsService {
     if (!aplicacao) throw new NotFoundException('Aplicação não encontrada.');
     return aplicacao;
   }
+}
+
+function nomeDoArquivoPdf(tituloDaProva: string, nomeDaTurma: string): string {
+  const base = `${tituloDaProva}-${nomeDaTurma}`
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+  return `${base || 'aplicacao'}.pdf`;
 }
 
 const MAXIMO_DE_VERSOES = 200;

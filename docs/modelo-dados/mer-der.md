@@ -1,6 +1,6 @@
 # Modelo de dados — SGP N2
 
-O diagrama abaixo reproduz os 11 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
+O diagrama abaixo reproduz os 12 modelos de `apps/api/prisma/schema.prisma`. `PK` indica chave primária; `FK` indica chave estrangeira. Os tipos são os escalares Prisma, incluindo modificadores MySQL definidos com `@db.*`. `?` indica campo anulável. As cardinalidades mostram quantos registros podem existir em cada lado conforme nulabilidade e relações do schema.
 
 ```mermaid
 erDiagram
@@ -19,6 +19,13 @@ erDiagram
         DateTime expiresAt
         DateTime revokedAt "nullable"
         DateTime createdAt
+    }
+    TentativaLogin {
+        String id PK
+        String email "VarChar(255)"
+        String ip "VarChar(45)"
+        Boolean sucesso
+        DateTime criadaEm
     }
     Turma {
         String id PK
@@ -88,6 +95,7 @@ erDiagram
     VersaoProva {
         String id PK
         String aplicacaoId FK
+        String alunoId FK "nullable"
         Int numeroVersao
         Json layout
         String qrCodePayload UK
@@ -120,6 +128,7 @@ erDiagram
     Aplicacao ||--o{ VersaoProva : gera
     Aplicacao ||--o{ Correcao : recebe
     Aluno o|--o{ Correcao : identificado_em
+    Aluno o|--o{ VersaoProva : dono_da_versao
 ```
 
 ![DER do SGP](der.png)
@@ -149,6 +158,16 @@ erDiagram
 | expiresAt | DateTime | Sim | Data de expiração do token. |
 | revokedAt | DateTime | Não | Data de revogação, se revogado. |
 | createdAt | DateTime | Sim | Criação, padrão `now()`. |
+
+### TentativaLogin
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---:|---|
+| id | String | Sim | Chave primária textual, `cuid()`. |
+| email | String (`VarChar(255)`) | Sim | E-mail informado na tentativa; não é FK, porque e-mail inexistente também conta. |
+| ip | String (`VarChar(45)`) | Sim | Endereço IP de origem. |
+| sucesso | Boolean | Sim | Se o login foi aceito. |
+| criadaEm | DateTime | Sim | Data da tentativa, padrão `now()`; índices em `(email, criadaEm)` e `(ip, criadaEm)`. |
 
 ### Turma
 
@@ -242,6 +261,7 @@ erDiagram
 |---|---|---:|---|
 | id | String | Sim | Chave primária textual, `cuid()`. |
 | aplicacaoId | String | Sim | FK para `Aplicacao.id`; único com `numeroVersao`. |
+| alunoId | String | Não | FK opcional para `Aluno.id`, preenchida na prova identificada; único com `aplicacaoId`; vira nulo se o aluno for apagado (`ON DELETE SET NULL`). |
 | numeroVersao | Int | Sim | Número da versão na aplicação. |
 | layout | Json | Sim | Ordem de questões e alternativas nesta versão. |
 | qrCodePayload | String | Sim | Conteúdo do QR Code, único. |
@@ -264,4 +284,4 @@ erDiagram
 
 ## Regras importantes
 
-Uma matrícula é única por turma (`@@unique([turmaId, matricula])`), mas pode aparecer em turmas distintas. Questões são excluídas logicamente por `deletedAt`, preservando vínculos e histórico. A correção permite `alunoId` nulo para registrar uma prova não identificada; a associação pode ser preenchida posteriormente. `clientCorrectionId` é único para deduplicar correções reenviadas na sincronização. Todos os identificadores são `String` em vez de inteiros para manter os ids textuais iguais aos usados na N1. Campos de valor fixo, como `turno`, `tipo`, `status`, `origem` e `statusSync`, ficam armazenados como texto; a validação dos valores aceitos é feita pela API.
+Uma matrícula é única por turma (`@@unique([turmaId, matricula])`), mas pode aparecer em turmas distintas. Questões são excluídas logicamente por `deletedAt`, preservando vínculos e histórico. Na prova identificada, cada aluno da turma tem uma versão (`@@unique([aplicacaoId, alunoId])`). `TentativaLogin` não tem chave para `Professor` e só guarda 1 dia de tentativas. A correção permite `alunoId` nulo para registrar uma prova não identificada; a associação pode ser preenchida posteriormente. `clientCorrectionId` é único para deduplicar correções reenviadas na sincronização. Todos os identificadores são `String` em vez de inteiros para manter os ids textuais iguais aos usados na N1. Campos de valor fixo, como `turno`, `tipo`, `status`, `origem` e `statusSync`, ficam armazenados como texto; a validação dos valores aceitos é feita pela API.

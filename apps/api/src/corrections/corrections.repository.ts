@@ -58,8 +58,12 @@ export class CorrectionsRepository {
     });
   }
 
-  atualizar(id: string, dados: Prisma.CorrecaoUncheckedUpdateInput) {
-    return this.prisma.correcao.update({ where: { id }, data: dados });
+  atualizar(aplicacaoId: string, id: string, dados: Prisma.CorrecaoUncheckedUpdateInput, totalAlunos: number) {
+    return this.prisma.$transaction(async (tx) => {
+      const correcao = await tx.correcao.update({ where: { id }, data: dados });
+      await atualizarStatus(tx, aplicacaoId, totalAlunos);
+      return correcao;
+    });
   }
 
   excluir(aplicacaoId: string, id: string, totalAlunos: number) {
@@ -76,8 +80,22 @@ async function atualizarContagem(
   variacao: Prisma.IntFieldUpdateOperationsInput,
   totalAlunos: number,
 ) {
-  const aplicacao = await tx.aplicacao.update({ where: { id: aplicacaoId }, data: { corrigidas: variacao } });
-  const status = statusPelasCorrecoes(aplicacao.corrigidas, totalAlunos);
+  await tx.aplicacao.update({ where: { id: aplicacaoId }, data: { corrigidas: variacao } });
+  await atualizarStatus(tx, aplicacaoId, totalAlunos);
+}
+
+async function atualizarStatus(tx: Prisma.TransactionClient, aplicacaoId: string, totalAlunos: number) {
+  const aplicacao = await tx.aplicacao.findUniqueOrThrow({ where: { id: aplicacaoId } });
+  const alunosCorrigidos = await tx.correcao.findMany({
+    where: { aplicacaoId, alunoId: { not: null } },
+    distinct: ['alunoId'],
+    select: { id: true },
+  });
+  const status = statusPelasCorrecoes({
+    correcoes: aplicacao.corrigidas,
+    alunosCorrigidos: alunosCorrigidos.length,
+    totalAlunos,
+  });
   if (status !== aplicacao.status) {
     await tx.aplicacao.update({ where: { id: aplicacaoId }, data: { status } });
   }
