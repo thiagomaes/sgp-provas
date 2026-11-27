@@ -7,7 +7,8 @@ import type { QuestaoLida } from '../correcao/leitura-cartao'
 import { LETRAS_IMPRESSAS, notaPrevista, respostasParaApi, type Marcacoes } from '../correcao/respostas'
 import AppShell from '../layouts/AppShell.vue'
 import { buscarAplicacao, listarVersoes } from '../services/aplicacoes'
-import { listarCorrecoes, novoIdDeCorrecao, registrarCorrecao } from '../services/correcoes'
+import { listarCorrecoes, novoIdDeCorrecao } from '../services/correcoes'
+import { registrarOuGuardar } from '../services/filaOffline'
 import { ErroApi, mensagemDeErro } from '../services/http'
 import { useLeituraStore } from '../stores/leitura'
 import type { Application, ApplicationVersionKey, Correction, OptionLetter, PrintedQuestion } from '../types'
@@ -181,7 +182,8 @@ async function confirmar() {
   enviando.value = true
   erroEnvio.value = ''
   try {
-    await registrarCorrecao(id, {
+    // Sem internet, a correção fica na fila e é enviada quando a conexão voltar (RF10).
+    await registrarOuGuardar(id, {
       clientCorrectionId,
       origem: 'mobile',
       versao: versao.value.numeroVersao,
