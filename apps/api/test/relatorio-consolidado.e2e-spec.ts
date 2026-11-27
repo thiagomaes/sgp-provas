@@ -35,7 +35,17 @@ const aplicacao = {
       { id: 'a2', turmaId: 't1', nome: 'Bruno Lima', matricula: '2026002', createdAt: new Date() },
     ],
   },
-  prova: { id: 'p1', titulo: 'Avaliação Bimestral 1', totalPontos: 10 },
+  // Mesmo formato do select do ReportsRepository (incluirRelatorio): a prova traz
+  // as questões, usadas pela estatística por questão.
+  prova: {
+    id: 'p1',
+    titulo: 'Avaliação Bimestral 1',
+    totalPontos: 10,
+    questoes: [
+      { questaoId: 'q1', ordem: 1 },
+      { questaoId: 'q2', ordem: 2 },
+    ],
+  },
   correcoes: [
     {
       id: 'c1',
@@ -43,7 +53,10 @@ const aplicacao = {
       alunoId: 'a1',
       versao: 1,
       nota: 8.5,
-      respostas: [],
+      respostas: [
+        { questaoId: 'q1', marcada: 'A', correta: true, pontuacao: 5 },
+        { questaoId: 'q2', marcada: 'C', correta: false, pontuacao: 0 },
+      ],
       origem: 'mobile',
       clientCorrectionId: 'cli-1',
       statusSync: 'sincronizada',
