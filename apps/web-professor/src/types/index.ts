@@ -200,3 +200,25 @@ export interface ApplicationReport {
   /** Provas lidas sem identificação que ainda não têm aluno (RF09). */
   semAluno: Correction[]
 }
+
+export interface AnswerKeyItem {
+  ordem: number
+  tipo: 'objetiva' | 'discursiva'
+  /** Letra impressa da alternativa correta nesta versão; nula nas discursivas. */
+  letraCorreta: string | null
+  respostaEsperada: string | null
+  pontuacao: number
+}
+
+export interface AnswerKeyVersion {
+  numeroVersao: number
+  aluno: { nome: string; matricula: string } | null
+  questoes: AnswerKeyItem[]
+}
+
+export interface AnswerKey {
+  tituloDaProva: string
+  nomeDaTurma: string
+  data: string
+  versoes: AnswerKeyVersion[]
+}

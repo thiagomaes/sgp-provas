@@ -81,6 +81,11 @@ const router = createRouter({
       name: 'aplicacao-exportar',
       component: () => import('../pages/AplicacaoExportarPage.vue'),
     },
+    {
+      path: '/aplicacoes/:id/gabarito',
+      name: 'aplicacao-gabarito',
+      component: () => import('../pages/AplicacaoGabaritoPage.vue'),
+    },
 
     // Correção pela câmera do celular (RF08). Ver ADR-001.
     {
