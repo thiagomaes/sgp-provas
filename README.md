@@ -457,6 +457,7 @@ traz a convenção de commit e o fluxo de branch e PR.
 | **Web** | https://sgp-provas.vercel.app |
 | **API** | https://sgp-provas-api.vercel.app/health |
 | **Conta de demonstração** | `ana.costa@escola.edu.br` / `sgp2026` |
+| **Manual do usuário** | [docs/manual-usuario.md](docs/manual-usuario.md) |
 
 A conta de demonstração vem do seed: a professora Ana Costa, com 4 turmas, 115
 alunos, 10 questões, 5 provas e 5 aplicações.
