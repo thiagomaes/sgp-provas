@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Res, StreamableFile } from '@nestjs/common';
+import type { Response } from 'express';
 import { CurrentProfessor } from '../common/current-professor.decorator.js';
 import { ApplicationsService } from './applications.service.js';
 import { CreateAplicacaoDto, GerarVersoesDto } from './dto/aplicacao.dto.js';
@@ -20,6 +21,20 @@ export class ApplicationsController {
   @Get(':id')
   buscar(@CurrentProfessor() professorId: string, @Param('id') id: string) {
     return this.aplicacoes.buscar(professorId, id);
+  }
+
+  @Get(':id/pdf')
+  async baixarPdf(
+    @CurrentProfessor() professorId: string,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) resposta: Response,
+  ) {
+    const { arquivo, nome } = await this.aplicacoes.gerarPdf(professorId, id);
+    resposta.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${nome}"`,
+    });
+    return new StreamableFile(arquivo);
   }
 
   @Delete(':id')

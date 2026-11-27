@@ -329,6 +329,7 @@ rotas não públicas exigem o cabeçalho `Authorization: Bearer <accessToken>`.
 | GET | `/applications/:id` | Uma aplicação | |
 | DELETE | `/applications/:id` | Exclui aplicação (409 se tiver provas corrigidas) | |
 | POST | `/applications/:id/generate` | Gera as versões embaralhadas, cada uma com o conteúdo do QR Code | |
+| GET | `/applications/:id/pdf` | Baixa o PDF da aplicação: para cada versão, o caderno e o cartão-resposta (409 se as versões ainda não foram geradas) | |
 | GET | `/applications/:id/corrections` | Correções da aplicação; `?assigned=false` traz só as sem aluno | |
 | POST | `/applications/:id/corrections` | Grava uma correção lida pela câmera (a API calcula a nota) ou um lançamento manual; reenviar o mesmo `clientCorrectionId` não duplica | |
 | PATCH | `/applications/:id/corrections/:correctionId` | Atribui o aluno e/ou ajusta a nota | |
