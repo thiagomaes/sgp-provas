@@ -19,6 +19,16 @@ export const useAuthStore = defineStore('auth', () => {
     professor.value = await http.get<Teacher>('/auth/me')
   }
 
+  /**
+   * Anonimiza a conta (RF13, POST /auth/anonymize). A API já encerra todas as
+   * sessões, então aqui só falta limpar a sessão local.
+   */
+  async function anonimizarConta(senha: string) {
+    await http.post('/auth/anonymize', { senha })
+    limparSessao()
+    professor.value = null
+  }
+
   async function sair() {
     const refreshToken = tokenDeRenovacao()
     try {
@@ -33,5 +43,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { professor, entrar, carregarProfessor, sair }
+  return { professor, entrar, carregarProfessor, anonimizarConta, sair }
 })

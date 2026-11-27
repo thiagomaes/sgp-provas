@@ -43,6 +43,7 @@ const menu: ItemMenu[] = [
   { rotulo: 'Aplicações e PDF', para: '/aplicacoes', prefixo: '/aplicacoes' },
   { rotulo: 'Correção', para: '/correcao', prefixo: '/correcao' },
   { rotulo: 'Relatórios e notas', para: '/relatorios', prefixo: '/relatorios' },
+  { rotulo: 'Minha conta', para: '/conta', prefixo: '/conta' },
 ]
 
 const route = useRoute()
