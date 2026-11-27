@@ -81,14 +81,15 @@ model Turma {
 
 /// Registro simples dentro da turma (RF03): nome e matrícula, sem login.
 model Aluno {
-  id        String     @id @default(cuid())
+  id        String        @id @default(cuid())
   turmaId   String
   nome      String
-  matricula String     @db.VarChar(30)
-  createdAt DateTime   @default(now())
-  turma     Turma      @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  matricula String        @db.VarChar(30)
+  createdAt DateTime      @default(now())
+  turma     Turma         @relation(fields: [turmaId], references: [id], onDelete: Cascade)
   /// Restrict: aluno com correção não pode ser apagado (a API responde 409).
   correcoes Correcao[]
+  versoes   VersaoProva[]
 
   @@unique([turmaId, matricula])
 }
@@ -187,14 +188,19 @@ model Aplicacao {
 model VersaoProva {
   id            String    @id @default(cuid())
   aplicacaoId   String
+  /// Preenchido na prova identificada: a versão pertence a este aluno.
+  alunoId       String?
   numeroVersao  Int
   /// Ordem das questões e das alternativas desta versão.
   layout        Json
   qrCodePayload String    @unique
   createdAt     DateTime  @default(now())
   aplicacao     Aplicacao @relation(fields: [aplicacaoId], references: [id], onDelete: Cascade)
+  aluno         Aluno?    @relation(fields: [alunoId], references: [id], onDelete: SetNull)
 
   @@unique([aplicacaoId, numeroVersao])
+  @@unique([aplicacaoId, alunoId])
+  @@index([alunoId])
 }
 
 /// Correção de uma prova (RF08, RF09, RF10).
