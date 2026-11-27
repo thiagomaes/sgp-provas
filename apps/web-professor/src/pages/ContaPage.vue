@@ -97,7 +97,7 @@ async function anonimizar() {
 
         <label class="campo">
           <span class="rotulo">Sua senha</span>
-          <input v-model="senha" type="password" autocomplete="current-password" />
+          <input v-model="senha" type="password" maxlength="72" autocomplete="current-password" />
         </label>
 
         <p v-if="erro" class="erro" role="alert">{{ erro }}</p>

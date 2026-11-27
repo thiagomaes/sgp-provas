@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
+import { ErroInternoFilter } from './common/erro-interno.filter.js';
 
 async function criarApp() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -26,6 +27,9 @@ async function criarApp() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
+
+  // Erro não tratado responde em português, sem stack (o detalhe fica no log).
+  app.useGlobalFilters(new ErroInternoFilter(app.get(HttpAdapterHost).httpAdapter));
 
   return app;
 }

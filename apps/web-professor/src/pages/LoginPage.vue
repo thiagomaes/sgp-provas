@@ -58,6 +58,7 @@ async function entrar() {
         <input
           v-model="email"
           type="email"
+          maxlength="191"
           autocomplete="email"
           placeholder="ana.professora@escola.edu.br"
         />
@@ -68,6 +69,7 @@ async function entrar() {
         <input
           v-model="senha"
           type="password"
+          maxlength="72"
           autocomplete="current-password"
           placeholder="••••••••••"
         />

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppShell from '../layouts/AppShell.vue'
 import type { Question } from '../types'
+import { mensagemDeErro } from '../services/http'
 import { buscarQuestao, criarQuestao, editarQuestao } from '../services/questoes'
 
 const router = useRouter()
@@ -15,6 +16,8 @@ const tagsTexto = ref('')
 const pontuacaoMaxima = ref(10)
 const respostaEsperada = ref('')
 const erro = ref('')
+/** Enquanto a API responde, o botão fica desabilitado: dois cliques não criam duas questões. */
+const salvando = ref(false)
 const alternativas = ref<Array<{ texto: string; correta: boolean }>>([])
 
 const editingId = computed(() => {
@@ -109,7 +112,13 @@ const parseTags = (valor: string) => {
 }
 
 const salvarQuestao = async () => {
+  if (salvando.value) return
   erro.value = ''
+
+  if (!disciplina.value.trim()) {
+    erro.value = 'Informe a disciplina da questão.'
+    return
+  }
 
   const enunciadoFormatado = enunciado.value.trim()
   if (!enunciadoFormatado) {
@@ -141,10 +150,15 @@ const salvarQuestao = async () => {
     return
   }
 
+  if (tipo.value === 'discursiva' && !(Number(pontuacaoMaxima.value) > 0)) {
+    erro.value = 'A pontuação máxima deve ser maior que zero.'
+    return
+  }
+
   const dadosQuestao = {
     enunciado: enunciadoFormatado,
     tipo: tipo.value,
-    disciplina: disciplina.value,
+    disciplina: disciplina.value.trim(),
     tags: parseTags(tagsTexto.value),
     ...(tipo.value === 'objetiva'
       ? {
@@ -156,10 +170,11 @@ const salvarQuestao = async () => {
         }
       : {
           respostaEsperada: respostaEsperada.value.trim(),
-          pontuacaoMaxima: Number(pontuacaoMaxima.value) || 10,
+          pontuacaoMaxima: Number(pontuacaoMaxima.value),
         }),
   }
 
+  salvando.value = true
   try {
     if (editingId.value) {
       await editarQuestao(editingId.value, dadosQuestao)
@@ -167,8 +182,11 @@ const salvarQuestao = async () => {
       await criarQuestao(dadosQuestao)
     }
     router.push('/questoes')
-  } catch {
-    erro.value = 'Não foi possível salvar a questão.'
+  } catch (falha) {
+    // A API devolve a regra que faltou (ex.: "exatamente uma alternativa correta").
+    erro.value = mensagemDeErro(falha, 'Não foi possível salvar a questão.')
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -192,6 +210,7 @@ const cancelar = () => {
             id="disciplina"
             v-model="disciplina"
             type="text"
+            maxlength="80"
             class="input-texto"
             placeholder="Ex.: Matemática, História, Física"
           />
@@ -222,7 +241,7 @@ const cancelar = () => {
 
         <div class="campo-grupo">
           <label class="label" for="enunciado">Enunciado</label>
-          <textarea id="enunciado" v-model="enunciado" rows="4" class="input-texto" />
+          <textarea id="enunciado" v-model="enunciado" rows="4" maxlength="10000" class="input-texto" />
         </div>
 
         <div v-if="tipo === 'objetiva'" class="campo-grupo">
@@ -248,6 +267,7 @@ const cancelar = () => {
               <input
                 v-model="alternativa.texto"
                 type="text"
+                maxlength="2000"
                 class="input-alternativa"
                 :placeholder="`Alternativa ${String.fromCharCode(65 + index)}`"
               />
@@ -274,7 +294,7 @@ const cancelar = () => {
           />
 
           <label class="label" for="respostaEsperada">Resposta esperada</label>
-          <textarea id="respostaEsperada" v-model="respostaEsperada" rows="3" class="input-texto" />
+          <textarea id="respostaEsperada" v-model="respostaEsperada" rows="3" maxlength="10000" class="input-texto" />
         </div>
       </div>
 
@@ -294,8 +314,8 @@ const cancelar = () => {
       <div v-if="erro" class="mensagem-erro">{{ erro }}</div>
 
       <div class="acoes">
-        <button type="button" class="botao-primario" @click="salvarQuestao">
-          {{ isEditMode ? 'Salvar alterações' : 'Salvar questão' }}
+        <button type="button" class="botao-primario" :disabled="salvando" @click="salvarQuestao">
+          {{ salvando ? 'Salvando...' : isEditMode ? 'Salvar alterações' : 'Salvar questão' }}
         </button>
         <button type="button" class="botao-secundario" @click="cancelar">Cancelar</button>
       </div>
@@ -489,6 +509,11 @@ textarea.input-texto {
   background: var(--accent);
   border: 1px solid var(--accent);
   color: var(--surface);
+}
+
+.botao-primario:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .botao-secundario {

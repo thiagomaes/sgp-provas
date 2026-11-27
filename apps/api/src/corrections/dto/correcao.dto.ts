@@ -32,8 +32,8 @@ export class RespostaDto {
 
   /** Só nas discursivas: pontos dados pelo professor (limitado à pontuação da questão). */
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({}, { message: 'Os pontos da questão devem ser um número.' })
+  @Min(0, { message: 'Os pontos da questão não podem ser negativos.' })
   pontuacao?: number;
 }
 
@@ -55,8 +55,8 @@ export class CreateCorrecaoDto {
   origem?: (typeof ORIGENS)[number];
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  @IsInt({ message: 'A versão deve ser um número inteiro.' })
+  @Min(1, { message: 'A versão começa em 1.' })
   versao?: number;
 
   /** null ou ausente quando a prova não é identificada. */
@@ -73,8 +73,8 @@ export class CreateCorrecaoDto {
 
   /** Nota final quando o professor ajustou (mobile) ou lançou (manual). */
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({}, { message: 'A nota deve ser um número.' })
+  @Min(0, { message: 'A nota não pode ser negativa.' })
   nota?: number;
 }
 
@@ -86,8 +86,8 @@ export class UpdateCorrecaoDto {
   alunoId?: string | null;
 
   @IsOptional()
-  @IsNumber()
-  @Min(0)
+  @IsNumber({}, { message: 'A nota deve ser um número.' })
+  @Min(0, { message: 'A nota não pode ser negativa.' })
   nota?: number;
 }
 

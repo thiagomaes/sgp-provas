@@ -59,7 +59,11 @@ function cancelar() {
 }
 
 async function salvarAluno() {
-  if (!turma.value || !novoNome.value.trim() || !novaMatricula.value.trim()) return
+  if (!turma.value || salvando.value) return
+  if (!novoNome.value.trim() || !novaMatricula.value.trim()) {
+    erroFormulario.value = 'Preencha o nome e a matrícula do aluno.'
+    return
+  }
 
   salvando.value = true
   erroFormulario.value = ''
@@ -107,7 +111,11 @@ function abrirEdicao(aluno: Student) {
 }
 
 async function salvarEdicao(alunoId: string) {
-  if (!turma.value || !nomeEditado.value.trim() || !matriculaEditada.value.trim()) return
+  if (!turma.value || salvandoEdicao.value) return
+  if (!nomeEditado.value.trim() || !matriculaEditada.value.trim()) {
+    erroEdicao.value = 'Preencha o nome e a matrícula do aluno.'
+    return
+  }
 
   salvandoEdicao.value = true
   erroEdicao.value = ''
@@ -188,12 +196,12 @@ async function confirmarExclusao(alunoId: string) {
       <form v-if="mostrarFormulario" class="formulario" @submit.prevent="salvarAluno">
         <label class="campo">
           <span class="rotulo">Nome do aluno</span>
-          <input v-model="novoNome" type="text" placeholder="Nome completo" required />
+          <input v-model="novoNome" type="text" maxlength="120" placeholder="Nome completo" required />
         </label>
 
         <label class="campo">
           <span class="rotulo">Matrícula</span>
-          <input v-model="novaMatricula" type="text" placeholder="2026099" required />
+          <input v-model="novaMatricula" type="text" maxlength="30" placeholder="2026099" required />
         </label>
 
         <div class="formulario-acoes">
@@ -222,10 +230,10 @@ async function confirmarExclusao(alunoId: string) {
           <template v-for="aluno in turma.alunos" :key="aluno.id">
             <tr v-if="editandoId === aluno.id">
               <td>
-                <input v-model="nomeEditado" type="text" aria-label="Nome do aluno" />
+                <input v-model="nomeEditado" type="text" maxlength="120" aria-label="Nome do aluno" />
               </td>
               <td>
-                <input v-model="matriculaEditada" type="text" aria-label="Matrícula" />
+                <input v-model="matriculaEditada" type="text" maxlength="30" aria-label="Matrícula" />
               </td>
               <td class="tabela-acao">
                 <button

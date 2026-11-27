@@ -69,7 +69,11 @@ function cancelar() {
 }
 
 async function salvarTurma() {
-  if (!novoNome.value.trim() || !novaDisciplina.value.trim() || !novoAno.value.trim()) return
+  if (salvando.value) return
+  if (!novoNome.value.trim() || !novaDisciplina.value.trim() || !novoAno.value.trim()) {
+    erroFormulario.value = 'Preencha o nome, a disciplina e o ano da turma.'
+    return
+  }
 
   const dados = {
     nome: novoNome.value.trim(),
@@ -137,17 +141,17 @@ async function confirmarExclusao(id: string) {
 
       <label class="campo">
         <span class="rotulo">Nome da turma</span>
-        <input v-model="novoNome" type="text" placeholder="Matemática — 1º Ano" required />
+        <input v-model="novoNome" type="text" maxlength="120" placeholder="Matemática — 1º Ano" required />
       </label>
 
       <label class="campo">
         <span class="rotulo">Disciplina</span>
-        <input v-model="novaDisciplina" type="text" placeholder="Matemática" required />
+        <input v-model="novaDisciplina" type="text" maxlength="80" placeholder="Matemática" required />
       </label>
 
       <label class="campo">
         <span class="rotulo">Ano</span>
-        <input v-model="novoAno" type="text" placeholder="1º Ano" required />
+        <input v-model="novoAno" type="text" maxlength="30" placeholder="1º Ano" required />
       </label>
 
       <label class="campo">
