@@ -79,8 +79,7 @@ async function entrar() {
         {{ entrando ? 'Entrando...' : 'Entrar' }}
       </button>
 
-      <!-- Ainda sem ação: recuperação de senha não faz parte da N2. -->
-      <a class="esqueci" href="#" @click.prevent>Esqueci minha senha</a>
+      <RouterLink class="esqueci" to="/esqueci-senha">Esqueci minha senha</RouterLink>
 
       <p class="criar-conta">
         Ainda não tem conta? <RouterLink to="/cadastro">Criar conta</RouterLink>
