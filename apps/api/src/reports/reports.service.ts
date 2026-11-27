@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import ExcelJS from 'exceljs';
 import { aplicacaoParaResposta, type AplicacaoResposta } from '../applications/aplicacao.mapper.js';
 import { correcaoParaResposta, type CorrecaoResposta } from '../corrections/correcao.mapper.js';
 import { dataIso } from '../common/formatos.js';
@@ -95,6 +96,37 @@ export class ReportsService {
     ];
     const nome = `${relatorio.prova.titulo} ${relatorio.turma.nome}`;
     return { nomeArquivo: `notas-${paraNomeDeArquivo(nome)}.csv`, conteudo: paraCsv(linhas) };
+  }
+
+  /** Planilha .xlsx: uma linha por aluno, a nota e, por questão, a alternativa marcada e se acertou. */
+  async xlsx(professorId: string, aplicacaoId: string): Promise<{ nomeArquivo: string; conteudo: Buffer }> {
+    const relatorio = montarRelatorio(await this.dados(professorId, aplicacaoId));
+    const porQuestao = (correcao: CorrecaoResposta | null) => {
+      const respostas = (correcao?.respostas ?? []) as RespostaCorrigida[];
+      return relatorio.questoes.flatMap(({ questaoId }) => {
+        const resposta = respostas.find((item) => item.questaoId === questaoId);
+        return resposta ? [resposta.marcada ?? '', resposta.correta ? 'Sim' : 'Não'] : ['', ''];
+      });
+    };
+
+    const planilha = new ExcelJS.Workbook();
+    const aba = planilha.addWorksheet('Notas');
+    const colunasDasQuestoes = relatorio.questoes.flatMap(({ numero }) => [`Q${numero}`, `Q${numero} acertou`]);
+    aba.addRow(['Matrícula', 'Aluno', 'Nota', ...colunasDasQuestoes]).font = { bold: true };
+    for (const { aluno, correcao } of relatorio.notas) {
+      aba.addRow([aluno.matricula, aluno.nome, correcao?.nota ?? '', ...porQuestao(correcao)]);
+    }
+    for (const correcao of relatorio.semAluno) {
+      aba.addRow(['', '(não identificado)', correcao.nota, ...porQuestao(correcao)]);
+    }
+    aba.getColumn(1).width = 14;
+    aba.getColumn(2).width = 32;
+
+    const nome = `${relatorio.prova.titulo} ${relatorio.turma.nome}`;
+    return {
+      nomeArquivo: `notas-${paraNomeDeArquivo(nome)}.xlsx`,
+      conteudo: Buffer.from(await planilha.xlsx.writeBuffer()),
+    };
   }
 
   /** CSV com as notas de todas as aplicações do professor (xlsx e pdf ficam para a N3). */

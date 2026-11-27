@@ -41,4 +41,13 @@ export class ReportsController {
     resposta.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
     resposta.send(conteudo);
   }
+
+  /** Planilha Excel com a nota e a alternativa marcada em cada questão. */
+  @Get('applications/:id/report.xlsx')
+  @Header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  async xlsx(@CurrentProfessor() professorId: string, @Param('id') id: string, @Res() resposta: Response) {
+    const { nomeArquivo, conteudo } = await this.relatorios.xlsx(professorId, id);
+    resposta.setHeader('Content-Disposition', `attachment; filename="${nomeArquivo}"`);
+    resposta.send(conteudo);
+  }
 }
