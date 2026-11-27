@@ -274,6 +274,13 @@ watch(
   color: var(--text-soft);
 }
 
+/* Mais de um botão no canto (ex.: Importar alunos + Adicionar aluno). */
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 /* Slots opcionais não ocupam espaço quando a tela não os preenche. */
 .caminho:empty,
 .subtitulo:empty,
