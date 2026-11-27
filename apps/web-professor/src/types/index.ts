@@ -209,6 +209,21 @@ export interface Statistics {
   menor: number
 }
 
+/** Acerto de uma questão nas provas lidas pela câmera (RF12). */
+export interface QuestionStatistics {
+  questaoId: string
+  /** Posição da questão na prova original. */
+  numero: number
+  /** Provas lidas que têm esta questão; lançamentos manuais não entram. */
+  respondidas: number
+  /** 0 a 100, ou null sem provas lidas. */
+  percentualAcerto: number | null
+  /** Quantas vezes cada letra original foi marcada, ex.: { A: 3, C: 1 }. */
+  marcacoes: Partial<Record<OptionLetter, number>>
+  /** Letra original mais marcada; null sem marcação ou na discursiva. */
+  maisMarcada: OptionLetter | null
+}
+
 /** Resposta de GET /applications/:id/report. */
 export interface ApplicationReport {
   aplicacao: Application
@@ -216,6 +231,8 @@ export interface ApplicationReport {
   turma: ClassSummary
   /** null enquanto não há nenhuma nota. */
   estatisticas: Statistics | null
+  /** Acerto e alternativa mais marcada de cada questão, na ordem da prova. */
+  questoes: QuestionStatistics[]
   /** Um item por aluno da turma; correcao null = nota ainda não lançada. */
   notas: { aluno: Student; correcao: Correction | null }[]
   /** Provas lidas sem identificação que ainda não têm aluno (RF09). */

@@ -2,7 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { aplicacaoParaResposta, type AplicacaoResposta } from '../applications/aplicacao.mapper.js';
 import { correcaoParaResposta, type CorrecaoResposta } from '../corrections/correcao.mapper.js';
 import { dataIso } from '../common/formatos.js';
-import { calcularEstatisticas, media, type Estatisticas } from './estatisticas.js';
+import type { RespostaCorrigida } from '../corrections/calculo-nota.js';
+import {
+  calcularEstatisticas,
+  estatisticasPorQuestao,
+  media,
+  type EstatisticaQuestao,
+  type Estatisticas,
+} from './estatisticas.js';
 import { ReportsRepository } from './reports.repository.js';
 
 interface TurmaResumo {
@@ -25,6 +32,8 @@ export interface RelatorioAplicacao {
   prova: { id: string; titulo: string; totalPontos: number };
   turma: TurmaResumo;
   estatisticas: Estatisticas | null;
+  /** Acerto e alternativa mais marcada de cada questão, na ordem da prova. */
+  questoes: EstatisticaQuestao[];
   /** Um item por aluno da turma; correcao null = nota ainda não lançada. */
   notas: { aluno: { id: string; nome: string; matricula: string }; correcao: CorrecaoResposta | null }[];
   /** Provas lidas sem identificação que ainda não foram atribuídas a um aluno (RF09). */
@@ -119,11 +128,16 @@ export class ReportsService {
 
 function montarRelatorio(dados: DadosRelatorio): RelatorioAplicacao {
   const correcoes = dados.correcoes.map(correcaoParaResposta);
+  const { questoes, ...prova } = dados.prova;
   return {
     aplicacao: aplicacaoParaResposta(dados),
-    prova: dados.prova,
+    prova,
     turma: { id: dados.turma.id, nome: dados.turma.nome, disciplina: dados.turma.disciplina, ano: dados.turma.ano },
     estatisticas: calcularEstatisticas(correcoes.map((correcao) => correcao.nota)),
+    questoes: estatisticasPorQuestao(
+      questoes,
+      correcoes.map((correcao) => correcao.respostas as RespostaCorrigida[]),
+    ),
     notas: dados.turma.alunos.map((aluno) => ({
       aluno: { id: aluno.id, nome: aluno.nome, matricula: aluno.matricula },
       correcao: correcoes.find((correcao) => correcao.alunoId === aluno.id) ?? null,

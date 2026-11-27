@@ -313,6 +313,48 @@ const imprimir = () => window.print()
         </tbody>
       </table>
 
+      <section v-if="relatorio.questoes?.some((questao) => questao.respondidas)" class="por-questao">
+        <h2 class="secao-titulo">Acerto por questão</h2>
+        <p class="secao-desc">
+          Calculado com as provas lidas pela câmera; notas lançadas à mão não entram.
+        </p>
+
+        <table class="tabela">
+          <thead>
+            <tr>
+              <th>Questão</th>
+              <th>Acerto</th>
+              <th>Marcações (a mais marcada em destaque)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="questao in relatorio.questoes" :key="questao.questaoId">
+              <td>{{ questao.numero }}</td>
+              <td>
+                {{
+                  questao.percentualAcerto === null
+                    ? '—'
+                    : `${Math.round(questao.percentualAcerto)}% (de ${questao.respondidas})`
+                }}
+              </td>
+              <td>
+                <template v-if="questao.maisMarcada">
+                  <span
+                    v-for="(vezes, letra) in questao.marcacoes"
+                    :key="letra"
+                    class="marcacao"
+                    :class="{ destaque: letra === questao.maisMarcada }"
+                  >
+                    {{ letra }}: {{ vezes }}
+                  </span>
+                </template>
+                <template v-else>—</template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section v-if="relatorio.semAluno.length" class="sem-aluno">
         <h2 class="secao-titulo">Provas lidas sem identificação</h2>
         <p class="secao-desc">
@@ -435,8 +477,18 @@ const imprimir = () => window.print()
   color: var(--accent-dark);
 }
 
-.sem-aluno {
+.sem-aluno,
+.por-questao {
   margin-top: var(--space-6);
+}
+
+.marcacao {
+  margin-right: var(--space-3);
+}
+
+.marcacao.destaque {
+  font-weight: 700;
+  color: var(--accent-dark);
 }
 
 .secao-titulo {
