@@ -15,19 +15,23 @@ export const buscarRelatorio = (aplicacaoId: string) =>
  * publicado a web e a API têm origens diferentes e o navegador não deixa
  * ler o Content-Disposition da resposta, então a tela monta o nome.
  */
-export function nomeDoCsv(tituloProva: string, nomeTurma: string): string {
+export function nomeDoCsv(tituloProva: string, nomeTurma: string, extensao = 'csv'): string {
   const nome = `${tituloProva} ${nomeTurma}`
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-  return `notas-${nome}.csv`
+  return `notas-${nome}.${extensao}`
 }
 
 /** Baixa a planilha CSV das notas (separador ";" e vírgula decimal). */
 export const baixarCsv = (aplicacaoId: string, nomeArquivo: string) =>
   baixarArquivo(`/applications/${aplicacaoId}/report.csv`, nomeArquivo)
+
+/** Baixa a planilha Excel com a nota e a alternativa marcada em cada questão. */
+export const baixarXlsx = (aplicacaoId: string, nomeArquivo: string) =>
+  baixarArquivo(`/applications/${aplicacaoId}/report.xlsx`, nomeArquivo)
 
 /** Baixa o CSV com as notas de todas as aplicações (GET /reports/consolidated). */
 export const baixarConsolidado = () =>

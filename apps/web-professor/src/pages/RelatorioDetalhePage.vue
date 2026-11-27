@@ -11,7 +11,7 @@ import {
   registrarCorrecao,
 } from '../services/correcoes'
 import { ErroApi, mensagemDeErro } from '../services/http'
-import { baixarCsv, buscarRelatorio, nomeDoCsv } from '../services/relatorios'
+import { baixarCsv, baixarXlsx, buscarRelatorio, nomeDoCsv } from '../services/relatorios'
 import type { ApplicationReport, Correction } from '../types'
 
 /**
@@ -149,14 +149,15 @@ async function confirmarExclusaoDaCorrecao(correcaoId: string) {
 const exportando = ref(false)
 const erroExportacao = ref('')
 
-async function exportarCsv() {
+async function exportar(formato: 'csv' | 'xlsx') {
   if (!relatorio.value) return
   exportando.value = true
   erroExportacao.value = ''
   try {
-    await baixarCsv(aplicacaoId, nomeDoCsv(relatorio.value.prova.titulo, relatorio.value.turma.nome))
+    const baixar = formato === 'csv' ? baixarCsv : baixarXlsx
+    await baixar(aplicacaoId, nomeDoCsv(relatorio.value.prova.titulo, relatorio.value.turma.nome, formato))
   } catch (falha) {
-    erroExportacao.value = mensagemDeErro(falha, 'Não foi possível baixar o CSV.')
+    erroExportacao.value = mensagemDeErro(falha, 'Não foi possível baixar a planilha.')
   } finally {
     exportando.value = false
   }
@@ -178,9 +179,17 @@ const imprimir = () => window.print()
           class="botao-secundario"
           type="button"
           :disabled="exportando"
-          @click="exportarCsv"
+          @click="exportar('csv')"
         >
           {{ exportando ? 'Baixando...' : 'Exportar CSV' }}
+        </button>
+        <button
+          class="botao-secundario"
+          type="button"
+          :disabled="exportando"
+          @click="exportar('xlsx')"
+        >
+          Exportar Excel
         </button>
         <!-- O navegador gera o PDF pela opção "Salvar como PDF" da impressão. -->
         <button class="botao-secundario" type="button" @click="imprimir">Exportar PDF</button>
