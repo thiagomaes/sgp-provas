@@ -161,6 +161,8 @@ async function exportarCsv() {
     exportando.value = false
   }
 }
+
+const imprimir = () => window.print()
 </script>
 
 <template>
@@ -180,6 +182,8 @@ async function exportarCsv() {
         >
           {{ exportando ? 'Baixando...' : 'Exportar CSV' }}
         </button>
+        <!-- O navegador gera o PDF pela opção "Salvar como PDF" da impressão. -->
+        <button class="botao-secundario" type="button" @click="imprimir">Exportar PDF</button>
       </span>
     </template>
 
@@ -573,5 +577,13 @@ async function exportarCsv() {
 
 .vazio {
   color: var(--text-soft);
+}
+
+@media print {
+  .link-editar,
+  .link-lancar,
+  .sem-aluno {
+    display: none;
+  }
 }
 </style>

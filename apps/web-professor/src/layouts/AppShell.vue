@@ -296,6 +296,20 @@ watch(
   display: none;
 }
 
+/* Imprimir (ou "Salvar como PDF") leva só o conteúdo da tela, sem menu e botões. */
+@media print {
+  .topo-celular,
+  .sidebar,
+  .acoes {
+    display: none;
+  }
+
+  .conteudo {
+    margin-left: 0;
+    padding: 0;
+  }
+}
+
 @media (max-width: 767px) {
   .shell {
     flex-direction: column;

@@ -5,7 +5,7 @@ import AppShell from '../layouts/AppShell.vue'
 import { listarAplicacoes } from '../services/aplicacoes'
 import { mensagemDeErro } from '../services/http'
 import { listarProvas } from '../services/provas'
-import { buscarResumo } from '../services/relatorios'
+import { baixarConsolidado, buscarResumo } from '../services/relatorios'
 import { listarTurmas } from '../services/turmas'
 import type { Application, Class, Exam } from '../types'
 
@@ -44,6 +44,21 @@ async function carregar() {
 
 onMounted(carregar)
 
+const exportando = ref(false)
+const erroExportacao = ref('')
+
+async function exportarTudo() {
+  exportando.value = true
+  erroExportacao.value = ''
+  try {
+    await baixarConsolidado()
+  } catch (falha) {
+    erroExportacao.value = mensagemDeErro(falha, 'Não foi possível baixar o relatório consolidado.')
+  } finally {
+    exportando.value = false
+  }
+}
+
 // Formata a data de AAAA-MM-DD para DD/MM
 const formatarData = (dataIso: string) => {
   const partes = dataIso.split('-')
@@ -70,6 +85,13 @@ const relatorios = computed(() =>
   <AppShell>
     <template #titulo>Relatórios e notas</template>
     <template #subtitulo>Notas por aplicação e relatórios consolidados</template>
+    <template v-if="relatorios.length" #acoes>
+      <button class="botao-secundario" type="button" :disabled="exportando" @click="exportarTudo">
+        {{ exportando ? 'Baixando...' : 'Exportar tudo' }}
+      </button>
+    </template>
+
+    <p v-if="erroExportacao" class="erro" role="alert">{{ erroExportacao }}</p>
 
     <EstadoTela v-if="carregando" tipo="carregando">Carregando relatórios...</EstadoTela>
     <EstadoTela v-else-if="erro" tipo="erro" @tentar="carregar">{{ erro }}</EstadoTela>
@@ -147,5 +169,30 @@ tr:last-child td {
 
 .btn-link:hover {
   text-decoration: underline;
+}
+
+.botao-secundario {
+  padding: var(--space-2) var(--space-4);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.botao-secundario:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.erro {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: var(--radius-sm);
 }
 </style>

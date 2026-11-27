@@ -28,3 +28,10 @@ export function nomeDoCsv(tituloProva: string, nomeTurma: string): string {
 /** Baixa a planilha CSV das notas (separador ";" e vírgula decimal). */
 export const baixarCsv = (aplicacaoId: string, nomeArquivo: string) =>
   baixarArquivo(`/applications/${aplicacaoId}/report.csv`, nomeArquivo)
+
+/** Baixa o CSV com as notas de todas as aplicações (GET /reports/consolidated). */
+export const baixarConsolidado = () =>
+  baixarArquivo(
+    '/reports/consolidated',
+    `relatorio-consolidado-${new Date().toISOString().slice(0, 10)}.csv`,
+  )
