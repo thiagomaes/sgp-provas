@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import EstadoTela from '../components/EstadoTela.vue'
 import AppShell from '../layouts/AppShell.vue'
 import { listarAplicacoes } from '../services/aplicacoes'
+import { descartar, enviarPendentes, fila } from '../services/filaOffline'
 import { mensagemDeErro } from '../services/http'
 import { listarProvas } from '../services/provas'
 import { listarTurmas } from '../services/turmas'
@@ -40,6 +41,11 @@ async function carregar() {
 }
 
 onMounted(carregar)
+// Correções guardadas sem internet saem daqui também, não só no evento "online".
+onMounted(enviarPendentes)
+
+const pendentes = computed(() => fila.value.filter((item) => !item.erro))
+const conflitos = computed(() => fila.value.filter((item) => item.erro))
 
 const paraCorrigir = computed(() =>
   listaAplicacoes.value.filter(
@@ -68,6 +74,19 @@ function percentual(corrigidas: number, total: number): number {
     <template #subtitulo>
       Escolha a aplicação e leia as provas com a câmera do celular.
     </template>
+
+    <p v-if="pendentes.length" class="fila" role="status">
+      {{ pendentes.length }}
+      {{ pendentes.length === 1 ? 'correção guardada' : 'correções guardadas' }} sem internet.
+      O envio é automático quando a conexão voltar.
+      <button class="link" type="button" @click="enviarPendentes">Enviar agora</button>
+    </p>
+    <p v-for="item in conflitos" :key="item.dados.clientCorrectionId" class="fila conflito" role="alert">
+      Correção guardada sem internet não foi aceita: {{ item.erro }}
+      <button class="link" type="button" @click="descartar(item.dados.clientCorrectionId)">
+        Descartar
+      </button>
+    </p>
 
     <EstadoTela v-if="carregando" tipo="carregando">Carregando aplicações...</EstadoTela>
     <EstadoTela v-else-if="erro" tipo="erro" @tentar="carregar">{{ erro }}</EstadoTela>
@@ -252,6 +271,28 @@ function percentual(corrigidas: number, total: number): number {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+}
+
+.fila {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+}
+
+.fila.conflito {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.fila .link {
+  padding: 0;
+  margin-left: var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .nota {
