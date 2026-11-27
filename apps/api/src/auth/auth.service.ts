@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { ConflictException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { Professor } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import type { PayloadAcesso } from '../common/jwt-auth.guard.js';
+import { emailAnonimo, NOME_ALUNO_ANONIMO, NOME_PROFESSOR_ANONIMO } from './anonimizacao.js';
 import { AuthRepository } from './auth.repository.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
@@ -125,6 +126,32 @@ export class AuthService {
       throw new UnauthorizedException('Faça login para acessar o sistema.');
     }
     return paraResposta(professor);
+  }
+
+  /**
+   * Anonimiza a conta do professor (RF13, LGPD). Pede a senha de novo: é uma
+   * ação sem volta. A senha errada responde 403, e não 401, para a web não
+   * confundir com sessão expirada e deslogar o professor.
+   */
+  async anonimizar(professorId: string, senha: string): Promise<void> {
+    const professor = await this.repositorio.buscarPorId(professorId);
+    if (!professor || professor.anonymizedAt) {
+      throw new UnauthorizedException('Faça login para acessar o sistema.');
+    }
+    if (!(await bcrypt.compare(senha, professor.passwordHash))) {
+      throw new ForbiddenException('Senha incorreta.');
+    }
+    await this.repositorio.anonimizar(
+      professor.id,
+      professor.email,
+      {
+        nome: NOME_PROFESSOR_ANONIMO,
+        email: emailAnonimo(professor.id),
+        // Hash de um valor aleatório que ninguém conhece: a senha antiga deixa de valer.
+        passwordHash: await bcrypt.hash(randomUUID(), 10),
+      },
+      NOME_ALUNO_ANONIMO,
+    );
   }
 
   private async conferirLimite(email: string, ip: string): Promise<void> {

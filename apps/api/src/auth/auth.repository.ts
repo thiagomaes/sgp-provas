@@ -46,6 +46,39 @@ export class AuthRepository {
     await this.prisma.tentativaLogin.deleteMany({ where: { criadaEm: { lt: apagarAntesDe } } });
   }
 
+  /**
+   * Anonimização da conta (RF13), tudo numa transação: troca os dados do
+   * professor, troca nome e matrícula dos alunos das turmas dele, encerra as
+   * sessões abertas e apaga as tentativas de login com o e-mail antigo.
+   * Turmas, provas, aplicações, correções e notas ficam como estão.
+   */
+  async anonimizar(
+    professorId: string,
+    emailAntigo: string,
+    dados: { nome: string; email: string; passwordHash: string },
+    nomeAluno: string,
+  ) {
+    const agora = new Date();
+    await this.prisma.$transaction([
+      this.prisma.professor.update({
+        where: { id: professorId },
+        data: { ...dados, anonymizedAt: agora },
+      }),
+      // Uma instrução só para todos os alunos; a matrícula nova usa o id do
+      // aluno para continuar única dentro da turma (a coluna tem 30 caracteres).
+      this.prisma.$executeRaw`
+        UPDATE \`Aluno\` a
+        JOIN \`Turma\` t ON t.id = a.turmaId
+        SET a.nome = ${nomeAluno}, a.matricula = LEFT(CONCAT('anon-', a.id), 30)
+        WHERE t.professorId = ${professorId}`,
+      this.prisma.refreshToken.updateMany({
+        where: { professorId, revokedAt: null },
+        data: { revokedAt: agora },
+      }),
+      this.prisma.tentativaLogin.deleteMany({ where: { email: emailAntigo } }),
+    ]);
+  }
+
   /** Revoga só se ainda estiver ativo; devolve quantos foram revogados (0 ou 1). */
   async revogarRefreshToken(tokenHash: string): Promise<number> {
     const { count } = await this.prisma.refreshToken.updateMany({
