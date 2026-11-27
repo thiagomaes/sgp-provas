@@ -551,33 +551,37 @@ npm run test:e2e   # testes e2e (o do /health precisa do .env com JWT_SECRET)
 
 - **Unitários** (Vitest): as regras de negócio sem banco: validação de questão e
   limite de questões por prova, embaralhamento das versões, cálculo da nota,
-  estatísticas (média, mediana e desvio padrão), limite de tentativas de login e
-  conferência da importação de alunos.
+  estatísticas (média, mediana e desvio padrão), limite de tentativas de login,
+  conferência da importação de alunos, o serviço de correções, as mensagens dos
+  DTOs, o filtro de erro interno e o log de acesso.
 - **E2E** (Vitest e Supertest), com o repositório trocado por um falso: o
   `/health`, o relatório consolidado em CSV, o limite de tentativas de login, a
-  importação de alunos, a recuperação de senha e a anonimização da conta.
+  importação de alunos, a recuperação de senha, a anonimização da conta, as
+  versões da aplicação, o log de acesso e o **isolamento entre professores**
+  ([`test/isolamento.e2e-spec.ts`](apps/api/test/isolamento.e2e-spec.ts)): o
+  professor B recebe 404 em todas as rotas com ids do professor A, e as
+  listagens dele vêm vazias.
 
-**Resultado em 27/11/2026:**
+**Resultado em 27/11/2026 (PR #108):**
 
-- **Unitários:** 127 de 127 passam.
-- **E2E:** 24 de 25 passam. O que falha é o do relatório consolidado: o
-  repositório falso do teste não traz as questões da prova, que o relatório
-  passou a usar com a estatística por questão (#104). Falta atualizar o teste.
+- **Unitários:** 178 de 178 passam.
+- **E2E:** 56 de 56 passam.
 
-**Cobertura** (`npm run test:cov`, Vitest com v8):
+**Cobertura** (`npm run test:cov`): **83,85% das linhas**, sobre os 43 arquivos
+que os testes unitários carregam, de 74 da API. Os arquivos críticos (cálculo da
+nota, versões, estatísticas, validação de questão, regras da prova e o serviço de
+correções) estão todos acima de 80%. Detalhes e o que fica abaixo em
+[`docs/testes/n3-cobertura.md`](docs/testes/n3-cobertura.md).
 
-| Medida | Cobertura |
+### Outros registros de teste da N3
+
+| Registro | Resultado |
 | --- | --- |
-| Linhas | 84,71% (460 de 543) |
-| Comandos | 84,67% (514 de 607) |
-| Desvios (`if`, `?:`) | 82,02% (251 de 306) |
-| Funções | 76,73% (155 de 202) |
-
-A conta inclui só os 29 arquivos que os testes unitários carregam, de 72 da API:
-as regras de negócio, o PDF, as estatísticas e os serviços de questões, provas e
-aplicações. Controllers, repositories e os serviços de autenticação, turmas,
-correções e relatórios só são exercitados pelos testes e2e, que não entram nessa
-conta.
+| [Casos de borda dos formulários](docs/testes/n3-casos-de-borda.md) (T22) | 37 de 37 casos na web, com a API simulada; validações dos DTOs com mensagem em português |
+| [Cobertura](docs/testes/n3-cobertura.md) (T24) | 83,85% das linhas; arquivos críticos acima de 80% |
+| [npm audit](docs/testes/n3-npm-audit.md) (T25) | Web: 0 vulnerabilidades. API: de 20 para 6, todas só com major nova (Prisma 7 e exceljs); motivos registrados |
+| [Desempenho do sistema publicado](docs/testes/n3-desempenho.md) (T25) | p95 entre 338 e 671 ms, medido do Brasil: **o RNF02 (300 ms) não é atendido**. Boa parte é rede: a função roda em Washington, e o `/health` sem banco já leva 190 ms |
+| Teste de uso com uma pessoa de fora (T29) | Não foi feito |
 
 ### Testes automatizados da web
 
@@ -595,7 +599,7 @@ geradas estão em `apps/web-professor/src/correcao/__fixtures__`.
 
 ## 16. Estado atual (N3)
 
-Situação em **27/11/2026**, depois do merge do PR #106. "Na main" quer dizer
+Situação em **27/11/2026**, com o PR #108. "Na main" quer dizer
 mergeado e publicado. As tarefas são as do [plano da N3](docs/arquitetura/plano-n3.md).
 
 **Na main e no sistema publicado:** login com JWT e limite de tentativas,
@@ -635,13 +639,19 @@ consolidado. Nenhuma tela com dado fixo.
 | T14 Relatório consolidado na web e PDF | Marceu | ✅ na main (#103) |
 | T12 Estatística por questão | Marceu | ✅ na main (#104) |
 | T13 Exportação em Excel | Marceu | ✅ na main (#105) |
-| T22 a T25 Validações, logs de acesso, cobertura e desempenho | Hellen | ⏳ pendente |
-| T15, T29 Apresentação e teste com pessoa de fora | Marceu | ⏳ pendente |
+| T22 Validações e mensagens de erro | Hellen | ✅ na main (#108) |
+| T23 Logs de acesso e isolamento entre professores | Hellen | ✅ na main (#108) |
+| T24 Cobertura de testes | Hellen | ✅ na main (#108) |
+| T25 Desempenho e npm audit | Hellen | ✅ na main (#108) |
+| T15 Roteiro da apresentação | Marceu | ✅ na main (#108) |
+| T29 Teste de uso com uma pessoa de fora | Marceu | ⏳ pendente: não foi feito |
 | T30 Montar e enviar a entrega | Thiago | ⏳ pendente |
 
 O [manual do usuário](docs/manual-usuario.md) já descreve a correção pela câmera,
 a correção sem internet e os relatórios novos. Os ADRs da N3 (PDF, leitura do
-cartão e offline) estão em [`docs/adr`](docs/adr/README.md).
+cartão e offline) estão em [`docs/adr`](docs/adr/README.md). O roteiro da
+apresentação está em
+[`docs/apresentacao/roteiro-pitch.md`](docs/apresentacao/roteiro-pitch.md).
 
 ### Limitações conhecidas
 
@@ -664,6 +674,13 @@ cartão e offline) estão em [`docs/adr`](docs/adr/README.md).
   testados com imagens geradas e com a câmera falsa do Chrome. Caneta clara ou
   bolinha só riscada pode ficar perto do limite: a revisão destaca essas questões
   em amarelo para o professor conferir.
+- **Tempo de resposta acima do RNF02.** Medido do Brasil, o p95 das rotas comuns
+  fica entre 338 e 671 ms, acima dos 300 ms pedidos. A função da API roda em
+  Washington (`iad1`); detalhes em
+  [`docs/testes/n3-desempenho.md`](docs/testes/n3-desempenho.md).
+- **Log de acesso só no log da Vercel.** Cada requisição gera uma linha (método,
+  rota, status, tempo e professor) em Logs do projeto `sgp-provas-api`, que
+  guarda por pouco tempo no plano gratuito. Não há armazenamento próprio dos logs.
 - **Backup e disponibilidade.** Não há SLA de 99,5% (RNF03) nem retenção de 30 dias
   de backup (RNF07) nos planos usados; detalhes em
   [`docs/arquitetura/backup-e-disponibilidade.md`](docs/arquitetura/backup-e-disponibilidade.md).
