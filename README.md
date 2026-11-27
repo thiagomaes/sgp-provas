@@ -113,7 +113,8 @@ O SGP é uma aplicação web só, responsiva: as telas abaixo são as mesmas no
 computador e no celular. Os prints foram feitos na N1, com os dados de exemplo que
 na N2 viraram o seed do banco. Na N2 as telas continuam iguais, mas leem e gravam
 tudo na API. Os prints do sistema publicado na N2, passo a passo, estão no
-[teste de ponta a ponta](docs/testes/n2-ponta-a-ponta.md). Os protótipos
+[teste de ponta a ponta](docs/testes/n2-ponta-a-ponta.md), e os da N3 no
+[teste de ponta a ponta da N3](docs/testes/n3-ponta-a-ponta.md). Os protótipos
 aprovados pelo cliente continuam em [`docs/telas/`](docs/telas/).
 
 ### 4.1 Web do Professor
@@ -180,7 +181,7 @@ O professor abre o SGP no navegador do celular e corrige as provas pela câmera 
 
 <img src="docs/telas/sistema/15-celular-escanear.png" alt="Escanear prova" width="300">
 
-**Escanear prova:** abre a câmera traseira para ler o QR Code e o cartão-resposta; sem câmera, mostra o quadro com a instrução. Nesta fase a leitura ainda é simulada pelo botão **Simular leitura**.
+**Escanear prova:** abre a câmera traseira e lê o QR Code do cartão-resposta; a revisão já abre na versão e no aluno do QR Code. Sem câmera, a tela avisa e oferece **Escolher a versão**. As marcações do cartão ainda são conferidas à mão na revisão, até a T08.
 
 <img src="docs/telas/sistema/16-celular-revisao.png" alt="Revisar correção" width="300">
 
@@ -337,6 +338,7 @@ rotas não públicas exigem o cabeçalho `Authorization: Bearer <accessToken>`.
 | GET | `/applications/:id` | Uma aplicação | |
 | DELETE | `/applications/:id` | Exclui aplicação (409 se tiver provas corrigidas) | |
 | POST | `/applications/:id/generate` | Gera as versões embaralhadas, cada uma com o conteúdo do QR Code. Com `identificarAluno`, gera uma versão por aluno da turma (400 se a turma não tem alunos) | |
+| GET | `/applications/:id/versions` | Versões na ordem impressa, com o aluno e a letra certa de cada questão (usada pela tela de correção) | |
 | GET | `/applications/:id/pdf` | Baixa o PDF da aplicação: para cada versão, o caderno e o cartão-resposta (409 se as versões ainda não foram geradas) | |
 | GET | `/applications/:id/answer-key` | Gabarito: a letra certa de cada questão em cada versão, na ordem impressa (409 se as versões ainda não foram geradas) | |
 | GET | `/applications/:id/corrections` | Correções da aplicação; `?assigned=false` traz só as sem aluno | |
@@ -453,8 +455,7 @@ npm run dev
 No `npm run dev`, a web chama `/api` e o Vite repassa para o `VITE_API_URL`
 (seção 8). Para testar a correção no celular, abra a web no navegador do aparelho.
 A câmera só abre em contexto seguro (HTTPS ou `localhost`), então use o link
-publicado. Sem câmera, a tela mostra o quadro com a instrução e o botão
-**Simular leitura** continua funcionando.
+publicado. Sem câmera, a tela mostra o aviso e o botão **Escolher a versão**.
 
 Antes de mexer em qualquer tela, leia o [CONTRIBUTING.md](CONTRIBUTING.md): ele
 traz a convenção de commit e o fluxo de branch e PR.
@@ -510,7 +511,16 @@ os dois; cada pull request ganha uma URL de preview.
 
 ### Teste de ponta a ponta no sistema publicado
 
-Os 13 passos do fluxo do professor foram executados no site publicado com o
+**N3 (27/11/2026): 14 de 14 passos.** Cadastro, limite de tentativas de login,
+esqueci minha senha, importação de alunos por CSV, questões, prova, aplicação
+identificada com PDF e QR Code por aluno, gabarito, correção no celular pelo QR
+Code, status "Concluída", notas e CSV, recarregar rota interna, sair e anonimizar
+a conta. O registro, com os prints, está em
+[`docs/testes/n3-ponta-a-ponta.md`](docs/testes/n3-ponta-a-ponta.md). O único
+defeito encontrado (o PDF baixa com o nome genérico `aplicacao.pdf`) está
+descrito lá.
+
+**N2 (13 de 13 passos):** os 13 passos do fluxo do professor foram executados no site publicado com o
 Playwright: login, CRUD de turmas, alunos, questões e provas, aplicação com
 versões, correção no celular, nota manual, relatório com CSV, mensagens 409 da
 API, recarregar rota interna e sair. Dois problemas encontrados (imagem do QR
@@ -540,15 +550,16 @@ npm run test:e2e   # testes e2e (o do /health precisa do .env com JWT_SECRET)
 
 ## 16. Estado atual (N3)
 
-Situação em **27/11/2026**. "Na main" quer dizer mergeado e publicado; "em
-revisão" quer dizer que o pull request está aberto esperando o Approve do
-revisor. As tarefas são as do [plano da N3](docs/arquitetura/plano-n3.md).
+Situação em **27/11/2026**, depois do merge do PR #100. "Na main" quer dizer
+mergeado e publicado. As tarefas são as do [plano da N3](docs/arquitetura/plano-n3.md).
 
-**Na main e no sistema publicado (N2):** login real com JWT, CRUD de turmas,
-alunos, questões (com soft-delete) e provas, aplicações com versões embaralhadas e
-QR Code, correção pela tela do celular gravando a nota (leitura ainda simulada),
-lançamento manual de nota, relatórios com média, mediana e desvio padrão, CSV por
-aplicação e consolidado. Nenhuma tela com dado fixo.
+**Na main e no sistema publicado:** login com JWT e limite de tentativas,
+cadastro do professor, recuperação de senha, anonimização da conta (LGPD), CRUD de
+turmas, alunos (também por planilha CSV ou Excel), questões e provas, aplicações
+em várias turmas com versões embaralhadas, prova identificada com uma versão por
+aluno, PDF com caderno e cartão-resposta, gabarito por versão, leitura do QR Code
+pela câmera do celular, lançamento manual de nota, status "Concluída" automático,
+relatórios com média, mediana e desvio padrão e CSV. Nenhuma tela com dado fixo.
 
 **Tarefas da N3:**
 
@@ -557,26 +568,31 @@ aplicação e consolidado. Nenhuma tela com dado fixo.
 | T01 Plano e Issues da N3 | Thiago | ✅ na main (#60) |
 | T02 Layout do cartão-resposta | Thiago | ✅ na main (#81) |
 | T10 Limite de tentativas de login e certificado do Aiven | Thiago | ✅ na main (#82) |
-| T06 Status "Concluída" automático e várias turmas | Iago | ✅ na main (#83) |
+| T07 Leitura do QR Code pela câmera | Thiago | ✅ na main (#97) |
+| T27 Teste de ponta a ponta da N3 | Thiago | ✅ na main (#100) |
+| T06 Status "Concluída" automático e várias turmas | Iago | ✅ na main (#83, #95) |
 | T03 PDF consolidado da aplicação | Iago | ✅ na main (#86) |
 | T04 Prova identificada: versão e QR Code por aluno | Iago | ✅ na main (#87) |
-| T16 Tela de cadastro do professor | Amanda | 🔎 em revisão (#88) |
-| T19 Anonimização da conta (LGPD) | Amanda | 🔎 em revisão (#89) |
-| T18 Importar alunos por planilha (CSV e Excel) | Amanda | 🔎 em revisão (#90) |
-| T17 Recuperação de senha | Amanda | 🔎 em revisão (#91, depende do #88) |
-| T20 Backup e disponibilidade | Amanda | 🔎 em revisão (#92) |
-| T21 README final | Amanda | 🔎 em revisão (este README) |
-| T05 Tela de gabarito por versão | Iago | ⏳ pendente |
-| T07, T08, T09 Leitura do QR Code e do cartão pela câmera, nota no aluno | Thiago | ⏳ pendente |
+| T05 Tela de gabarito por versão | Iago | ✅ na main (#94) |
+| T26 UML e MER/DER | Iago | ✅ na main (#96, #99) |
+| T28 Manual do usuário | Iago | ✅ na main (#98, #99) |
+| T16 Tela de cadastro do professor | Amanda | ✅ na main (#88) |
+| T19 Anonimização da conta (LGPD) | Amanda | ✅ na main (#89) |
+| T18 Importar alunos por planilha (CSV e Excel) | Amanda | ✅ na main (#90) |
+| T17 Recuperação de senha | Amanda | ✅ na main (#91) |
+| T20 Backup e disponibilidade | Amanda | ✅ na main (#92) |
+| T21 README final | Amanda | 🔎 README na main (#93 e este PR); faltam os ADRs novos |
+| T08, T09 Reconhecer as marcações do cartão e nota no aluno identificado | Thiago | ⏳ pendente |
 | T11 Correção offline (PWA) | Marceu | ⏳ pendente |
 | T12, T13, T14 Estatística por questão, Excel e relatório consolidado | Marceu | ⏳ pendente |
-| T22 a T25, T27 Validações, logs de acesso, cobertura, desempenho e ponta a ponta | Hellen | ⏳ pendente |
-| T26 UML e MER/DER, T28 manual do usuário | Iago | ⏳ pendente |
+| T22 a T25 Validações, logs de acesso, cobertura e desempenho | Hellen | ⏳ pendente |
 | T15, T29 Apresentação e teste com pessoa de fora | Marceu | ⏳ pendente |
+| T30 Montar e enviar a entrega | Thiago | ⏳ pendente |
 
-O manual do usuário (`docs/manual-usuario.md`, T28) ainda não existe; o link
-entra aqui quando ele for mergeado. Os ADRs novos da N3 (PDF, leitura do cartão e
-offline) também entram quando essas partes estiverem prontas.
+O [manual do usuário](docs/manual-usuario.md) e o
+[teste de ponta a ponta da N3](docs/testes/n3-ponta-a-ponta.md) já estão na main.
+Os ADRs novos da N3 (PDF, leitura do cartão e offline) entram quando essas partes
+estiverem prontas.
 
 ### Limitações conhecidas
 
@@ -584,7 +600,12 @@ offline) também entram quando essas partes estiverem prontas.
   Em "Esqueci minha senha", o link de redefinição é escrito no log da API
   (Vercel → projeto `sgp-provas-api` → Logs) e quem administra o sistema repassa ao
   professor. O link vale 1 hora e só uma vez.
-- **Leitura pela câmera ainda simulada** até a T07 e a T08.
+- **Marcações do cartão conferidas à mão.** A câmera já lê o QR Code e abre a
+  revisão na versão e no aluno certos, mas as letras marcadas ainda são tocadas na
+  tela de revisão até a T08. A leitura pela câmera ainda não foi testada num
+  celular de verdade, só com a câmera falsa do Chrome.
+- **Nome do PDF.** O PDF da aplicação baixa como `aplicacao.pdf`, porque a API não
+  libera o cabeçalho `Content-Disposition` no CORS (ver o teste da N3).
 - **Backup e disponibilidade.** Não há SLA de 99,5% (RNF03) nem retenção de 30 dias
   de backup (RNF07) nos planos usados; detalhes em
   [`docs/arquitetura/backup-e-disponibilidade.md`](docs/arquitetura/backup-e-disponibilidade.md).
