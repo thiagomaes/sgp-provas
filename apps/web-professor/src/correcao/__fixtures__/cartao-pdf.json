@@ -1,0 +1,19 @@
+{
+  "leitura": [
+    "C",
+    "A",
+    "x",
+    "D"
+  ],
+  "payload": "sgp:cmwziti8d0013y4uz6mhav0nu:v2:6aac5b70",
+  "centroDoQr": {
+    "cartao-pdf.png": {
+      "x": 190,
+      "y": 170
+    },
+    "cartao-pdf-270.png": {
+      "x": 254,
+      "y": 745
+    }
+  }
+}
