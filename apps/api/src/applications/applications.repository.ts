@@ -20,6 +20,28 @@ export class ApplicationsRepository {
     return this.prisma.aplicacao.findFirst({ where: { id, professorId }, include: incluirTotalDeAlunos });
   }
 
+  buscarParaPdf(professorId: string, id: string) {
+    return this.prisma.aplicacao.findFirst({
+      where: { id, professorId },
+      include: {
+        turma: { select: { nome: true } },
+        prova: {
+          select: {
+            titulo: true,
+            questoes: {
+              select: {
+                questaoId: true,
+                pontuacao: true,
+                questao: { select: { enunciado: true, alternativas: { select: { letra: true, texto: true } } } },
+              },
+            },
+          },
+        },
+        versoesProva: { orderBy: { numeroVersao: 'asc' } },
+      },
+    });
+  }
+
   provaDoProfessor(professorId: string, provaId: string) {
     return this.prisma.prova.findFirst({
       where: { id: provaId, professorId, deletedAt: null },
