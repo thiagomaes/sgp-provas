@@ -1,4 +1,4 @@
-import { montarLayout, type QuestaoParaVersao } from './versoes.js';
+import { montarLayout, payloadDoQrCode, type QuestaoParaVersao } from './versoes.js';
 
 const questoes: QuestaoParaVersao[] = Array.from({ length: 6 }, (_, i) => ({
   questaoId: `q${i + 1}`,
@@ -28,5 +28,15 @@ describe('montarLayout', () => {
   it('não embaralha quando a opção está desligada', () => {
     const layout = montarLayout(questoes, 2, { embaralharQuestoes: false, embaralharAlternativas: false }, 's');
     expect(layout.questoes.map((q) => q.questaoId)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6']);
+  });
+});
+
+describe('payloadDoQrCode', () => {
+  it('monta o conteúdo da prova comum', () => {
+    expect(payloadDoQrCode('apl-1', 3, 'abcdef12')).toBe('sgp:apl-1:v3:abcdef12');
+  });
+
+  it('acrescenta o aluno na prova identificada', () => {
+    expect(payloadDoQrCode('apl-1', 3, 'abcdef12', 'aluno-9')).toBe('sgp:apl-1:v3:abcdef12:aaluno-9');
   });
 });

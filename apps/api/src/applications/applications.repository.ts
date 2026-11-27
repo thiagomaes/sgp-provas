@@ -37,7 +37,7 @@ export class ApplicationsRepository {
             },
           },
         },
-        versoesProva: { orderBy: { numeroVersao: 'asc' } },
+        versoesProva: { orderBy: { numeroVersao: 'asc' }, include: { aluno: { select: { nome: true, matricula: true } } } },
       },
     });
   }
@@ -67,6 +67,14 @@ export class ApplicationsRepository {
     );
   }
 
+  alunosDaTurma(turmaId: string) {
+    return this.prisma.aluno.findMany({
+      where: { turmaId },
+      select: { id: true, nome: true, matricula: true },
+      orderBy: [{ nome: 'asc' }, { matricula: 'asc' }],
+    });
+  }
+
   contarCorrecoes(aplicacaoId: string) {
     return this.prisma.correcao.count({ where: { aplicacaoId } });
   }
@@ -79,7 +87,7 @@ export class ApplicationsRepository {
   salvarVersoes(
     aplicacaoId: string,
     configuracao: Prisma.AplicacaoUpdateInput,
-    versoes: { numeroVersao: number; layout: Prisma.InputJsonValue; qrCodePayload: string }[],
+    versoes: { numeroVersao: number; alunoId?: string; layout: Prisma.InputJsonValue; qrCodePayload: string }[],
   ) {
     return this.prisma.$transaction(async (tx) => {
       await tx.versaoProva.deleteMany({ where: { aplicacaoId } });

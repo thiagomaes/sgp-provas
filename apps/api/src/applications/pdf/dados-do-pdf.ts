@@ -12,7 +12,12 @@ export interface AplicacaoParaPdf {
       questao: { enunciado: string; alternativas: { letra: string; texto: string }[] };
     }[];
   };
-  versoesProva: { numeroVersao: number; layout: unknown; qrCodePayload: string }[];
+  versoesProva: {
+    numeroVersao: number;
+    layout: unknown;
+    qrCodePayload: string;
+    aluno: { nome: string; matricula: string } | null;
+  }[];
 }
 
 export function dadosDoPdf(aplicacao: AplicacaoParaPdf): DadosDoPdf {
@@ -36,6 +41,7 @@ export function dadosDoPdf(aplicacao: AplicacaoParaPdf): DadosDoPdf {
       numeroVersao: versao.numeroVersao,
       layout: versao.layout as LayoutVersao,
       qrCodePayload: versao.qrCodePayload,
+      aluno: versao.aluno ?? undefined,
     })),
   };
 }
