@@ -126,6 +126,13 @@ const router = createRouter({
       name: 'relatorio-detalhe',
       component: () => import('../pages/RelatorioDetalhePage.vue'),
     },
+
+    // Dados da conta e anonimização (RF13, LGPD).
+    {
+      path: '/conta',
+      name: 'conta',
+      component: () => import('../pages/ContaPage.vue'),
+    },
   ],
 })
 
