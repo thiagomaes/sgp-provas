@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ApplicationsModule } from './applications/applications.module.js';
@@ -9,6 +9,7 @@ import { CorrectionsModule } from './corrections/corrections.module.js';
 import { ExamsModule } from './exams/exams.module.js';
 import { HealthController } from './common/health.controller.js';
 import { JwtAuthGuard } from './common/jwt-auth.guard.js';
+import { LogDeAcessoMiddleware } from './common/log-de-acesso.js';
 import { QuestionsModule } from './questions/questions.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 
@@ -20,6 +21,9 @@ import { ReportsModule } from './reports/reports.module.js';
  *
  * O JwtAuthGuard é global: toda rota exige login, exceto as marcadas com
  * @Publica() (/health, /auth/login, /auth/register e /auth/refresh).
+ *
+ * Toda requisição passa pelo LogDeAcessoMiddleware (método, rota, status,
+ * tempo e professor), inclusive as recusadas pelo guard.
  */
 @Module({
   imports: [
@@ -36,4 +40,8 @@ import { ReportsModule } from './reports/reports.module.js';
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(LogDeAcessoMiddleware).forRoutes('*');
+  }
+}
