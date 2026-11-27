@@ -45,15 +45,15 @@ describe('estatisticasPorQuestao', () => {
     ];
 
     expect(estatisticasPorQuestao(questoes, respostas)).toEqual([
-      { questaoId: 'q1', numero: 1, respondidas: 4, percentualAcerto: 75, maisMarcada: 'B' },
-      { questaoId: 'q2', numero: 2, respondidas: 4, percentualAcerto: 25, maisMarcada: 'A' },
+      { questaoId: 'q1', numero: 1, respondidas: 4, percentualAcerto: 75, marcacoes: { B: 3, C: 1 }, maisMarcada: 'B' },
+      { questaoId: 'q2', numero: 2, respondidas: 4, percentualAcerto: 25, marcacoes: { A: 2, D: 1 }, maisMarcada: 'A' },
     ]);
   });
 
   it('ignora lançamentos manuais, que não têm respostas', () => {
     expect(estatisticasPorQuestao(questoes, [[]])).toEqual([
-      { questaoId: 'q1', numero: 1, respondidas: 0, percentualAcerto: null, maisMarcada: null },
-      { questaoId: 'q2', numero: 2, respondidas: 0, percentualAcerto: null, maisMarcada: null },
+      { questaoId: 'q1', numero: 1, respondidas: 0, percentualAcerto: null, marcacoes: {}, maisMarcada: null },
+      { questaoId: 'q2', numero: 2, respondidas: 0, percentualAcerto: null, marcacoes: {}, maisMarcada: null },
     ]);
   });
 });

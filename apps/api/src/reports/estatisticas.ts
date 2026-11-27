@@ -52,6 +52,8 @@ export interface EstatisticaQuestao {
   respondidas: number;
   /** 0 a 100, ou null sem provas lidas. */
   percentualAcerto: number | null;
+  /** Quantas vezes cada letra original foi marcada, ex.: { A: 3, C: 1 }. */
+  marcacoes: Record<string, number>;
   /** Letra original mais marcada; null sem marcação ou na discursiva. */
   maisMarcada: string | null;
 }
@@ -74,14 +76,14 @@ export function estatisticasPorQuestao(
       const daQuestao = todas.filter((resposta) => resposta.questaoId === questaoId);
       const acertos = daQuestao.filter((resposta) => resposta.correta).length;
 
-      const marcacoes = new Map<string, number>();
+      const marcacoes: Record<string, number> = {};
       for (const { marcada } of daQuestao) {
-        if (marcada) marcacoes.set(marcada, (marcacoes.get(marcada) ?? 0) + 1);
+        if (marcada) marcacoes[marcada] = (marcacoes[marcada] ?? 0) + 1;
       }
       // Empate: fica a letra que apareceu primeiro.
       let maisMarcada: string | null = null;
-      for (const [letra, vezes] of marcacoes) {
-        if (!maisMarcada || vezes > marcacoes.get(maisMarcada)!) maisMarcada = letra;
+      for (const [letra, vezes] of Object.entries(marcacoes)) {
+        if (!maisMarcada || vezes > marcacoes[maisMarcada]) maisMarcada = letra;
       }
 
       return {
@@ -89,6 +91,7 @@ export function estatisticasPorQuestao(
         numero: ordem,
         respondidas: daQuestao.length,
         percentualAcerto: daQuestao.length ? duasCasas((acertos / daQuestao.length) * 100) : null,
+        marcacoes,
         maisMarcada,
       };
     });
