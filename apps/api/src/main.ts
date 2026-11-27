@@ -13,12 +13,13 @@ async function criarApp() {
   app.set('trust proxy', 1);
 
   // CORS só para a web do professor. Em desenvolvimento, o Vite local
-  // (localhost:5173) também é liberado.
+  // (localhost:5173) também é liberado. O Content-Disposition fica visível para
+  // a web, que lê dele o nome do arquivo baixado (PDF, CSV e Excel).
   const origens = [process.env.WEB_ORIGIN].filter((origem): origem is string => !!origem);
   if (process.env.NODE_ENV !== 'production') {
     origens.push('http://localhost:5173');
   }
-  app.enableCors({ origin: origens });
+  app.enableCors({ origin: origens, exposedHeaders: ['Content-Disposition'] });
 
   // Valida todos os DTOs: campo a mais é recusado e os tipos são convertidos
   // (ex.: "?tag=" vira string, números do corpo viram number).

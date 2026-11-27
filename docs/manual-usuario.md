@@ -131,26 +131,65 @@ Peça aos alunos que preencham as bolinhas por completo, com caneta preta ou azu
 
 ## 8. Corrigir pelo celular
 
-1. Abra o SGP no navegador do celular, entre na sua conta e vá em **Correção**.
-2. Escolha a aplicação e abra **Escanear prova**. Permita o uso da câmera quando o navegador pedir. A câmera só abre no site com `https`.
-3. Aponte a câmera para o cartão-resposta, com as quatro marcas dos cantos visíveis. O sistema lê o QR Code (versão e, na prova identificada, o aluno) e as bolinhas marcadas.
-4. Na tela **Revisar correção**, confira as respostas lidas e a nota calculada. Se algo estiver errado, ajuste a nota.
-5. Confirme. Na prova identificada, a nota vai direto para o aluno.
+1. Abra o SGP no navegador do celular, entre na sua conta e vá em **Correção**. A lista mostra as aplicações esperando correção (com o PDF gerado e ainda não concluídas), com quantas provas já foram corrigidas.
+2. Na aplicação, toque em **Corrigir provas**. A tela **Escanear prova** abre a câmera traseira; permita o uso da câmera quando o navegador pedir. A câmera só abre no site com `https`.
+3. Aponte a câmera para o cartão-resposta **inteiro**, com os 4 quadrados pretos dos cantos dentro da imagem. O sistema lê primeiro o QR Code, que diz a versão e, na prova identificada, o aluno. Aparece "Versão N identificada. Lendo as marcações..." e, em seguida, ele lê as bolinhas pintadas. O cartão pode estar de lado ou de cabeça para baixo.
+4. A tela **Revisar correção** abre com as respostas lidas já marcadas e a **nota calculada**. Em cima aparece uma miniatura da foto, com a letra lida circulada em cada questão.
+5. Confira as questões **destacadas em amarelo**:
+   - **Em branco:** nenhuma bolinha estava pintada.
+   - **Mais de uma marcação: anulada:** duas ou mais bolinhas pintadas. A questão vale zero.
+   - **Marcação duvidosa** ou **Leitura fraca:** a bolinha estava pouco preenchida.
+   Se a leitura estiver diferente do cartão, toque na letra certa (tocar de novo na letra marcada deixa a questão em branco). Nas questões discursivas, digite os pontos. Se precisar, use **Ajustar nota**.
+6. Toque em **Confirmar**. Na prova identificada, a nota vai direto para o aluno do QR Code. A câmera abre de novo para a próxima prova.
+
+**Se a leitura falhar,** a tela mostra o motivo (por exemplo, "Enquadre o cartão inteiro, com os 4 quadrados pretos") e dois botões:
+
+- **Tentar de novo:** volta para a câmera.
+- **Marcar à mão:** abre a revisão na versão e no aluno lidos no QR Code, com as respostas em branco para você marcar olhando o cartão.
+
+**Sem câmera** (no computador, ou com a câmera bloqueada), use **Escolher a versão**: escolha a versão (e, na prova identificada, o aluno) e marque as respostas à mão na revisão.
+
+**Dicas para a leitura dar certo:**
+
+- Deixe o cartão inteiro na imagem, com os 4 quadrados pretos aparecendo, e segure o celular parado até a imagem ficar nítida.
+- Use boa luz, sem sombra forte e sem reflexo na folha. Evite o flash.
+- Peça aos alunos caneta preta ou azul escura e a bolinha pintada por inteiro. Caneta fraca ou bolinha só riscada pode sair como "Leitura fraca".
+- O cartão impresso em escala 100% é o que funciona (passo 6).
 
 **Prova sem identificação:** a nota fica guardada sem aluno. Depois, na tela de notas (passo 9), em **Provas lidas sem identificação**, você escolhe o aluno de cada uma, usando o nome e a matrícula escritos na folha.
 
+**Prova já corrigida:** se o cartão de um aluno que já tem nota for lido de novo, a revisão avisa "A prova de ... já foi corrigida". Para mudar a nota, use **Ver notas**.
+
 Quando todos os alunos da turma têm correção, a aplicação passa sozinha para **Concluída**. Se você excluir uma correção, ela volta para **Em correção**.
 
-> **Atenção, estado desta versão:** a leitura automática da câmera (QR Code e bolinhas) e o uso sem internet ainda estão em desenvolvimento. Hoje a tela abre a câmera e o botão **Simular leitura** leva à revisão com uma leitura de exemplo, que grava a correção de verdade. Este passo será atualizado quando a leitura real for publicada.
+### Correção sem internet
+
+Se a internet cair na hora de **Confirmar**, a correção não se perde: ela fica guardada no navegador do celular e é enviada sozinha quando a conexão voltar. A tela de **Correção** mostra quantas correções estão guardadas, com o botão **Enviar agora**. Enviar de novo não duplica a nota.
+
+Atenção aos limites:
+
+- **As telas precisam abrir com internet.** A tela de escanear e a de revisão buscam a aplicação e as versões na hora em que abrem. Sem internet nesse momento, elas mostram erro. O que funciona sem conexão é confirmar uma revisão que já estava aberta.
+- **As correções guardadas ficam só naquele navegador.** Não limpe os dados do navegador nem troque de celular antes de elas serem enviadas.
+- Se o sistema recusar uma correção guardada (por exemplo, o aluno já tinha nota), a tela de **Correção** mostra o motivo e o botão **Descartar**.
 
 <!-- print: 12-correcao.png, 13-escanear.png, 14-revisao.png -->
 
 ## 9. Ver e exportar as notas
 
-1. No menu, abra **Relatórios e notas**. A lista mostra cada aplicação com a **média** das notas.
-2. Clique em uma aplicação para ver as notas dos alunos e as estatísticas: **média**, **mediana** e **desvio padrão**.
-3. Em **Provas lidas sem identificação**, ligue cada prova a um aluno da turma.
-4. Clique em **Exportar CSV** para baixar a planilha e lançar as notas no sistema da escola.
+1. No menu, abra **Relatórios e notas**. A lista mostra cada aplicação com a turma, a prova, a data e a **média** das notas.
+2. Clique em **Ver resultados →** para ver as notas dos alunos e as estatísticas: **média**, **mediana**, **desvio padrão**, menor e maior nota. A coluna **Origem** diz se a nota veio da câmera (**Automática**) ou foi lançada à mão (**Manual**).
+3. Em **Acerto por questão**, veja o percentual de acerto de cada questão e quantas vezes cada alternativa foi marcada, com a mais marcada em destaque. As versões embaralhadas são somadas pela letra da prova original. Só entram as provas lidas pela câmera; notas lançadas à mão não têm respostas.
+4. Em **Provas lidas sem identificação**, ligue cada prova a um aluno da turma.
+5. Para lançar ou mudar uma nota à mão, use **— lançar —** ou **editar** na linha do aluno. **excluir** apaga a correção, e a prova pode ser lida de novo.
+
+Para exportar:
+
+| Botão | Onde | O que baixa |
+|---|---|---|
+| **Exportar CSV** | Notas da aplicação | Planilha simples (aluno, matrícula, nota e origem), para lançar no sistema da escola |
+| **Exportar Excel** | Notas da aplicação | Arquivo `.xlsx` com matrícula, aluno e nota e, para cada questão, a letra marcada e se acertou |
+| **Exportar PDF** | Notas da aplicação | Abre a impressão do navegador só com o título, as estatísticas e as notas; escolha **Salvar como PDF** |
+| **Exportar tudo** | Relatórios e notas | CSV consolidado com as notas de todas as suas aplicações |
 
 <!-- print: 15-relatorios.png, 16-notas.png -->
 
@@ -166,5 +205,8 @@ Quando todos os alunos da turma têm correção, a aplicação passa sozinha par
 | Não consigo gerar versões novas | A correção já começou. Exclua as correções da aplicação, se for o caso, ou crie outra aplicação. |
 | Não consigo excluir a turma, o aluno ou a aplicação | Eles já têm provas corrigidas. O sistema protege as notas. |
 | A câmera não abre no celular | Permita a câmera nas configurações do navegador e confira se o endereço começa com `https`. |
-| O cartão não é lido | Reimprima em escala 100%, sem ajustar à página, e deixe as quatro marcas e o QR Code visíveis. |
+| O cartão não é lido | Enquadre o cartão inteiro com os 4 quadrados pretos, melhore a luz e tire o reflexo. Se continuar, reimprima em escala 100%, sem ajustar à página. Para não parar a correção, use **Marcar à mão**. |
+| Muitas questões em amarelo como "Leitura fraca" | As bolinhas estão pouco pintadas ou a caneta é clara. Confira essas questões na revisão antes de confirmar. |
+| "Este cartão é de versões que foram geradas de novo" | As versões foram geradas outra vez depois da impressão. Imprima e use o PDF atual. |
+| A tela de escanear ou de revisão mostra erro sem internet | Essas telas precisam de internet para abrir. Só a confirmação funciona sem conexão (ver o passo 8). |
 | O PDF de uma turma grande não baixa | A turma pode ser grande demais para um único arquivo. Divida a turma em duas aplicações. |

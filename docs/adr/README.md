@@ -30,6 +30,9 @@ Todos os ADRs deste repositório seguem a mesma estrutura, definida pelo ADR-001
 | [ADR-003](ADR-003-autenticacao-jwt.md) | Autenticação JWT só do professor | 30/10/2026 | aceita |
 | [ADR-004](ADR-004-hospedagem-vercel-e-aiven.md) | Hospedagem na Vercel com banco MySQL no Aiven | 30/10/2026 | aceita |
 | [ADR-005](ADR-005-soft-delete-questao.md) | Soft-delete de questões | 30/10/2026 | aceita |
+| [ADR-006](ADR-006-pdf-na-api-com-pdf-lib.md) | PDF gerado na API com pdf-lib e qrcode | 27/11/2026 | aceita |
+| [ADR-007](ADR-007-leitura-do-cartao-no-navegador.md) | Leitura do cartão no navegador, sem servidor e sem OpenCV | 27/11/2026 | aceita |
+| [ADR-008](ADR-008-correcao-offline-com-fila.md) | Correção offline com fila no localStorage e clientCorrectionId | 27/11/2026 | aceita |
 
 ## Resumo de cada um
 
@@ -54,6 +57,21 @@ Todos os ADRs deste repositório seguem a mesma estrutura, definida pelo ADR-001
   provas que já a usam continuam com ela, inclusive no gabarito da correção.
   Registra por que não foi exclusão física em cascata nem cópia da questão
   dentro da prova.
+- **ADR-006: PDF gerado na API com pdf-lib e qrcode.** O caderno e o
+  cartão-resposta são desenhados na hora do download, em coordenadas de
+  milímetro, com bibliotecas só de JavaScript que rodam na função da Vercel sem
+  Chrome nem arquivo de fonte. Registra por que não foi HTML com Puppeteer,
+  `pdfkit`, `pdfmake` ou geração no navegador.
+- **ADR-007: leitura do cartão no navegador, sem servidor e sem OpenCV.** A
+  câmera lê o QR Code e as bolinhas no próprio celular: acha as 4 marcas, calcula
+  a homografia de mm para a foto e mede cada bolinha com as regras do documento
+  do cartão. As medidas são uma cópia das da API, conferida por teste. Registra
+  por que não foi OpenCV.js nem leitura no servidor.
+- **ADR-008: correção offline com fila no localStorage e clientCorrectionId.** A
+  correção confirmada sem internet fica numa fila no navegador e é enviada
+  quando a conexão volta, sem duplicar a nota. Registra por que a web ainda não
+  é uma PWA completa e o que isso deixa de fora (as telas precisam de internet
+  para abrir).
 
 ## Decisões da N2 registradas aqui
 
@@ -70,3 +88,15 @@ a divisão de tarefas estão em
 | ADR-001 | Thiago Luís Lombardi Maes | [#10](https://github.com/thiagomaes/sgp-provas/pull/10) |
 | ADR-002, ADR-003 e ADR-004 | Amanda Zimmermann | [#18](https://github.com/thiagomaes/sgp-provas/pull/18) |
 | ADR-005 | Hellen Cristina de Oliveira | [#19](https://github.com/thiagomaes/sgp-provas/pull/19) |
+
+## Decisões da N3 registradas aqui
+
+Os ADRs 006, 007 e 008 registram as decisões da N3, escritos no fechamento da
+entrega, depois que as partes estavam na `main`. O plano da entrega está em
+[`docs/arquitetura/plano-n3.md`](../arquitetura/plano-n3.md).
+
+| ADR | Decisão implementada por | PR |
+| --- | --- | --- |
+| ADR-006 | Iago Henrique Pinto Bogler (PDF e prova identificada) | [#86](https://github.com/thiagomaes/sgp-provas/pull/86), [#87](https://github.com/thiagomaes/sgp-provas/pull/87) |
+| ADR-007 | Thiago Luís Lombardi Maes (leitura do QR Code e do cartão) | [#97](https://github.com/thiagomaes/sgp-provas/pull/97), [#102](https://github.com/thiagomaes/sgp-provas/pull/102) |
+| ADR-008 | Marceu Lago Pontes Schmidt (correção offline) | [#106](https://github.com/thiagomaes/sgp-provas/pull/106) |

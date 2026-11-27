@@ -181,11 +181,11 @@ O professor abre o SGP no navegador do celular e corrige as provas pela câmera 
 
 <img src="docs/telas/sistema/15-celular-escanear.png" alt="Escanear prova" width="300">
 
-**Escanear prova:** abre a câmera traseira e lê o QR Code do cartão-resposta; a revisão já abre na versão e no aluno do QR Code. Sem câmera, a tela avisa e oferece **Escolher a versão**. As marcações do cartão ainda são conferidas à mão na revisão, até a T08.
+**Escanear prova:** abre a câmera traseira, lê o QR Code e, em seguida, as bolinhas pintadas no cartão-resposta, tudo no navegador ([ADR-007](docs/adr/ADR-007-leitura-do-cartao-no-navegador.md)). A revisão abre na versão e no aluno do QR Code, com as respostas já marcadas. Se a leitura falhar, a tela explica o motivo e oferece **Tentar de novo** e **Marcar à mão**; sem câmera, oferece **Escolher a versão**.
 
 <img src="docs/telas/sistema/16-celular-revisao.png" alt="Revisar correção" width="300">
 
-**Revisar correção:** mostra a nota calculada e os acertos por questão para o professor ajustar, se precisar, e confirmar. Confirmar grava a correção no banco, e a API recalcula a nota com o gabarito.
+**Revisar correção:** mostra a nota calculada, uma miniatura da foto com a letra lida em cada questão e, em amarelo, as questões em branco, anuladas ou de leitura fraca, para o professor conferir e corrigir tocando na letra. Confirmar grava a correção no banco, e a API recalcula a nota com o gabarito; sem internet, a correção fica guardada e é enviada depois.
 
 > O print da tela de escanear foi feito em um navegador sem câmera, por isso mostra o quadro escuro com a instrução. No celular, o vídeo da câmera aparece dentro do quadro.
 
@@ -254,6 +254,9 @@ consequências. O formato e o índice estão em
 | 003 | Autenticação JWT só do professor, com refresh token rotacionado e guard global | [ADR-003](docs/adr/ADR-003-autenticacao-jwt.md) |
 | 004 | Hospedagem na Vercel (web e API) com banco MySQL no Aiven | [ADR-004](docs/adr/ADR-004-hospedagem-vercel-e-aiven.md) |
 | 005 | Soft-delete de questões, para as provas antigas não perderem a questão | [ADR-005](docs/adr/ADR-005-soft-delete-questao.md) |
+| 006 | PDF da aplicação gerado na API com `pdf-lib` e `qrcode`, só JavaScript, para rodar na Vercel | [ADR-006](docs/adr/ADR-006-pdf-na-api-com-pdf-lib.md) |
+| 007 | Leitura do cartão no navegador, sem servidor e sem OpenCV, pela homografia das 4 marcas | [ADR-007](docs/adr/ADR-007-leitura-do-cartao-no-navegador.md) |
+| 008 | Correção offline com fila no `localStorage` e `clientCorrectionId`, sem PWA completa | [ADR-008](docs/adr/ADR-008-correcao-offline-com-fila.md) |
 
 ## 8. Arquitetura
 
@@ -373,9 +376,14 @@ Versões lidas dos `package.json`:
 | Hospedagem | Vercel: a web como site estático e a API como função serverless |
 | Testes | Vitest e Supertest na API; Playwright no teste de ponta a ponta |
 
-Previsto para a N3 e ainda **fora** do código: Redis para cache e filas, object
-storage para os PDFs gerados, PWA (service worker e IndexedDB) para a correção
-offline e um Vision Service no servidor para conferir a leitura do cartão-resposta.
+Previsto no início da N3 e que ficou **fora** do código: Redis para cache e filas,
+object storage para os PDFs gerados, PWA (service worker e IndexedDB) para a
+correção offline e um Vision Service no servidor para conferir a leitura do
+cartão-resposta. O PDF é gerado na hora pela API
+([ADR-006](docs/adr/ADR-006-pdf-na-api-com-pdf-lib.md)), a leitura do cartão roda
+no navegador ([ADR-007](docs/adr/ADR-007-leitura-do-cartao-no-navegador.md)) e o
+offline usa uma fila no `localStorage`
+([ADR-008](docs/adr/ADR-008-correcao-offline-com-fila.md)).
 
 ## 11. Estrutura de Pastas
 
@@ -518,7 +526,7 @@ Code, status "Concluída", notas e CSV, recarregar rota interna, sair e anonimiz
 a conta. O registro, com os prints, está em
 [`docs/testes/n3-ponta-a-ponta.md`](docs/testes/n3-ponta-a-ponta.md). O único
 defeito encontrado (o PDF baixa com o nome genérico `aplicacao.pdf`) está
-descrito lá.
+descrito lá; a correção libera o cabeçalho `Content-Disposition` no CORS da API.
 
 **N2 (13 de 13 passos):** os 13 passos do fluxo do professor foram executados no site publicado com o
 Playwright: login, CRUD de turmas, alunos, questões e provas, aplicação com
@@ -537,6 +545,7 @@ completo, com um print de cada passo, está em
 ```bash
 cd apps/api
 npm test           # testes unitários
+npm run test:cov   # testes unitários com a cobertura
 npm run test:e2e   # testes e2e (o do /health precisa do .env com JWT_SECRET)
 ```
 
@@ -548,18 +557,57 @@ npm run test:e2e   # testes e2e (o do /health precisa do .env com JWT_SECRET)
   `/health`, o relatório consolidado em CSV, o limite de tentativas de login, a
   importação de alunos, a recuperação de senha e a anonimização da conta.
 
+**Resultado em 27/11/2026:**
+
+- **Unitários:** 127 de 127 passam.
+- **E2E:** 24 de 25 passam. O que falha é o do relatório consolidado: o
+  repositório falso do teste não traz as questões da prova, que o relatório
+  passou a usar com a estatística por questão (#104). Falta atualizar o teste.
+
+**Cobertura** (`npm run test:cov`, Vitest com v8):
+
+| Medida | Cobertura |
+| --- | --- |
+| Linhas | 84,71% (460 de 543) |
+| Comandos | 84,67% (514 de 607) |
+| Desvios (`if`, `?:`) | 82,02% (251 de 306) |
+| Funções | 76,73% (155 de 202) |
+
+A conta inclui só os 29 arquivos que os testes unitários carregam, de 72 da API:
+as regras de negócio, o PDF, as estatísticas e os serviços de questões, provas e
+aplicações. Controllers, repositories e os serviços de autenticação, turmas,
+correções e relatórios só são exercitados pelos testes e2e, que não entram nessa
+conta.
+
+### Testes automatizados da web
+
+```bash
+cd apps/web-professor
+npm test   # test runner do próprio Node
+```
+
+São 32 testes da correção: a leitura do QR Code, a conversão das letras impressas
+para as originais, as medidas do cartão (comparadas com as da API e com a tabela
+de `docs/arquitetura/cartao-resposta.md`) e a leitura das bolinhas em imagens de
+exemplo: o cartão reto, de cabeça para baixo, inclinado, escuro, com ruído e o
+cartão de um PDF real com bolinhas pintadas por código. As imagens e como foram
+geradas estão em `apps/web-professor/src/correcao/__fixtures__`.
+
 ## 16. Estado atual (N3)
 
-Situação em **27/11/2026**, depois do merge do PR #100. "Na main" quer dizer
+Situação em **27/11/2026**, depois do merge do PR #106. "Na main" quer dizer
 mergeado e publicado. As tarefas são as do [plano da N3](docs/arquitetura/plano-n3.md).
 
 **Na main e no sistema publicado:** login com JWT e limite de tentativas,
 cadastro do professor, recuperação de senha, anonimização da conta (LGPD), CRUD de
 turmas, alunos (também por planilha CSV ou Excel), questões e provas, aplicações
 em várias turmas com versões embaralhadas, prova identificada com uma versão por
-aluno, PDF com caderno e cartão-resposta, gabarito por versão, leitura do QR Code
-pela câmera do celular, lançamento manual de nota, status "Concluída" automático,
-relatórios com média, mediana e desvio padrão e CSV. Nenhuma tela com dado fixo.
+aluno, PDF com caderno e cartão-resposta, gabarito por versão, **correção pela
+câmera do celular** (QR Code e bolinhas, com a revisão já preenchida), nota direto
+no aluno na prova identificada, correção guardada sem internet e enviada depois,
+lançamento manual de nota, status "Concluída" automático e relatórios com média,
+mediana, desvio padrão e acerto por questão, exportados em CSV, Excel, PDF e no
+consolidado. Nenhuma tela com dado fixo.
 
 **Tarefas da N3:**
 
@@ -569,6 +617,7 @@ relatórios com média, mediana e desvio padrão e CSV. Nenhuma tela com dado fi
 | T02 Layout do cartão-resposta | Thiago | ✅ na main (#81) |
 | T10 Limite de tentativas de login e certificado do Aiven | Thiago | ✅ na main (#82) |
 | T07 Leitura do QR Code pela câmera | Thiago | ✅ na main (#97) |
+| T08, T09 Reconhecer as marcações do cartão e nota no aluno identificado | Thiago | ✅ na main (#102) |
 | T27 Teste de ponta a ponta da N3 | Thiago | ✅ na main (#100) |
 | T06 Status "Concluída" automático e várias turmas | Iago | ✅ na main (#83, #95) |
 | T03 PDF consolidado da aplicação | Iago | ✅ na main (#86) |
@@ -581,18 +630,18 @@ relatórios com média, mediana e desvio padrão e CSV. Nenhuma tela com dado fi
 | T18 Importar alunos por planilha (CSV e Excel) | Amanda | ✅ na main (#90) |
 | T17 Recuperação de senha | Amanda | ✅ na main (#91) |
 | T20 Backup e disponibilidade | Amanda | ✅ na main (#92) |
-| T21 README final | Amanda | 🔎 README na main (#93 e este PR); faltam os ADRs novos |
-| T08, T09 Reconhecer as marcações do cartão e nota no aluno identificado | Thiago | ⏳ pendente |
-| T11 Correção offline (PWA) | Marceu | ⏳ pendente |
-| T12, T13, T14 Estatística por questão, Excel e relatório consolidado | Marceu | ⏳ pendente |
+| T21 README final | Amanda | ✅ na main (#93, #101) |
+| T11 Correção offline | Marceu | ✅ na main (#106) |
+| T14 Relatório consolidado na web e PDF | Marceu | ✅ na main (#103) |
+| T12 Estatística por questão | Marceu | ✅ na main (#104) |
+| T13 Exportação em Excel | Marceu | ✅ na main (#105) |
 | T22 a T25 Validações, logs de acesso, cobertura e desempenho | Hellen | ⏳ pendente |
 | T15, T29 Apresentação e teste com pessoa de fora | Marceu | ⏳ pendente |
 | T30 Montar e enviar a entrega | Thiago | ⏳ pendente |
 
-O [manual do usuário](docs/manual-usuario.md) e o
-[teste de ponta a ponta da N3](docs/testes/n3-ponta-a-ponta.md) já estão na main.
-Os ADRs novos da N3 (PDF, leitura do cartão e offline) entram quando essas partes
-estiverem prontas.
+O [manual do usuário](docs/manual-usuario.md) já descreve a correção pela câmera,
+a correção sem internet e os relatórios novos. Os ADRs da N3 (PDF, leitura do
+cartão e offline) estão em [`docs/adr`](docs/adr/README.md).
 
 ### Limitações conhecidas
 
@@ -600,12 +649,21 @@ estiverem prontas.
   Em "Esqueci minha senha", o link de redefinição é escrito no log da API
   (Vercel → projeto `sgp-provas-api` → Logs) e quem administra o sistema repassa ao
   professor. O link vale 1 hora e só uma vez.
-- **Marcações do cartão conferidas à mão.** A câmera já lê o QR Code e abre a
-  revisão na versão e no aluno certos, mas as letras marcadas ainda são tocadas na
-  tela de revisão até a T08. A leitura pela câmera ainda não foi testada num
-  celular de verdade, só com a câmera falsa do Chrome.
-- **Nome do PDF.** O PDF da aplicação baixa como `aplicacao.pdf`, porque a API não
-  libera o cabeçalho `Content-Disposition` no CORS (ver o teste da N3).
+- **Correção sem internet só no envio.** O RF10 e o RNF06 pedem a correção
+  totalmente offline; a entrega atende o envio. O SGP não é uma PWA: não há service
+  worker nem cópia das telas no celular. A tela de escanear e a de revisão buscam
+  a aplicação e as versões na API quando abrem, então precisam de internet para
+  abrir. O que funciona sem conexão é confirmar uma revisão já aberta: a correção
+  fica numa fila no `localStorage` daquele navegador e é enviada quando a conexão
+  volta (ou ao abrir a tela de Correção), sem duplicar, pelo `clientCorrectionId`.
+  Limpar os dados do navegador antes do envio perde a fila. Ver o
+  [ADR-008](docs/adr/ADR-008-correcao-offline-com-fila.md).
+- **Limites da leitura do cartão.** Os valores de corte (bolinha marcada a partir
+  de 50% de preenchimento, com 20 pontos acima da segunda) são os da seção 10 de
+  [`docs/arquitetura/cartao-resposta.md`](docs/arquitetura/cartao-resposta.md),
+  testados com imagens geradas e com a câmera falsa do Chrome. Caneta clara ou
+  bolinha só riscada pode ficar perto do limite: a revisão destaca essas questões
+  em amarelo para o professor conferir.
 - **Backup e disponibilidade.** Não há SLA de 99,5% (RNF03) nem retenção de 30 dias
   de backup (RNF07) nos planos usados; detalhes em
   [`docs/arquitetura/backup-e-disponibilidade.md`](docs/arquitetura/backup-e-disponibilidade.md).
