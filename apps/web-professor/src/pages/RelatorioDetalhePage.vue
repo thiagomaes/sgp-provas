@@ -324,7 +324,7 @@ const imprimir = () => window.print()
             <tr>
               <th>Questão</th>
               <th>Acerto</th>
-              <th>Mais marcada</th>
+              <th>Marcações (a mais marcada em destaque)</th>
             </tr>
           </thead>
           <tbody>
@@ -337,7 +337,19 @@ const imprimir = () => window.print()
                     : `${Math.round(questao.percentualAcerto)}% (de ${questao.respondidas})`
                 }}
               </td>
-              <td>{{ questao.maisMarcada ?? '—' }}</td>
+              <td>
+                <template v-if="questao.maisMarcada">
+                  <span
+                    v-for="(vezes, letra) in questao.marcacoes"
+                    :key="letra"
+                    class="marcacao"
+                    :class="{ destaque: letra === questao.maisMarcada }"
+                  >
+                    {{ letra }}: {{ vezes }}
+                  </span>
+                </template>
+                <template v-else>—</template>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -468,6 +480,15 @@ const imprimir = () => window.print()
 .sem-aluno,
 .por-questao {
   margin-top: var(--space-6);
+}
+
+.marcacao {
+  margin-right: var(--space-3);
+}
+
+.marcacao.destaque {
+  font-weight: 700;
+  color: var(--accent-dark);
 }
 
 .secao-titulo {

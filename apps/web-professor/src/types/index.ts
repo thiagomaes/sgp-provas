@@ -218,6 +218,8 @@ export interface QuestionStatistics {
   respondidas: number
   /** 0 a 100, ou null sem provas lidas. */
   percentualAcerto: number | null
+  /** Quantas vezes cada letra original foi marcada, ex.: { A: 3, C: 1 }. */
+  marcacoes: Partial<Record<OptionLetter, number>>
   /** Letra original mais marcada; null sem marcação ou na discursiva. */
   maisMarcada: OptionLetter | null
 }
